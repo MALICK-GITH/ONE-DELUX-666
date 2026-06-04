@@ -170,6 +170,10 @@ function renderMatchDetail(match) {
             </div>
             ${aiPrediction.exactScore ? `<p class="prediction-model">Score exact estimé: ${aiPrediction.exactScore}</p>` : ""}
             ${aiPrediction.modelScope ? `<p class="prediction-model">Portée du modèle: ${aiPrediction.modelScope}</p>` : ""}
+            ${aiPrediction.modelFile ? `<p class="prediction-model">Fichier modèle: ${aiPrediction.modelFile}</p>` : ""}
+            ${aiPrediction.reportFile ? `<p class="prediction-model">Rapport: ${aiPrediction.reportFile}</p>` : ""}
+            ${aiPrediction.metrics?.resultAccuracy ? `<p class="prediction-model">Accuracy validation: ${(aiPrediction.metrics.resultAccuracy * 100).toFixed(2)}%</p>` : ""}
+            ${aiPrediction.trainSize ? `<p class="prediction-model">Train: ${aiPrediction.trainSize} | Valid: ${aiPrediction.validSize ?? "-"}</p>` : ""}
           </div>
         </div>
       ` : ""}
@@ -195,6 +199,10 @@ function renderMatchDetail(match) {
       <div class="match-actions">
         <a class="action-link" href="/coupon.html">Générer un coupon avec ce match →</a>
       </div>
+
+      <footer class="model-signature">
+        <span>Modèle entraîné et interface signés par SOLITAIRE HACK</span>
+      </footer>
     </div>
   `;
 

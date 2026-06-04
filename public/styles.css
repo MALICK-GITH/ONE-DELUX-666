@@ -1018,6 +1018,16 @@ footer small {
   border-top: 1px solid var(--line);
 }
 
+.model-signature {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .action-link {
   display: inline-block;
   color: var(--brand-2);

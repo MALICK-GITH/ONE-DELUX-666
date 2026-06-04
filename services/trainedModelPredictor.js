@@ -6,6 +6,7 @@ const path = require("path");
 const MODEL_DIR = path.join(process.cwd(), "data", "training");
 const PENALTY_MODEL_DIR = path.join(MODEL_DIR, "penalty-leagues");
 const MODEL_PREFIX = "model-finished-matches-";
+const REPORT_PREFIX = "report-finished-matches-";
 const PENALTY_MODEL_PREFIX = "model-penalty-";
 const PINNED_GLOBAL_MODEL_FILE = String(process.env.TRAINED_GLOBAL_MODEL_FILE || "").trim();
 
@@ -122,6 +123,13 @@ function findLatestModelPath() {
   return path.join(MODEL_DIR, files[0]);
 }
 
+function findReportPathForModel(modelPath) {
+  if (!modelPath) return null;
+  const baseName = path.basename(modelPath).replace(/^model-/, "report-");
+  const reportPath = path.join(path.dirname(modelPath), baseName);
+  return fs.existsSync(reportPath) ? reportPath : null;
+}
+
 function getPenaltyModelPathsByLeague() {
   if (!fs.existsSync(PENALTY_MODEL_DIR)) return new Map();
 
@@ -188,6 +196,27 @@ function loadLatestModel() {
   return model;
 }
 
+function readLatestTrainingReport() {
+  if (!fs.existsSync(MODEL_DIR)) return null;
+
+  const files = fs
+    .readdirSync(MODEL_DIR)
+    .filter((name) => name.startsWith(REPORT_PREFIX) && name.endsWith(".json"))
+    .sort((a, b) => {
+      const pa = path.join(MODEL_DIR, a);
+      const pb = path.join(MODEL_DIR, b);
+      const sa = fs.statSync(pa).mtimeMs;
+      const sb = fs.statSync(pb).mtimeMs;
+      return sb - sa;
+    });
+
+  if (!files.length) return null;
+
+  const reportPath = path.join(MODEL_DIR, files[0]);
+  const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+  return { report, path: reportPath };
+}
+
 function roundScore(value) {
   return Math.max(0, Math.round(Number(value) || 0));
 }
@@ -197,6 +226,7 @@ function predictFromTrainedModel(input = {}) {
     const penaltyLeagueModelKey = detectPenaltyLeagueModelKey(input.league);
     const penaltyLoaded = loadPenaltyModelByLeague(penaltyLeagueModelKey);
     const model = penaltyLoaded?.model || loadLatestModel();
+    const modelInfo = getTrainedModelInfo();
 
     if (!model) {
       return {
@@ -243,8 +273,12 @@ function predictFromTrainedModel(input = {}) {
       source: "trained-finished-matches-model",
       modelVersion: model?.version || "1.0.0",
       modelFile,
+      reportFile: modelInfo?.reportFile || null,
       modelScope: penaltyLoaded?.path ? "penalty-league" : "global",
       trainedAt: model?.trainedAt || null,
+      trainSize: modelInfo?.trainSize ?? model?.trainSize ?? null,
+      validSize: modelInfo?.validSize ?? model?.validSize ?? null,
+      metrics: modelInfo?.metrics || null,
       recommendation,
       confidence: Number(confidence.toFixed(2)),
       exactScore: `${scoreHome}-${scoreAway}`,
@@ -273,6 +307,46 @@ function predictFromTrainedModel(input = {}) {
   }
 }
 
+function getTrainedModelInfo() {
+  const modelPath = findLatestModelPath();
+  if (!modelPath) {
+    return {
+      available: false,
+      reason: "no_model_file"
+    };
+  }
+
+  try {
+    const model = loadLatestModel();
+    const reportInfo = readLatestTrainingReport();
+    const reportPath = findReportPathForModel(modelPath) || reportInfo?.path || null;
+    const report = reportInfo?.report || null;
+
+    return {
+      available: true,
+      modelFile: path.basename(modelPath),
+      modelPath,
+      reportFile: reportPath ? path.basename(reportPath) : null,
+      reportPath,
+      trainedAt: model?.trainedAt || null,
+      version: model?.version || "1.0.0",
+      trainSize: model?.trainSize ?? null,
+      validSize: model?.validSize ?? null,
+      metrics: report?.metrics || null,
+      byLeagueValidation: Array.isArray(report?.byLeagueValidation) ? report.byLeagueValidation : [],
+      segmentTraining: Array.isArray(report?.segmentTraining) ? report.segmentTraining : [],
+      source: "trained-finished-matches-model",
+    };
+  } catch (error) {
+    return {
+      available: false,
+      reason: "model_info_error",
+      error: error.message
+    };
+  }
+}
+
 module.exports = {
-  predictFromTrainedModel
+  predictFromTrainedModel,
+  getTrainedModelInfo,
 };

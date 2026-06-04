@@ -12,11 +12,19 @@ const {
   formatCouponItem,
 } = require("./services/couponManager");
 const CronCollector = require("./services/cronCollector");
-const { predictFromTrainedModel } = require("./services/trainedModelPredictor");
+const {
+  predictFromTrainedModel,
+  getTrainedModelInfo,
+} = require("./services/trainedModelPredictor");
+const config = require("./server/config");
+const {
+  sanitizeCouponRequest,
+  sanitizePredictionRequest,
+} = require("./server/utils/validation");
 
 const REQUIRED_NODE_MAJOR = 18;
 const REQUIRED_NODE_MINOR = 17;
-const port = process.env.PORT || 3000;
+const port = config.port;
 
 const API_URL =
   "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip?sports=85&count=40&lng=fr&gr=789&mode=4&country=96&partner=233&getEmpty=true&virtualSports=true&noFilterBlockEvent=true";
@@ -125,11 +133,15 @@ function buildAiPrediction(match) {
     confidence: trained.confidence ?? null,
     modelVersion: trained.modelVersion || null,
     modelFile: trained.modelFile || null,
+    reportFile: trained.reportFile || null,
     modelScope: trained.modelScope || null,
     exactScore: trained.exactScore || null,
     distribution: trained.distribution || null,
     coverage: trained.coverage || null,
     trainedAt: trained.trainedAt || null,
+    trainSize: trained.trainSize ?? null,
+    validSize: trained.validSize ?? null,
+    metrics: trained.metrics || null,
     source: trained.source || "trained-finished-matches-model",
   };
 }
@@ -180,6 +192,7 @@ function buildAdvancedPrediction(match, ai = null) {
 
 function buildSystemSnapshot() {
   const memory = process.memoryUsage();
+  const trainedModel = getTrainedModelInfo();
   return {
     platform: process.platform,
     arch: process.arch,
@@ -199,9 +212,8 @@ function buildSystemSnapshot() {
       aiPrediction: true,
       advancedPrediction: true,
     },
-    model: {
-      available: Boolean(predictFromTrainedModel({}).available),
-    },
+    signature: config.appSignature,
+    model: trainedModel,
     timestamp: new Date().toISOString(),
   };
 }
@@ -679,9 +691,10 @@ async function handleMatchById(matchId, res) {
 async function handleCouponGeneration(req, res) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    const size = Number(url.searchParams.get("size")) || 3;
-    const league = url.searchParams.get("league") || "all";
-    const risk = url.searchParams.get("risk") || "balanced";
+    const params = sanitizeCouponRequest(Object.fromEntries(url.searchParams.entries()));
+    const size = params.size;
+    const league = params.league;
+    const risk = params.risk;
 
     const matches = await fetchMatches();
     const selectedMatches = matches.slice(0, size);
@@ -869,9 +882,11 @@ async function handleCouponValidation(req, res) {
     req.on("data", (chunk) => { body += chunk; });
     req.on("end", async () => {
       try {
-        const payload = body ? JSON.parse(body) : {};
+        const rawPayload = body ? JSON.parse(body) : {};
+        const validationPayload = sanitizeCouponRequest(rawPayload);
+        const payload = rawPayload && typeof rawPayload === "object" ? rawPayload : {};
         const selections = Array.isArray(payload.selections) ? payload.selections : [];
-        const driftThreshold = payload.driftThresholdPercent || 6;
+        const driftThreshold = validationPayload.driftThresholdPercent || 6;
 
         const matches = await fetchMatches();
         const issues = [];
@@ -1086,13 +1101,23 @@ async function handleCronStatus(req, res) {
 async function parsePredictionInput(req) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const query = Object.fromEntries(url.searchParams.entries());
+  const sanitizedQuery = sanitizePredictionRequest(query);
 
   if (req.method && req.method.toUpperCase() === "POST") {
     const body = await readJsonBody(req).catch(() => ({}));
-    return { ...query, ...(body && typeof body === "object" ? body : {}) };
+    const payload = body && typeof body === "object" ? body : {};
+    const sanitizedBody = sanitizePredictionRequest(payload);
+    const merged = { ...sanitizedQuery };
+    const keys = ["matchId", "league", "teamHome", "teamAway", "homeOdd", "drawOdd", "awayOdd", "label", "confidence", "model"];
+    for (const key of keys) {
+      if (Object.prototype.hasOwnProperty.call(payload, key)) {
+        merged[key] = sanitizedBody[key];
+      }
+    }
+    return merged;
   }
 
-  return query;
+  return sanitizedQuery;
 }
 
 async function resolveMatchFromPredictionRequest(req) {
@@ -1270,8 +1295,25 @@ async function handleStatusCheck(req, res) {
   }
 }
 
-server.listen(port, () => {
-  console.log(`RUST SIT XPR disponible sur http://localhost:${port}`);
-  // console.log(`[CRON Collector] Démarrage automatique du collecteur de matchs terminés...`);
-  // cronCollector.start();
-});
+function startServerWithRetry(currentPort = port, attempt = 1) {
+  const onError = (error) => {
+    if (error.code === "EADDRINUSE" && attempt < config.maxPortTries) {
+      server.removeListener("error", onError);
+      startServerWithRetry(currentPort + 1, attempt + 1);
+      return;
+    }
+
+    console.error(`Impossible de démarrer le serveur sur le port ${currentPort}: ${error.message}`);
+    process.exit(1);
+  };
+
+  server.once("error", onError);
+  server.listen(currentPort, () => {
+    server.removeListener("error", onError);
+    console.log(`RUST SIT XPR disponible sur http://localhost:${currentPort}`);
+    // console.log(`[CRON Collector] Démarrage automatique du collecteur de matchs terminés...`);
+    // cronCollector.start();
+  });
+}
+
+startServerWithRetry();

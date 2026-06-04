@@ -1,0 +1,13 @@
+{
+  "name": "one-delux",
+  "version": "1.0.0",
+  "description": "ONE-DELUX landing page with live match feed",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {}
+}

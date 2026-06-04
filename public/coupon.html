@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0a1628" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RUST SIT XPR" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="RUST SIT XPR" />
+  <meta name="msapplication-TileColor" content="#050508" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="robots" content="noindex,nofollow" />
+
+  <title>RUST SIT XPR - Coupon</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  
+  <header class="hero">
+    <p class="tag">Coupon Generator</p>
+    <h1>RUST SIT XPR</h1>
+    <p id="subTitle">Générateur de coupons intelligents avec IA</p>
+    
+    <div class="controls">
+      <button id="refreshBtn" type="button">Générer Coupon</button>
+      <label class="league-filter" for="sizeSelect">
+        <span>Taille</span>
+        <select id="sizeSelect">
+          <option value="3">3 matchs</option>
+          <option value="5">5 matchs</option>
+          <option value="7">7 matchs</option>
+        </select>
+      </label>
+      <label class="league-filter" for="riskSelect">
+        <span>Risque</span>
+        <select id="riskSelect">
+          <option value="conservative">Conservateur</option>
+          <option value="balanced" selected>Équilibré</option>
+          <option value="aggressive">Agressif</option>
+        </select>
+      </label>
+      <a class="coupon-page-link" href="/">← Retour accueil</a>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="stats" id="couponStats"></section>
+    
+    <section class="coupon-section" id="couponSection">
+      <div class="loading-card">Cliquez sur "Générer Coupon" pour commencer</div>
+    </section>
+    
+    <section class="coupon-actions" id="couponActions">
+      <button id="ladderBtn" type="button" class="action-btn">Générer Ladder</button>
+      <button id="multiBtn" type="button" class="action-btn">Générer Multi</button>
+      <button id="validateBtn" type="button" class="action-btn">Valider Coupon</button>
+    </section>
+  </main>
+
+  <footer>
+    <small id="updatedAt"></small>
+    <small id="appVersionTag"></small>
+    <p class="legal-foot">
+      Informations et scores a titre indicatif. Paris interdits aux mineurs. Joue avec moderation.
+    </p>
+    <div class="site-signature">😈 Signé par <strong>SOLITAIRE HACK 🇨🇮</strong></div>
+  </footer>
+
+  <!-- API Client -->
+  <script src="/site-api.js"></script>
+  
+  <!-- Coupon Application Script -->
+  <script src="/coupon.js"></script>
+</body>
+
+</html>

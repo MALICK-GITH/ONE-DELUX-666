@@ -43,6 +43,9 @@
     matches() {
       return requestJson("/matches");
     },
+    matchStatus() {
+      return requestJson("/matches/status");
+    },
     matchById(matchId) {
       return requestJson(`/matches/${encodeURIComponent(matchId)}`);
     },
@@ -73,6 +76,18 @@
     },
     health() {
       return requestJson("/health");
+    },
+    cronLearningStatus() {
+      return requestJson("/cron/learning/status");
+    },
+    cronLearningStart() {
+      return requestJson("/cron/learning/start", { method: "POST" });
+    },
+    cronLearningStop() {
+      return requestJson("/cron/learning/stop", { method: "POST" });
+    },
+    cronLearningCollect() {
+      return requestJson("/cron/learning/collect", { method: "POST" });
     },
   };
 

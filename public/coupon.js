@@ -14,6 +14,8 @@ const multiBtn = document.getElementById("multiBtn");
 const validateBtn = document.getElementById("validateBtn");
 const updatedAt = document.getElementById("updatedAt");
 const appVersionTag = document.getElementById("appVersionTag");
+const visualFormatSelect = document.getElementById("visualFormatSelect");
+const visualQualitySelect = document.getElementById("visualQualitySelect");
 
 let currentCoupon = null;
 const APP_VERSION = "2026.06.04-r1";
@@ -29,6 +31,64 @@ function setupEventListeners() {
   ladderBtn.addEventListener("click", generateLadder);
   multiBtn.addEventListener("click", generateMulti);
   validateBtn.addEventListener("click", validateCoupon);
+  
+  // Setup Visual Generator
+  const generateVisualBtn = document.getElementById('generateVisualBtn');
+  if (generateVisualBtn) {
+    generateVisualBtn.addEventListener('click', handleGenerateCouponVisual);
+  }
+}
+
+function getVisualSettings() {
+  return {
+    exportFormat: visualFormatSelect?.value || "png",
+    quality: Number(visualQualitySelect?.value || 0.92),
+  };
+}
+
+async function handleGenerateCouponVisual() {
+  if (!currentCoupon) {
+    alert('Veuillez générer un coupon d\'abord');
+    return;
+  }
+
+  const generateBtn = document.getElementById('generateVisualBtn');
+  generateBtn.disabled = true;
+  generateBtn.textContent = '⏳ Génération...';
+
+  try {
+    const coupon = currentCoupon.coupon || [];
+    const summary = currentCoupon.summary || {};
+
+    // Préparer les données pour le visuel du coupon - Système amélioré ONE-DELUX
+    const visualData = {
+      selections: coupon.map((item, index) => ({
+        team: item.teamHome,
+        awayTeam: item.teamAway,
+        prediction: item.pari,
+        odds: item.cote
+      })),
+      totalOdds: summary.combinedOdd ? summary.combinedOdd.toFixed(2) : 'N/A',
+      confidence: Math.floor(coupon.reduce((acc, item) => acc + (item.confidence || 50), 0) / coupon.length),
+      generatedAt: new Date().toISOString()
+    };
+
+    const result = await window.visualGenerator.generateCouponImage(visualData, {
+      ...getVisualSettings(),
+    });
+
+    if (result.success) {
+      window.visualGenerator.showShareModal(result.imageUrl, result.blob, result.pdfBlob, result.fileExtension);
+    } else {
+      throw new Error(result.error || 'Erreur lors de la génération');
+    }
+  } catch (error) {
+    console.error('Erreur lors de la génération du visuel coupon:', error);
+    alert('Erreur lors de la génération du visuel: ' + error.message);
+  } finally {
+    generateBtn.disabled = false;
+    generateBtn.textContent = '📸 Générer l\'image';
+  }
 }
 
 async function generateCoupon() {

@@ -1,5 +1,4 @@
 const http = require("http");
-const https = require("https");
 const fs = require("fs");
 const path = require("path");
 const { URL } = require("url");
@@ -11,11 +10,22 @@ const {
   buildTelegramValidationText,
   formatCouponItem,
 } = require("./services/couponManager");
-const CronCollector = require("./services/cronCollector");
 const {
   predictFromTrainedModel,
   getTrainedModelInfo,
 } = require("./services/trainedModelPredictor");
+const VisualGenerator = require("./services/visualGenerator");
+const { fetchLiveFeedEvents } = require("./services/liveFeedClient");
+// const {
+//   buildMatchImageSvg,
+//   buildCouponImageSvg
+// } = require("./services/svgBuilder");
+const {
+  getMatchStatus,
+  extractMatchScore,
+  classifyMatchByStatus
+} = require("./services/matchStatus");
+const CronLearningService = require("./services/cronLearningService");
 const config = require("./server/config");
 const {
   sanitizeCouponRequest,
@@ -25,9 +35,6 @@ const {
 const REQUIRED_NODE_MAJOR = 18;
 const REQUIRED_NODE_MINOR = 17;
 const port = config.port;
-
-const API_URL =
-  "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip?sports=85&count=40&lng=fr&gr=789&mode=4&country=96&partner=233&getEmpty=true&virtualSports=true&noFilterBlockEvent=true";
 
 const publicDir = path.join(__dirname, "public");
 
@@ -45,10 +52,13 @@ const mimeTypes = {
 // Session state for coupon management
 const sessionState = new Map();
 
-// Initialize CRON Collector for automatic finished matches collection
-const cronCollector = new CronCollector({
-  interval: 5 * 60 * 1000, // 5 minutes
-  outputPath: path.join(__dirname, "data", "finished-matches.csv"),
+// Initialize Visual Generator for premium image generation
+const visualGenerator = new VisualGenerator();
+
+// Initialize Cron Learning Service for automatic match collection
+const cronLearningService = new CronLearningService({
+  interval: config.cronLearningIntervalMs,
+  databaseUrl: config.finishedMatchesStoreUrl,
 });
 
 function assertNodeVersion() {
@@ -75,32 +85,11 @@ function toOddNumber(value) {
   return Number.isFinite(odd) && odd > 0 ? odd : null;
 }
 
-function buildPredictionCandidate(label, odd, source) {
-  return { label, odd, source };
-}
-
-function normalizeOutcomeLabel(label, homeTeam, awayTeam) {
-  const value = String(label || "").toLowerCase();
-  if (value.includes("nul")) return "draw";
-  if (value.includes(String(homeTeam || "").toLowerCase())) return "home";
-  if (value.includes(String(awayTeam || "").toLowerCase())) return "away";
-  if (value === "home" || value === "draw" || value === "away") return value;
-  return null;
-}
-
 function buildOutcomeLabel(outcome, homeTeam, awayTeam) {
   if (outcome === "home") return `Victoire ${homeTeam}`;
   if (outcome === "away") return `Victoire ${awayTeam}`;
   if (outcome === "draw") return "Match nul";
   return "Analyse indisponible";
-}
-
-function getOutcomeOdd(match, outcome) {
-  if (!match || !match.odds) return null;
-  if (outcome === "home") return match.odds.home;
-  if (outcome === "draw") return match.odds.draw;
-  if (outcome === "away") return match.odds.away;
-  return null;
 }
 
 function buildAiPrediction(match) {
@@ -123,7 +112,7 @@ function buildAiPrediction(match) {
   }
 
   const recommendation = trained.recommendation || null;
-  const odd = getOutcomeOdd(match, recommendation);
+  const odd = match?.odds && recommendation ? match.odds[recommendation] ?? null : null;
 
   return {
     available: true,
@@ -148,44 +137,23 @@ function buildAiPrediction(match) {
 
 function buildAdvancedPrediction(match, ai = null) {
   const modelPrediction = ai || buildAiPrediction(match);
-  const marketOutcome = normalizeOutcomeLabel(match.primaryPrediction?.label, match.team1, match.team2);
-  const marketConfidence = Number(match.primaryPrediction?.confidence || 0);
-  const aiConfidence = Number(modelPrediction.confidence || 0);
-
-  const consensusOutcome = marketOutcome && modelPrediction.recommendation === marketOutcome
-    ? marketOutcome
-    : (aiConfidence >= marketConfidence ? modelPrediction.recommendation : marketOutcome);
-  const confidenceBoost = marketOutcome && modelPrediction.recommendation === marketOutcome ? 8 : 0;
-  const confidencePenalty = marketOutcome && modelPrediction.recommendation && modelPrediction.recommendation !== marketOutcome ? 4 : 0;
-  const confidence = Math.max(
-    1,
-    Math.min(99, Math.round(Math.max(marketConfidence, aiConfidence) + confidenceBoost - confidencePenalty))
-  );
-
   return {
     available: Boolean(modelPrediction.available),
-    label: buildOutcomeLabel(consensusOutcome, match.team1, match.team2),
-    recommendation: consensusOutcome,
-    confidence,
-    odd: getOutcomeOdd(match, consensusOutcome) != null ? Number(getOutcomeOdd(match, consensusOutcome)).toFixed(2) : null,
-    sources: {
-      market: {
-        label: match.primaryPrediction?.label || null,
-        confidence: marketConfidence || null,
-        model: match.primaryPrediction?.model || null,
-      },
-      ai: {
-        label: modelPrediction.label,
-        confidence: modelPrediction.confidence,
-        modelVersion: modelPrediction.modelVersion,
-        exactScore: modelPrediction.exactScore,
-      },
-    },
-    consensus: marketOutcome && modelPrediction.recommendation
-      ? marketOutcome === modelPrediction.recommendation
-        ? "aligned"
-        : "blended"
-      : "market_only",
+    label: modelPrediction.label,
+    recommendation: modelPrediction.recommendation,
+    confidence: modelPrediction.confidence,
+    modelVersion: modelPrediction.modelVersion,
+    modelFile: modelPrediction.modelFile,
+    reportFile: modelPrediction.reportFile,
+    modelScope: modelPrediction.modelScope,
+    exactScore: modelPrediction.exactScore,
+    distribution: modelPrediction.distribution,
+    coverage: modelPrediction.coverage,
+    trainedAt: modelPrediction.trainedAt,
+    trainSize: modelPrediction.trainSize,
+    validSize: modelPrediction.validSize,
+    metrics: modelPrediction.metrics,
+    source: modelPrediction.source,
     ai: modelPrediction,
   };
 }
@@ -208,7 +176,6 @@ function buildSystemSnapshot() {
     services: {
       matches: true,
       coupon: true,
-      cron: true,
       aiPrediction: true,
       advancedPrediction: true,
     },
@@ -264,179 +231,89 @@ function resolvePredictionMatch(input = {}) {
   return fallback;
 }
 
-function calculateConfidence(selectedOdd, candidateOdds) {
-  const validOdds = candidateOdds.filter((odd) => Number.isFinite(odd) && odd > 0);
-
-  if (!Number.isFinite(selectedOdd) || selectedOdd <= 0 || !validOdds.length) {
-    return null;
-  }
-
-  const weights = validOdds.map((odd) => 1 / odd);
-  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-
-  if (!totalWeight) {
-    return null;
-  }
-
-  const selectedWeight = 1 / selectedOdd;
-  return Math.max(1, Math.min(99, Math.round((selectedWeight / totalWeight) * 100)));
+async function fetchMatches() {
+  const events = await fetchLiveFeedEvents();
+  return events.map(formatMatch);
 }
 
-function fetchMatches() {
-  return new Promise((resolve, reject) => {
-    https.get(API_URL, {
-      headers: {
-        'accept': 'application/json, text/plain, */*',
-        'user-agent': 'Mozilla/5.0'
-      }
-    }, (res) => {
-      let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        try {
-          if (res.statusCode !== 200) {
-            const error = new Error(`API distante en erreur (${res.statusCode})`);
-            error.status = res.statusCode;
-            reject(error);
-            return;
-          }
-          const parsed = JSON.parse(data);
-          const events = Array.isArray(parsed.Value) ? parsed.Value.map(formatMatch) : [];
-          resolve(events);
-        } catch (error) {
-          reject(error);
-        }
-      });
-    }).on('error', (error) => {
-      reject(error);
-    });
-  });
+// Cron Learning Service Authentication Functions
+function isAuthorizedCronRequest(req) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const key = url.searchParams.get('key');
+    const cronSecret = config.cronSecret || process.env.CRON_SECRET || "default-secret";
+    return key === cronSecret;
+  } catch (error) {
+    console.error("[Cron Auth] Erreur d'authentification:", error.message);
+    return false;
+  }
+}
+
+function rejectCronUnauthorized(res) {
+  res.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
+  res.end(JSON.stringify({
+    success: false,
+    error: "Unauthorized",
+    message: "Clé secrète invalide ou manquante"
+  }));
 }
 
 function pickMainPrediction(event) {
-  const markets = Array.isArray(event.E) ? event.E : [];
-  const additionalEvents = Array.isArray(event.AE) ? event.AE : [];
+  const prediction = predictFromTrainedModel({
+    league: event.L || event.LE || "Compétition virtuelle",
+    teamHome: event.O1 || "Équipe 1",
+    teamAway: event.O2 || "Équipe 2",
+  });
 
-  // Filtrer les cotes bloquées (B: true)
-  const availableMarkets = markets.filter((item) => !item.B);
-
-  // Chercher dans les marchés principaux (E)
-  const homeWin = availableMarkets.find((item) => item.T === 1 && item.G === 1);
-  const draw = availableMarkets.find((item) => item.T === 2 && item.G === 1);
-  const awayWin = availableMarkets.find((item) => item.T === 3 && item.G === 1);
-  const over = availableMarkets.find((item) => item.T === 9 && item.G === 17);
-  const under = availableMarkets.find((item) => item.T === 10 && item.G === 17);
-
-  // Si pas trouvé dans E, chercher dans AE (marchés secondaires)
-  const findInAE = (type, group) => {
-    for (const ae of additionalEvents) {
-      if (ae.G === group && Array.isArray(ae.ME)) {
-        const found = ae.ME.find((me) => me.T === type && !me.B);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  const overAE = over || findInAE(9, 17);
-  const underAE = under || findInAE(10, 17);
-
-  const oneXTwoCandidates = [
-    homeWin ? buildPredictionCandidate(`Victoire ${event.O1}`, toOddNumber(homeWin.CV ?? homeWin.C), "1X2") : null,
-    draw ? buildPredictionCandidate("Match nul", toOddNumber(draw.CV ?? draw.C), "1X2") : null,
-    awayWin ? buildPredictionCandidate(`Victoire ${event.O2}`, toOddNumber(awayWin.CV ?? awayWin.C), "1X2") : null
-  ].filter(Boolean);
-
-  if (oneXTwoCandidates.length) {
-    const selected = oneXTwoCandidates.reduce((best, current) => (current.odd < best.odd ? current : best));
+  if (!prediction.available) {
     return {
-      label: selected.label,
-      odd: selected.odd,
-      source: selected.source,
-      model: "Heuristique de marché",
-      confidence: calculateConfidence(
-        selected.odd,
-        oneXTwoCandidates.map((candidate) => candidate.odd)
-      )
-    };
-  }
-
-  const goalCandidates = [
-    overAE ? buildPredictionCandidate(`Plus de ${overAE.P} buts`, toOddNumber(overAE.CV ?? overAE.C), "buts") : null,
-    underAE ? buildPredictionCandidate(`Moins de ${underAE.P} buts`, toOddNumber(underAE.CV ?? underAE.C), "buts") : null
-  ].filter(Boolean);
-
-  if (goalCandidates.length) {
-    const selected = goalCandidates.reduce((best, current) => (current.odd < best.odd ? current : best));
-    return {
-      label: selected.label,
-      odd: selected.odd,
-      source: selected.source,
-      model: "Heuristique de marché",
-      confidence: calculateConfidence(
-        selected.odd,
-        goalCandidates.map((candidate) => candidate.odd)
-      )
+      label: "Modèle indisponible",
+      odd: null,
+      source: prediction.reason || "unavailable",
+      model: "Modèle entraîné",
+      confidence: null,
+      recommendation: null,
+      exactScore: null,
+      distribution: null,
+      modelVersion: null,
     };
   }
 
   return {
-    label: "Analyse indisponible",
-    odd: null,
-    source: null,
-    model: "Heuristique de marché",
-    confidence: null
+    label: buildOutcomeLabel(prediction.recommendation, event.O1 || "Équipe 1", event.O2 || "Équipe 2"),
+    odd: prediction.odd || null,
+    source: prediction.source || "trained-finished-matches-model",
+    model: `Modèle entraîné${prediction.modelVersion ? ` v${prediction.modelVersion}` : ""}`,
+    confidence: prediction.confidence ?? null,
+    recommendation: prediction.recommendation || null,
+    exactScore: prediction.exactScore || null,
+    distribution: prediction.distribution || null,
+    modelVersion: prediction.modelVersion || null,
+    modelFile: prediction.modelFile || null,
+    reportFile: prediction.reportFile || null,
+    metrics: prediction.metrics || null,
+    available: true,
   };
 }
 
 function formatMatch(event) {
-  const primary = pickMainPrediction(event);
   const markets = Array.isArray(event.E) ? event.E : [];
   const additionalEvents = Array.isArray(event.AE) ? event.AE : [];
-  const sc = event.SC || {};
 
-  // Score actuel (FS: Full Score) - uniquement disponible en live
-  const fullScore = sc.FS || {};
-  const currentScore = {
-    home: fullScore.S1 || 0,
-    away: fullScore.S2 || 0
-  };
+  // Utiliser le service commun de statut pour éviter les divergences entre pages et API
+  const statusInfo = getMatchStatus(event);
+  const scoreInfo = extractMatchScore(event);
 
-  // Historique des scores par période (PS: Period Scores)
-  const periodScores = Array.isArray(sc.PS) ? sc.PS : [];
-
-  // Période actuelle (CP: Current Period, CPS: Current Period String)
-  const currentPeriod = sc.CP || null;
-  const currentPeriodString = sc.CPS || event.TN || event.TNS || "Match";
-
-  // Temps écoulé en secondes (TS: Time Seconds)
-  const timeSeconds = sc.TS || 0;
-
-  // Statut affiché (SLS: Start Line Status)
-  const statusDisplay = sc.SLS || event.TI || "Disponible";
-  const statusLower = statusDisplay.toLowerCase();
-
-  // Déterminer si le match est en live (FS existe et n'est pas vide)
-  const isLive = fullScore && typeof fullScore === 'object' && (fullScore.S1 !== undefined || fullScore.S2 !== undefined);
-
-  // Déterminer si le match est terminé
-  const isFinished = 
-    statusLower.includes("terminé") || 
-    statusLower.includes("finished") || 
-    statusLower.includes("final") || 
-    statusLower.includes("ft") ||
-    (fullScore.S1 !== undefined && fullScore.S2 !== undefined && !isLive && currentPeriod === null);
-
-  // Déterminer si le match est à venir (pas encore commencé)
-  const isScheduled = !isLive && !isFinished && (event.S && new Date(event.S) > new Date());
-
-  // Déterminer le statut normalisé
-  let normalizedStatus = "disponible";
-  if (isFinished) normalizedStatus = "terminé";
-  else if (isLive) normalizedStatus = "en_cours";
-  else if (isScheduled) normalizedStatus = "a_venir";
+  const currentScore = scoreInfo.currentScore;
+  const periodScores = Array.isArray(scoreInfo.periodScores) ? scoreInfo.periodScores : [];
+  const currentPeriod = scoreInfo.currentPeriod || null;
+  const currentPeriodString = scoreInfo.currentPeriodString || event.TN || event.TNS || "Match";
+  const timeSeconds = scoreInfo.timeSeconds || 0;
+  const statusDisplay = scoreInfo.statusDisplay || event.TI || "Disponible";
+  const normalizedStatus = statusInfo.normalized;
+  const isLive = statusInfo.status === "live";
+  const isFinished = statusInfo.status === "finished";
+  const isScheduled = statusInfo.status === "upcoming";
 
   const match = {
     id: event.I,
@@ -448,8 +325,10 @@ function formatMatch(event) {
     team1Code: event.O1E || event.O1 || "Équipe 1",
     team2Code: event.O2E || event.O2 || "Équipe 2",
     startTime: event.S || null,
-    status: statusDisplay,
-    normalizedStatus: normalizedStatus,
+    status: statusInfo.label || statusDisplay,
+    statusText: statusDisplay,
+    normalizedStatus,
+    statusNormalized: normalizedStatus,
     period: currentPeriodString,
     currentPeriod: currentPeriod,
     timeSeconds: timeSeconds,
@@ -464,13 +343,7 @@ function formatMatch(event) {
       draw: markets.find((item) => item.T === 2)?.CV || null,
       away: markets.find((item) => item.T === 3)?.CV || null
     },
-    primaryPrediction: {
-      label: primary.label,
-      odd: primary.odd ? primary.odd.toFixed(2) : null,
-      confidence: primary.confidence,
-      model: primary.model,
-      source: primary.source
-    },
+    primaryPrediction: null,
     details: {
       over: markets.find((item) => item.T === 9)
         ? {
@@ -492,6 +365,7 @@ function formatMatch(event) {
 
   return {
     ...match,
+    primaryPrediction: aiPrediction,
     aiPrediction,
     advancedPrediction: buildAdvancedPrediction(match, aiPrediction)
   };
@@ -521,10 +395,8 @@ async function handleMatches(res) {
 async function handleUpcomingMatches(res) {
   try {
     const matches = await fetchMatches();
-    const upcoming = matches.filter(m =>
-      m.status === "Paris avant le début du jeu" ||
-      m.status?.includes("Début dans")
-    );
+    // Utiliser le nouveau système ONE-DELUX pour filtrer les matchs à venir
+    const upcoming = matches.filter(m => m.normalizedStatus === "a_venir");
 
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
@@ -546,7 +418,8 @@ async function handleUpcomingMatches(res) {
 async function handleLiveMatches(res) {
   try {
     const matches = await fetchMatches();
-    const live = matches.filter(m => m.isLive);
+    // Utiliser le nouveau système ONE-DELUX pour filtrer les matchs en cours
+    const live = matches.filter(m => m.normalizedStatus === "en_cours");
 
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
@@ -640,7 +513,8 @@ async function handleLiveMatches(res) {
 async function handleFinishedMatches(res) {
   try {
     const matches = await fetchMatches();
-    const finished = matches.filter(m => m.isFinished);
+    // Utiliser le nouveau système ONE-DELUX pour filtrer les matchs terminés
+    const finished = matches.filter(m => m.normalizedStatus === "terminé");
 
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
@@ -999,6 +873,11 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (url.pathname === "/api/matches/status") {
+    await handleStatusCheck(req, res);
+    return;
+  }
+
   if (url.pathname.startsWith("/api/matches/")) {
     const matchId = url.pathname.split("/").pop();
     await handleMatchById(matchId, res);
@@ -1040,63 +919,81 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (url.pathname === "/api/cron/start") {
-    await handleCronStart(req, res);
-    return;
-  }
-
-  if (url.pathname === "/api/cron/stop") {
-    await handleCronStop(req, res);
-    return;
-  }
-
-  if (url.pathname === "/api/cron/status") {
-    await handleCronStatus(req, res);
-    return;
-  }
-
   if (url.pathname === "/api/health") {
     await handleHealth(req, res);
     return;
   }
 
+  // Auto Visual Generator routes
+  if (url.pathname === "/api/visual/generate/prediction") {
+    await handleGeneratePredictionVisual(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/visual/generate/coupon") {
+    await handleGenerateCouponVisual(req, res);
+    return;
+  }
+
+  // SVG Image Generation routes - Adapté de ONE-DELUX (TEMPORAIREMENT DÉSACTIVÉS)
+  // if (url.pathname === "/api/svg/generate/match") {
+  //   await handleGenerateMatchSvg(req, res);
+  //   return;
+  // }
+
+  // if (url.pathname === "/api/svg/generate/coupon") {
+  //   await handleGenerateCouponSvg(req, res);
+  //   return;
+  // }
+
+  // Cron Learning Service routes - Adapté de ONE-DELUX
+  if (url.pathname === "/api/cron/learning/status") {
+    if (!isAuthorizedCronRequest(req)) {
+      rejectCronUnauthorized(res);
+      return;
+    }
+    handleCronStatus(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/cron/learning/start") {
+    if (!isAuthorizedCronRequest(req)) {
+      rejectCronUnauthorized(res);
+      return;
+    }
+    handleCronStart(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/cron/learning/stop") {
+    if (!isAuthorizedCronRequest(req)) {
+      rejectCronUnauthorized(res);
+      return;
+    }
+    handleCronStop(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/cron/learning/collect") {
+    if (!isAuthorizedCronRequest(req)) {
+      rejectCronUnauthorized(res);
+      return;
+    }
+    handleCronCollect(req, res);
+    return;
+  }
+
+  if (url.pathname === "/cron/learn") {
+    if (!isAuthorizedCronRequest(req)) {
+      rejectCronUnauthorized(res);
+      return;
+    }
+    handleCronCollect(req, res);
+    return;
+  }
+
   serveStaticFile(url.pathname, res);
 });
-
-async function handleCronStart(req, res) {
-  try {
-    cronCollector.start();
-    const status = cronCollector.getStatus();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: true, status }));
-  } catch (error) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: false, error: error.message }));
-  }
-}
-
-async function handleCronStop(req, res) {
-  try {
-    cronCollector.stop();
-    const status = cronCollector.getStatus();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: true, status }));
-  } catch (error) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: false, error: error.message }));
-  }
-}
-
-async function handleCronStatus(req, res) {
-  try {
-    const status = cronCollector.getStatus();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: true, status }));
-  } catch (error) {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: false, error: error.message }));
-  }
-}
 
 async function parsePredictionInput(req) {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -1233,6 +1130,82 @@ async function handleHealth(req, res) {
   }
 }
 
+async function handleGeneratePredictionVisual(req, res) {
+  try {
+    const body = await readJsonBody(req);
+    const data = body && typeof body === "object" ? body : {};
+    
+    const options = {
+      format: data.format || 'square',
+      exportFormat: data.exportFormat || 'png',
+      quality: data.quality || 0.9
+    };
+
+    const result = await visualGenerator.generatePredictionVisual(data, options);
+
+    if (result.success) {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        success: true,
+        imageUrl: result.path,
+        format: result.format,
+        dimensions: result.dimensions,
+        timestamp: result.timestamp
+      }));
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        success: false,
+        error: result.error
+      }));
+    }
+  } catch (error) {
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handleGenerateCouponVisual(req, res) {
+  try {
+    const body = await readJsonBody(req);
+    const data = body && typeof body === "object" ? body : {};
+    
+    const options = {
+      format: data.format || 'square',
+      exportFormat: data.exportFormat || 'png',
+      quality: data.quality || 0.9
+    };
+
+    const result = await visualGenerator.generateCouponVisual(data, options);
+
+    if (result.success) {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        success: true,
+        imageUrl: result.path,
+        format: result.format,
+        dimensions: result.dimensions,
+        timestamp: result.timestamp
+      }));
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        success: false,
+        error: result.error
+      }));
+    }
+  } catch (error) {
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
 async function handleSyncFinished(req, res) {
   try {
     const result = await syncFinishedMatches();
@@ -1255,19 +1228,13 @@ async function handleSyncFinished(req, res) {
 async function handleStatusCheck(req, res) {
   try {
     const matches = await fetchMatches();
+    const classified = classifyMatchByStatus(matches);
     const statusCounts = {
-      disponible: 0,
-      en_cours: 0,
-      terminé: 0,
-      a_venir: 0
+      en_cours: classified.live.length,
+      terminé: classified.finished.length,
+      a_venir: classified.upcoming.length,
+      disponible: Math.max(0, matches.length - classified.live.length - classified.finished.length - classified.upcoming.length),
     };
-
-    matches.forEach(m => {
-      const status = m.normalizedStatus || "disponible";
-      if (statusCounts.hasOwnProperty(status)) {
-        statusCounts[status]++;
-      }
-    });
 
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
@@ -1295,6 +1262,129 @@ async function handleStatusCheck(req, res) {
   }
 }
 
+// Cron Learning Service Handlers - Adapté de ONE-DELUX
+function handleCronStatus(req, res) {
+  try {
+    const status = cronLearningService.getStatus();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      status
+    }));
+  } catch (error) {
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: "Erreur lors de la vérification du statut du cron",
+      details: error.message
+    }));
+  }
+}
+
+function handleCronStart(req, res) {
+  try {
+    cronLearningService.start();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      message: "Cron Learning Service démarré",
+      status: cronLearningService.getStatus()
+    }));
+  } catch (error) {
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: "Erreur lors du démarrage du cron",
+      details: error.message
+    }));
+  }
+}
+
+function handleCronStop(req, res) {
+  try {
+    cronLearningService.stop();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      message: "Cron Learning Service arrêté",
+      status: cronLearningService.getStatus()
+    }));
+  } catch (error) {
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: "Erreur lors de l'arrêt du cron",
+      details: error.message
+    }));
+  }
+}
+
+async function handleCronCollect(req, res) {
+  try {
+    const result = await cronLearningService.collectFinishedMatches();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      result,
+      collectedAt: new Date().toISOString()
+    }));
+  } catch (error) {
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: "Erreur lors de la collecte des matchs terminés",
+      details: error.message
+    }));
+  }
+}
+
+// SVG Image Generation Handlers - Adapté de ONE-DELUX (TEMPORAIREMENT DÉSACTIVÉS)
+// async function handleGenerateMatchSvg(req, res) {
+//   try {
+//     const body = await readJsonBody(req);
+//     const data = body && typeof body === "object" ? body : {};
+//
+//     const svg = buildMatchImageSvg(data);
+//     const filename = `match-ticket-${data.matchId || 'unknown'}-${Date.now()}.svg`;
+//
+//     res.writeHead(200, {
+//       "Content-Type": "image/svg+xml; charset=utf-8",
+//       "Content-Disposition": `attachment; filename="${filename}"`
+//     });
+//     res.end(svg);
+//   } catch (error) {
+//     res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+//     res.end(JSON.stringify({
+//       success: false,
+//       error: "Erreur lors de la génération du SVG match",
+//       details: error.message
+//     }));
+//   }
+// }
+//
+// async function handleGenerateCouponSvg(req, res) {
+//   try {
+//     const body = await readJsonBody(req);
+//     const data = body && typeof body === "object" ? body : {};
+//
+//     const svg = buildCouponImageSvg(data);
+//     const filename = `coupon-${Date.now()}.svg`;
+//
+//     res.writeHead(200, {
+//       "Content-Type": "image/svg+xml; charset=utf-8",
+//       "Content-Disposition": `attachment; filename="${filename}"`
+//     });
+//     res.end(svg);
+//   } catch (error) {
+//     res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+//     res.end(JSON.stringify({
+//       success: false,
+//       error: "Erreur lors de la génération du SVG coupon",
+//       details: error.message
+//     }));
+//   }
+// }
+
 function startServerWithRetry(currentPort = port, attempt = 1) {
   const onError = (error) => {
     if (error.code === "EADDRINUSE" && attempt < config.maxPortTries) {
@@ -1311,8 +1401,10 @@ function startServerWithRetry(currentPort = port, attempt = 1) {
   server.listen(currentPort, () => {
     server.removeListener("error", onError);
     console.log(`RUST SIT XPR disponible sur http://localhost:${currentPort}`);
-    // console.log(`[CRON Collector] Démarrage automatique du collecteur de matchs terminés...`);
-    // cronCollector.start();
+    
+    // Démarrer le service Cron Learning (adapté de ONE-DELUX)
+    console.log(`[ONE-DELUX Adaptation] Démarrage du Cron Learning Service pour collecte automatique des matchs terminés...`);
+    cronLearningService.start();
   });
 }
 

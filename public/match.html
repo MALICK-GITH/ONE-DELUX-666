@@ -38,6 +38,25 @@
     <div class="controls">
       <a class="coupon-page-link" href="/">← Retour accueil</a>
       <a class="coupon-page-link" href="/coupon.html">Page Coupon</a>
+      <button id="generateVisualBtn" type="button" class="visual-btn">📸 Générer l'image</button>
+    </div>
+    <div class="visual-options" aria-label="Options de génération d'image">
+      <label class="visual-option" for="visualFormatSelect">
+        <span>Format</span>
+        <select id="visualFormatSelect">
+          <option value="png" selected>PNG</option>
+          <option value="jpeg">JPEG</option>
+          <option value="webp">WebP</option>
+        </select>
+      </label>
+      <label class="visual-option" for="visualQualitySelect">
+        <span>Qualité</span>
+        <select id="visualQualitySelect">
+          <option value="0.85">Économie</option>
+          <option value="0.92" selected>Équilibrée</option>
+          <option value="0.98">Haute</option>
+        </select>
+      </label>
     </div>
   </header>
 
@@ -58,6 +77,9 @@
 
   <!-- API Client -->
   <script src="/site-api.js"></script>
+
+  <!-- Visual Generator -->
+  <script src="/visualGenerator.js"></script>
 
   <!-- Match Detail Script -->
   <script src="/match.js"></script>

@@ -41,7 +41,7 @@ function weightedPick(counts) {
     const n = Number(value) || 0;
     if (!best || n > best.v) best = { k: key, v: n };
   }
-  return best ? best.k : "draw";
+  return best ? best.k : null;
 }
 
 function clamp(value, min, max) {
@@ -49,10 +49,23 @@ function clamp(value, min, max) {
 }
 
 function normalizeOutcomeDistribution(input = {}) {
-  const home = Math.max(0.0001, Number(input.home) || 0.0001);
-  const draw = Math.max(0.0001, Number(input.draw) || 0.0001);
-  const away = Math.max(0.0001, Number(input.away) || 0.0001);
+  const home = Number(input.home);
+  const draw = Number(input.draw);
+  const away = Number(input.away);
+
+  // Validation stricte : toutes les valeurs doivent être des nombres finis positifs
+  if (!Number.isFinite(home) || !Number.isFinite(draw) || !Number.isFinite(away)) {
+    return null;
+  }
+  if (home <= 0 || draw <= 0 || away <= 0) {
+    return null;
+  }
+
   const sum = home + draw + away;
+  if (sum <= 0) {
+    return null;
+  }
+
   return {
     home: home / sum,
     draw: draw / sum,
@@ -62,10 +75,14 @@ function normalizeOutcomeDistribution(input = {}) {
 
 function computeDynamicOutcomeDistribution({ leagueResult = {}, scoreHome = 1, scoreAway = 1 }) {
   const base = normalizeOutcomeDistribution({
-    home: Number(leagueResult.home) || 0.34,
-    draw: Number(leagueResult.draw) || 0.32,
-    away: Number(leagueResult.away) || 0.34
+    home: Number(leagueResult.home),
+    draw: Number(leagueResult.draw),
+    away: Number(leagueResult.away)
   });
+
+  if (!base) {
+    return null;
+  }
 
   const delta = Number(scoreHome) - Number(scoreAway);
   const absDelta = Math.abs(delta);
@@ -246,9 +263,42 @@ function predictFromTrainedModel(input = {}) {
     const away = model?.teams?.[awayKey] || null;
     const priors = model?.priors || {};
 
-    const leagueResult = league?.result || segment?.result || priors?.result || { home: 0.34, draw: 0.32, away: 0.34 };
-    const baseHome = Number(league?.score?.home ?? segment?.score?.home ?? priors?.score?.home ?? 1.2);
-    const baseAway = Number(league?.score?.away ?? segment?.score?.away ?? priors?.score?.away ?? 1.2);
+    // Hiérarchie stricte du modèle : ligue > segment > priors
+    // Utiliser les données les plus spécifiques disponibles sans mélanger
+    let leagueResult = null;
+    let baseHome = null;
+    let baseAway = null;
+    let dataSource = null;
+
+    if (league && league.result && league.score?.home !== undefined && league.score?.away !== undefined) {
+      // Priorité 1 : données spécifiques de la ligue
+      leagueResult = league.result;
+      baseHome = league.score.home;
+      baseAway = league.score.away;
+      dataSource = "league_specific";
+    } else if (segment && segment.result && segment.score?.home !== undefined && segment.score?.away !== undefined) {
+      // Priorité 2 : données du segment
+      leagueResult = segment.result;
+      baseHome = segment.score.home;
+      baseAway = segment.score.away;
+      dataSource = "segment_specific";
+    } else if (priors?.result && priors?.score?.home !== undefined && priors?.score?.away !== undefined) {
+      // Priorité 3 : données globales (priors)
+      leagueResult = priors.result;
+      baseHome = priors.score.home;
+      baseAway = priors.score.away;
+      dataSource = "global_priors";
+    }
+
+    if (!leagueResult || baseHome === null || baseAway === null) {
+      return {
+        available: false,
+        reason: "insufficient_model_data",
+        details: dataSource ? "incomplete_data_at_source" : "no_model_data_available",
+        dataSource
+      };
+    }
+
     const homeAdj = home ? (Number(home.for || 0) - Number(home.against || 0)) * 0.25 : 0;
     const awayAdj = away ? (Number(away.for || 0) - Number(away.against || 0)) * 0.25 : 0;
     const scoreHome = roundScore(baseHome + homeAdj - awayAdj * 0.15);
@@ -260,7 +310,23 @@ function predictFromTrainedModel(input = {}) {
       scoreAway
     });
 
+    if (!resultDist) {
+      return {
+        available: false,
+        reason: "insufficient_model_data",
+        details: "invalid_distribution"
+      };
+    }
+
     const recommendation = weightedPick(resultDist);
+    if (!recommendation) {
+      return {
+        available: false,
+        reason: "insufficient_model_data",
+        details: "no_clear_recommendation"
+      };
+    }
+
     const confidence = toPercent(resultDist?.[recommendation]);
     const modelFile = penaltyLoaded?.path
       ? path.basename(penaltyLoaded.path)
@@ -271,6 +337,7 @@ function predictFromTrainedModel(input = {}) {
     return {
       available: true,
       source: "trained-finished-matches-model",
+      dataSource,
       modelVersion: model?.version || "1.0.0",
       modelFile,
       reportFile: modelInfo?.reportFile || null,
@@ -294,7 +361,8 @@ function predictFromTrainedModel(input = {}) {
         segmentKey,
         segmentKnown: Boolean(segment),
         homeKnown: Boolean(home),
-        awayKnown: Boolean(away)
+        awayKnown: Boolean(away),
+        dataSource
       }
     };
   } catch (error) {

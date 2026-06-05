@@ -1,0 +1,2437 @@
+{
+  "lastUpdate": "2026-06-04T23:09:10.919Z",
+  "trackedMatches": [
+    {
+      "id": 726652734,
+      "league": "FC 25. Championnat d'Angleterre",
+      "sport": "FIFA",
+      "country": "Angleterre",
+      "team1": "Brentford",
+      "team2": "Arsenal",
+      "team1Code": "Brentford",
+      "team2Code": "Arsenal",
+      "startTime": 1780589400,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 0,
+        "away": 1
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 5400,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S2": 1
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S2": 1,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 5400,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52635217",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780590304,
+        "I": 726652734,
+        "N": 151956,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780589400,
+        "O1": "Brentford",
+        "O2": "Arsenal",
+        "O1I": 3635533,
+        "O2I": 251219,
+        "O1IS": [
+          3635533
+        ],
+        "O2IS": [
+          251219
+        ],
+        "O1C": 231,
+        "O2C": 231,
+        "O2CT": "Roana",
+        "O1IMG": [
+          "01e0e43c33f11cb287ec7f8af47de030.png"
+        ],
+        "O2IMG": [
+          "251219.png"
+        ],
+        "O1R": "Брентфорд",
+        "O2R": "Арсенал",
+        "O1E": "Brentford",
+        "O2E": "Arsenal",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 25. Championnat d'Angleterre",
+        "LR": "FC 25. Чемпионат Англии",
+        "LE": "FC 25. England Championship",
+        "LI": 2884422,
+        "CN": "Angleterre",
+        "CE": "England",
+        "COI": 231,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726662515,
+      "league": "FC 25. 3x3. Ligue de conférence",
+      "sport": "FIFA",
+      "country": "Europe",
+      "team1": "Eintracht",
+      "team2": "Fiorentine",
+      "team1Code": "Eintracht Frankfurt",
+      "team2Code": "Fiorentina",
+      "startTime": 1780590300,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 8,
+        "away": 7
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 360,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 8,
+            "S2": 7
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S1": 4,
+                "S2": 4,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 4,
+                "S2": 3,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 360,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52635468",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780590981,
+        "I": 726662515,
+        "N": 194133,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780590300,
+        "CHIMG": "a10dbaa7f75233083bc972f07452a2f0.png",
+        "O1": "Eintracht",
+        "O2": "Fiorentine",
+        "O1I": 2349425,
+        "O2I": 635785,
+        "O1IS": [
+          2349425
+        ],
+        "O2IS": [
+          635785
+        ],
+        "O1C": 53,
+        "O2C": 79,
+        "O1IMG": [
+          "85fb8dde462be96921c9cdd826ff2ba5.png"
+        ],
+        "O2IMG": [
+          "635785.png"
+        ],
+        "O1R": "Айнтрахт",
+        "O2R": "Фиорентина",
+        "O1E": "Eintracht Frankfurt",
+        "O2E": "Fiorentina",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 25. 3x3. Ligue de conférence",
+        "LR": "FC 25. 3x3. Лига Конференций",
+        "LE": "FC 25. 3x3. Conference League",
+        "LI": 2860561,
+        "CN": "Europe",
+        "CE": "Europe",
+        "COI": 223,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726667282,
+      "league": "FC 26. 5x5 Rush. Superligue",
+      "sport": "FIFA",
+      "country": "Monde",
+      "team1": "Club Atlético de Madrid",
+      "team2": "PSV Eindhoven",
+      "team1Code": "Atletico Madrid",
+      "team2Code": "PSV Eindhoven",
+      "startTime": 1780590600,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 4,
+        "away": 4
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 420,
+      "markets": [
+        {
+          "T": 4,
+          "C": 1.08,
+          "CV": "1.08",
+          "B": true,
+          "G": 8
+        },
+        {
+          "T": 6,
+          "C": 1.136,
+          "CV": "1.136",
+          "B": true,
+          "G": 8
+        },
+        {
+          "T": 14,
+          "P": 4.5,
+          "C": 1.16,
+          "CV": "1.16",
+          "B": true,
+          "G": 62
+        },
+        {
+          "T": 12,
+          "P": 4.5,
+          "C": 1.22,
+          "CV": "1.22",
+          "B": true,
+          "G": 15
+        },
+        {
+          "T": 2,
+          "C": 1.45,
+          "CV": "1.45",
+          "B": true,
+          "G": 1
+        },
+        {
+          "T": 10,
+          "P": 8.5,
+          "C": 1.59,
+          "CV": "1.59",
+          "B": true,
+          "G": 17
+        },
+        {
+          "T": 7,
+          "C": 1.71,
+          "CV": "1.71",
+          "B": true,
+          "G": 2
+        },
+        {
+          "T": 8,
+          "C": 2.136,
+          "CV": "2.136",
+          "B": true,
+          "G": 2
+        },
+        {
+          "T": 9,
+          "P": 8.5,
+          "C": 2.365,
+          "CV": "2.365",
+          "B": true,
+          "G": 17
+        },
+        {
+          "T": 5,
+          "C": 2.525,
+          "CV": "2.525",
+          "B": true,
+          "G": 8
+        },
+        {
+          "T": 11,
+          "P": 4.5,
+          "C": 3.81,
+          "CV": "3.81",
+          "B": true,
+          "G": 15
+        },
+        {
+          "T": 1,
+          "C": 4.47,
+          "CV": "4.47",
+          "B": true,
+          "G": 1
+        },
+        {
+          "T": 13,
+          "P": 4.5,
+          "C": 4.54,
+          "CV": "4.54",
+          "B": true,
+          "G": 62
+        },
+        {
+          "T": 3,
+          "C": 5.58,
+          "CV": "5.58",
+          "B": true,
+          "G": 1
+        }
+      ],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 4,
+            "S2": 4
+          },
+          "PS": [],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 420,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52635543",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780591287,
+        "I": 726667282,
+        "N": 210242,
+        "T": 50,
+        "CO": 17,
+        "E": [
+          {
+            "T": 4,
+            "C": 1.08,
+            "CV": "1.08",
+            "B": true,
+            "G": 8
+          },
+          {
+            "T": 6,
+            "C": 1.136,
+            "CV": "1.136",
+            "B": true,
+            "G": 8
+          },
+          {
+            "T": 14,
+            "P": 4.5,
+            "C": 1.16,
+            "CV": "1.16",
+            "B": true,
+            "G": 62
+          },
+          {
+            "T": 12,
+            "P": 4.5,
+            "C": 1.22,
+            "CV": "1.22",
+            "B": true,
+            "G": 15
+          },
+          {
+            "T": 2,
+            "C": 1.45,
+            "CV": "1.45",
+            "B": true,
+            "G": 1
+          },
+          {
+            "T": 10,
+            "P": 8.5,
+            "C": 1.59,
+            "CV": "1.59",
+            "B": true,
+            "G": 17
+          },
+          {
+            "T": 7,
+            "C": 1.71,
+            "CV": "1.71",
+            "B": true,
+            "G": 2
+          },
+          {
+            "T": 8,
+            "C": 2.136,
+            "CV": "2.136",
+            "B": true,
+            "G": 2
+          },
+          {
+            "T": 9,
+            "P": 8.5,
+            "C": 2.365,
+            "CV": "2.365",
+            "B": true,
+            "G": 17
+          },
+          {
+            "T": 5,
+            "C": 2.525,
+            "CV": "2.525",
+            "B": true,
+            "G": 8
+          },
+          {
+            "T": 11,
+            "P": 4.5,
+            "C": 3.81,
+            "CV": "3.81",
+            "B": true,
+            "G": 15
+          },
+          {
+            "T": 1,
+            "C": 4.47,
+            "CV": "4.47",
+            "B": true,
+            "G": 1
+          },
+          {
+            "T": 13,
+            "P": 4.5,
+            "C": 4.54,
+            "CV": "4.54",
+            "B": true,
+            "G": 62
+          },
+          {
+            "T": 3,
+            "C": 5.58,
+            "CV": "5.58",
+            "B": true,
+            "G": 1
+          }
+        ],
+        "AE": [
+          {
+            "G": 2,
+            "ME": [
+              {
+                "T": 7,
+                "C": 1.71,
+                "CV": "1.71",
+                "B": true,
+                "G": 2,
+                "CE": 1
+              },
+              {
+                "T": 8,
+                "C": 2.136,
+                "CV": "2.136",
+                "B": true,
+                "G": 2,
+                "CE": 1
+              }
+            ]
+          },
+          {
+            "G": 17,
+            "ME": [
+              {
+                "T": 9,
+                "P": 8.5,
+                "C": 2.365,
+                "CV": "2.365",
+                "B": true,
+                "G": 17,
+                "CE": 1
+              },
+              {
+                "T": 10,
+                "P": 8.5,
+                "C": 1.59,
+                "CV": "1.59",
+                "B": true,
+                "G": 17,
+                "CE": 1
+              }
+            ]
+          }
+        ],
+        "EC": 31,
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780590600,
+        "HS": 1,
+        "SGC": 1,
+        "CHIMG": "ca664fc41fa19d9ebf563216785a5485.png",
+        "O1": "Club Atlético de Madrid",
+        "O2": "PSV Eindhoven",
+        "O1I": 180445,
+        "O2I": 202185,
+        "O1IS": [
+          180445
+        ],
+        "O2IS": [
+          202185
+        ],
+        "O1C": 78,
+        "O1CT": "Madrid",
+        "O2C": 133,
+        "O2CT": "Eindhoven",
+        "O1IMG": [
+          "180445.png"
+        ],
+        "O2IMG": [
+          "202185.png"
+        ],
+        "O1R": "Атлетико Мадрид",
+        "O2R": "ПСВ",
+        "O1E": "Atletico Madrid",
+        "O2E": "PSV Eindhoven",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 26. 5x5 Rush. Superligue",
+        "LR": "FC 26. 5x5 Rush. Суперлига",
+        "LE": "FC 26. 5x5 Rush. Superleague",
+        "LI": 2986291,
+        "CN": "Monde",
+        "CE": "World",
+        "COI": 225,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726664266,
+      "league": "FC 24. 4x4. Championnat d'Angleterre",
+      "sport": "FIFA",
+      "country": "Angleterre",
+      "team1": "Brentford",
+      "team2": "Manchester City",
+      "team1Code": "Brentford",
+      "team2Code": "Manchester City",
+      "startTime": 1780590600,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 6,
+        "away": 13
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 360,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 6,
+            "S2": 13
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S1": 3,
+                "S2": 8,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 3,
+                "S2": 5,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 360,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52635561",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780591289,
+        "I": 726664266,
+        "N": 199879,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780590600,
+        "HS": 1,
+        "SGC": 1,
+        "O1": "Brentford",
+        "O2": "Manchester City",
+        "O1I": 3635533,
+        "O2I": 202183,
+        "O1IS": [
+          3635533
+        ],
+        "O2IS": [
+          202183
+        ],
+        "O1C": 231,
+        "O2C": 39,
+        "O1IMG": [
+          "01e0e43c33f11cb287ec7f8af47de030.png"
+        ],
+        "O2IMG": [
+          "202183.png"
+        ],
+        "O1R": "Брентфорд",
+        "O2R": "Манчестер Сити",
+        "O1E": "Brentford",
+        "O2E": "Manchester City",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 24. 4x4. Championnat d'Angleterre",
+        "LR": "FC 24. 4x4. Чемпионат Англии",
+        "LE": "FC 24. 4x4. England Championship",
+        "LI": 2648573,
+        "CN": "Angleterre",
+        "CE": "England",
+        "COI": 231,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726665397,
+      "league": "FC 25. 3x3. Ligue de conférence",
+      "sport": "FIFA",
+      "country": "Europe",
+      "team1": "Borussia Monchengladbach",
+      "team2": "Anderlecht",
+      "team1Code": "Borussia Monchengladbach",
+      "team2Code": "Anderlecht",
+      "startTime": 1780590900,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 8,
+        "away": 8
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 360,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 8,
+            "S2": 8
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S1": 4,
+                "S2": 5,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 4,
+                "S2": 3,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 360,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52635647",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780591588,
+        "I": 726665397,
+        "N": 204232,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780590900,
+        "CHIMG": "a10dbaa7f75233083bc972f07452a2f0.png",
+        "O1": "Borussia Monchengladbach",
+        "O2": "Anderlecht",
+        "O1I": 2349439,
+        "O2I": 202109,
+        "O1IS": [
+          2349439
+        ],
+        "O2IS": [
+          202109
+        ],
+        "O1C": 53,
+        "O2C": 24,
+        "O1IMG": [
+          "75edd97710db2bfcefceccf78b12c90f.png"
+        ],
+        "O2IMG": [
+          "202109.png"
+        ],
+        "O1R": "Боруссия Мёнхенгладбах",
+        "O2R": "Андерлехт",
+        "O1E": "Borussia Monchengladbach",
+        "O2E": "Anderlecht",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 25. 3x3. Ligue de conférence",
+        "LR": "FC 25. 3x3. Лига Конференций",
+        "LE": "FC 25. 3x3. Conference League",
+        "LI": 2860561,
+        "CN": "Europe",
+        "CE": "Europe",
+        "COI": 223,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726669767,
+      "league": "FC 26. 5x5 Rush. Superligue",
+      "sport": "FIFA",
+      "country": "Monde",
+      "team1": "Arsenal",
+      "team2": "Manchester City",
+      "team1Code": "Arsenal",
+      "team2Code": "Manchester City",
+      "startTime": 1780591200,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 7,
+        "away": 2
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 420,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 7,
+            "S2": 2
+          },
+          "PS": [],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 420,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52635722",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780591870,
+        "I": 726669767,
+        "N": 219310,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780591200,
+        "HS": 1,
+        "SGC": 1,
+        "CHIMG": "ca664fc41fa19d9ebf563216785a5485.png",
+        "O1": "Arsenal",
+        "O2": "Manchester City",
+        "O1I": 251219,
+        "O2I": 202183,
+        "O1IS": [
+          251219
+        ],
+        "O2IS": [
+          202183
+        ],
+        "O1C": 231,
+        "O1CT": "Roana",
+        "O2C": 39,
+        "O1IMG": [
+          "251219.png"
+        ],
+        "O2IMG": [
+          "202183.png"
+        ],
+        "O1R": "Арсенал",
+        "O2R": "Манчестер Сити",
+        "O1E": "Arsenal",
+        "O2E": "Manchester City",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 26. 5x5 Rush. Superligue",
+        "LR": "FC 26. 5x5 Rush. Суперлига",
+        "LE": "FC 26. 5x5 Rush. Superleague",
+        "LI": 2986291,
+        "CN": "Monde",
+        "CE": "World",
+        "COI": 225,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726667192,
+      "league": "FC 24. 4x4. Championnat d'Angleterre",
+      "sport": "FIFA",
+      "country": "Angleterre",
+      "team1": "Liverpool",
+      "team2": "Sheffield United",
+      "team1Code": "Liverpool",
+      "team2Code": "Sheffield United",
+      "startTime": 1780591200,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 10,
+        "away": 6
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 360,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 10,
+            "S2": 6
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S1": 4,
+                "S2": 5,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 6,
+                "S2": 1,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 360,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52635736",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780591863,
+        "I": 726667192,
+        "N": 209882,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780591200,
+        "O1": "Liverpool",
+        "O2": "Sheffield United",
+        "O1I": 180449,
+        "O2I": 4822925,
+        "O1IS": [
+          180449
+        ],
+        "O2IS": [
+          4822925
+        ],
+        "O1C": 231,
+        "O2C": 225,
+        "O1IMG": [
+          "180449.png"
+        ],
+        "O2IMG": [
+          "bff87272069f2d07b63e671b9a12cb4b.png"
+        ],
+        "O1R": "Ливерпуль",
+        "O2R": "Шеффилд Юнайтед",
+        "O1E": "Liverpool",
+        "O2E": "Sheffield United",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 24. 4x4. Championnat d'Angleterre",
+        "LR": "FC 24. 4x4. Чемпионат Англии",
+        "LE": "FC 24. 4x4. England Championship",
+        "LI": 2648573,
+        "CN": "Angleterre",
+        "CE": "England",
+        "COI": 231,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726668630,
+      "league": "FC 25. 3x3. Ligue de conférence",
+      "sport": "FIFA",
+      "country": "Europe",
+      "team1": "Heart of Midlothian",
+      "team2": "Lille OSC",
+      "team1Code": "Heart of Midlothian",
+      "team2Code": "Lille OSC",
+      "startTime": 1780591500,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 9,
+        "away": 9
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 360,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 9,
+            "S2": 9
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S1": 5,
+                "S2": 2,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 4,
+                "S2": 7,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 360,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52635825",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780592170,
+        "I": 726668630,
+        "N": 214839,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780591500,
+        "HS": 1,
+        "SGC": 1,
+        "CHIMG": "a10dbaa7f75233083bc972f07452a2f0.png",
+        "O1": "Heart of Midlothian",
+        "O2": "Lille OSC",
+        "O1I": 9601037,
+        "O2I": 2349369,
+        "O1IS": [
+          9601037
+        ],
+        "O2IS": [
+          2349369
+        ],
+        "O1C": 219,
+        "O2C": 225,
+        "O1IMG": [
+          "52de7c022bf1aff19e69e09bb3f05e96.png"
+        ],
+        "O2IMG": [
+          "2349369.png"
+        ],
+        "O1R": "Хартс",
+        "O2R": "Лилль",
+        "O1E": "Heart of Midlothian",
+        "O2E": "Lille OSC",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 25. 3x3. Ligue de conférence",
+        "LR": "FC 25. 3x3. Лига Конференций",
+        "LE": "FC 25. 3x3. Conference League",
+        "LI": 2860561,
+        "CN": "Europe",
+        "CE": "Europe",
+        "COI": 223,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726669689,
+      "league": "FC 24. 4x4. Championnat d'Angleterre",
+      "sport": "FIFA",
+      "country": "Angleterre",
+      "team1": "Sheffield United",
+      "team2": "Aston Villa",
+      "team1Code": "Sheffield United",
+      "team2Code": "Aston Villa",
+      "startTime": 1780591800,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 2,
+        "away": 7
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 360,
+      "markets": [
+        {
+          "T": 1,
+          "C": 1.001,
+          "CV": "1.001",
+          "B": true,
+          "G": 1
+        },
+        {
+          "T": 3,
+          "C": 1.001,
+          "CV": "1.001",
+          "B": true,
+          "G": 1
+        },
+        {
+          "T": 5,
+          "C": 1.001,
+          "CV": "1.001",
+          "B": true,
+          "G": 8
+        },
+        {
+          "T": 6,
+          "C": 1.001,
+          "CV": "1.001",
+          "B": true,
+          "G": 8
+        },
+        {
+          "T": 10,
+          "P": 9.5,
+          "C": 1.45,
+          "CV": "1.45",
+          "B": true,
+          "G": 17
+        },
+        {
+          "T": 7,
+          "P": 4.5,
+          "C": 1.456,
+          "CV": "1.456",
+          "B": true,
+          "G": 2
+        },
+        {
+          "T": 12,
+          "P": 2.5,
+          "C": 1.7,
+          "CV": "1.7",
+          "B": true,
+          "G": 15
+        },
+        {
+          "T": 13,
+          "P": 6.5,
+          "C": 1.84,
+          "CV": "1.84",
+          "B": true,
+          "G": 62
+        },
+        {
+          "T": 14,
+          "P": 6.5,
+          "C": 1.965,
+          "CV": "1.965",
+          "B": true,
+          "G": 62
+        },
+        {
+          "T": 11,
+          "P": 2.5,
+          "C": 2.15,
+          "CV": "2.15",
+          "B": true,
+          "G": 15
+        },
+        {
+          "T": 8,
+          "P": -4.5,
+          "C": 2.65,
+          "CV": "2.65",
+          "B": true,
+          "G": 2
+        },
+        {
+          "T": 9,
+          "P": 9.5,
+          "C": 2.675,
+          "CV": "2.675",
+          "B": true,
+          "G": 17
+        },
+        {
+          "T": 4,
+          "C": 25,
+          "CV": "25",
+          "B": true,
+          "G": 8
+        },
+        {
+          "T": 2,
+          "C": 30,
+          "CV": "30",
+          "B": true,
+          "G": 1
+        }
+      ],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 2,
+            "S2": 7
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S1": 1,
+                "S2": 4,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 1,
+                "S2": 3,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 360,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52635910",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780592321,
+        "I": 726669689,
+        "N": 219025,
+        "T": 50,
+        "CO": 17,
+        "E": [
+          {
+            "T": 1,
+            "C": 1.001,
+            "CV": "1.001",
+            "B": true,
+            "G": 1
+          },
+          {
+            "T": 3,
+            "C": 1.001,
+            "CV": "1.001",
+            "B": true,
+            "G": 1
+          },
+          {
+            "T": 5,
+            "C": 1.001,
+            "CV": "1.001",
+            "B": true,
+            "G": 8
+          },
+          {
+            "T": 6,
+            "C": 1.001,
+            "CV": "1.001",
+            "B": true,
+            "G": 8
+          },
+          {
+            "T": 10,
+            "P": 9.5,
+            "C": 1.45,
+            "CV": "1.45",
+            "B": true,
+            "G": 17
+          },
+          {
+            "T": 7,
+            "P": 4.5,
+            "C": 1.456,
+            "CV": "1.456",
+            "B": true,
+            "G": 2
+          },
+          {
+            "T": 12,
+            "P": 2.5,
+            "C": 1.7,
+            "CV": "1.7",
+            "B": true,
+            "G": 15
+          },
+          {
+            "T": 13,
+            "P": 6.5,
+            "C": 1.84,
+            "CV": "1.84",
+            "B": true,
+            "G": 62
+          },
+          {
+            "T": 14,
+            "P": 6.5,
+            "C": 1.965,
+            "CV": "1.965",
+            "B": true,
+            "G": 62
+          },
+          {
+            "T": 11,
+            "P": 2.5,
+            "C": 2.15,
+            "CV": "2.15",
+            "B": true,
+            "G": 15
+          },
+          {
+            "T": 8,
+            "P": -4.5,
+            "C": 2.65,
+            "CV": "2.65",
+            "B": true,
+            "G": 2
+          },
+          {
+            "T": 9,
+            "P": 9.5,
+            "C": 2.675,
+            "CV": "2.675",
+            "B": true,
+            "G": 17
+          },
+          {
+            "T": 4,
+            "C": 25,
+            "CV": "25",
+            "B": true,
+            "G": 8
+          },
+          {
+            "T": 2,
+            "C": 30,
+            "CV": "30",
+            "B": true,
+            "G": 1
+          }
+        ],
+        "AE": [
+          {
+            "G": 2,
+            "ME": [
+              {
+                "T": 8,
+                "P": -3.5,
+                "C": 1.29,
+                "CV": "1.29",
+                "B": true,
+                "G": 2
+              },
+              {
+                "T": 7,
+                "P": 3.5,
+                "C": 3.45,
+                "CV": "3.45",
+                "B": true,
+                "G": 2
+              },
+              {
+                "T": 8,
+                "P": -4.5,
+                "C": 2.65,
+                "CV": "2.65",
+                "B": true,
+                "G": 2,
+                "CE": 1
+              },
+              {
+                "T": 7,
+                "P": 4.5,
+                "C": 1.456,
+                "CV": "1.456",
+                "B": true,
+                "G": 2,
+                "CE": 1
+              }
+            ]
+          },
+          {
+            "G": 17,
+            "ME": [
+              {
+                "T": 9,
+                "P": 8.5,
+                "C": 1.216,
+                "CV": "1.216",
+                "B": true,
+                "G": 17
+              },
+              {
+                "T": 10,
+                "P": 8.5,
+                "C": 3.87,
+                "CV": "3.87",
+                "B": true,
+                "G": 17
+              },
+              {
+                "T": 9,
+                "P": 9.5,
+                "C": 2.675,
+                "CV": "2.675",
+                "B": true,
+                "G": 17,
+                "CE": 1
+              },
+              {
+                "T": 10,
+                "P": 9.5,
+                "C": 1.45,
+                "CV": "1.45",
+                "B": true,
+                "G": 17,
+                "CE": 1
+              }
+            ]
+          }
+        ],
+        "EC": 39,
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780591800,
+        "HS": 1,
+        "SGC": 1,
+        "O1": "Sheffield United",
+        "O2": "Aston Villa",
+        "O1I": 4822925,
+        "O2I": 4822915,
+        "O1IS": [
+          4822925
+        ],
+        "O2IS": [
+          4822915
+        ],
+        "O1C": 225,
+        "O2C": 225,
+        "O1IMG": [
+          "bff87272069f2d07b63e671b9a12cb4b.png"
+        ],
+        "O2IMG": [
+          "ee8029c0eb14ec43b3702ef147d9a288.png"
+        ],
+        "O1R": "Шеффилд Юнайтед",
+        "O2R": "Астон Вилла",
+        "O1E": "Sheffield United",
+        "O2E": "Aston Villa",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 24. 4x4. Championnat d'Angleterre",
+        "LR": "FC 24. 4x4. Чемпионат Англии",
+        "LE": "FC 24. 4x4. England Championship",
+        "LI": 2648573,
+        "CN": "Angleterre",
+        "CE": "England",
+        "COI": 231,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726661638,
+      "league": "FC 25. Italy Championship",
+      "sport": "FIFA",
+      "country": "Italie",
+      "team1": "Empoli",
+      "team2": "Lecce",
+      "team1Code": "Empoli",
+      "team2Code": "Lecce",
+      "startTime": 1780592100,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 1,
+        "away": 1
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 5400,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 1,
+            "S2": 1
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S1": 1,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S2": 1,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 5400,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52635988",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780593217,
+        "I": 726661638,
+        "N": 190749,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780592100,
+        "O1": "Empoli",
+        "O2": "Lecce",
+        "O1I": 2485077,
+        "O2I": 3801725,
+        "O1IS": [
+          2485077
+        ],
+        "O2IS": [
+          3801725
+        ],
+        "O1C": 79,
+        "O2C": 79,
+        "O1IMG": [
+          "2485077.png"
+        ],
+        "O2IMG": [
+          "6eda63f1fdd2c362dd5d2af0b8ec58b8.png"
+        ],
+        "O1R": "Эмполи",
+        "O2R": "Лечче",
+        "O1E": "Empoli",
+        "O2E": "Lecce",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 25. Italy Championship",
+        "LR": "FC 25. Чемпионат Италии",
+        "LE": "FC 25. Italy Championship",
+        "LI": 2837895,
+        "CN": "Italie",
+        "CE": "Italy",
+        "COI": 79,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726662518,
+      "league": "FC 25. Champions League",
+      "sport": "FIFA",
+      "country": "Monde",
+      "team1": "Bayer 04",
+      "team2": "Arsenal",
+      "team1Code": "Bayer 04",
+      "team2Code": "Arsenal",
+      "startTime": 1780592700,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 2,
+        "away": 1
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 5400,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 2,
+            "S2": 1
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 2,
+                "S2": 1,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 5400,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52636172",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780593821,
+        "I": 726662518,
+        "N": 194128,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780592700,
+        "CHIMG": "a0a3230c5d651a200e9a861ee7cc1dff.png",
+        "O1": "Bayer 04",
+        "O2": "Arsenal",
+        "O1I": 202197,
+        "O2I": 251219,
+        "O1IS": [
+          202197
+        ],
+        "O2IS": [
+          251219
+        ],
+        "O1C": 53,
+        "O1CT": "Leverkusen",
+        "O2C": 231,
+        "O2CT": "Roana",
+        "O1IMG": [
+          "bd1179b754fc2fd2408a601199a5af46.png"
+        ],
+        "O2IMG": [
+          "251219.png"
+        ],
+        "O1R": "Байер 04",
+        "O2R": "Арсенал",
+        "O1E": "Bayer 04",
+        "O2E": "Arsenal",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 25. Champions League",
+        "LR": "FC 25. Лига чемпионов",
+        "LE": "FC 25. Champions League",
+        "LI": 2866845,
+        "CN": "Monde",
+        "CE": "World",
+        "COI": 225,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726674957,
+      "league": "FC 25. 3x3. Ligue de conférence",
+      "sport": "FIFA",
+      "country": "Europe",
+      "team1": "AZ Alkmaar",
+      "team2": "Chelsea",
+      "team1Code": "AZ Alkmaar",
+      "team2Code": "Chelsea",
+      "startTime": 1780593300,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 10,
+        "away": 8
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 360,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 10,
+            "S2": 8
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S1": 4,
+                "S2": 5,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 6,
+                "S2": 3,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 360,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52636344",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780593987,
+        "I": 726674957,
+        "N": 253338,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780593300,
+        "CHIMG": "a10dbaa7f75233083bc972f07452a2f0.png",
+        "O1": "AZ Alkmaar",
+        "O2": "Chelsea",
+        "O1I": 7728545,
+        "O2I": 180073,
+        "O1IS": [
+          7728545
+        ],
+        "O2IS": [
+          180073
+        ],
+        "O1C": 225,
+        "O2C": 39,
+        "O2CT": "London",
+        "O1IMG": [
+          "bcbec18ea6b226d41f883f3ba86098d0.png"
+        ],
+        "O2IMG": [
+          "180073.png"
+        ],
+        "O1R": "АЗ",
+        "O2R": "Челси",
+        "O1E": "AZ Alkmaar",
+        "O2E": "Chelsea",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 25. 3x3. Ligue de conférence",
+        "LR": "FC 25. 3x3. Лига Конференций",
+        "LE": "FC 25. 3x3. Conference League",
+        "LI": 2860561,
+        "CN": "Europe",
+        "CE": "Europe",
+        "COI": 223,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726684969,
+      "league": "FC 24. 4x4. Championnat d'Angleterre",
+      "sport": "FIFA",
+      "country": "Angleterre",
+      "team1": "Crystal Palace",
+      "team2": "Luton Town",
+      "team1Code": "Crystal Palace",
+      "team2Code": "Luton Town",
+      "startTime": 1780596000,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 8,
+        "away": 8
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 360,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 8,
+            "S2": 8
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S1": 5,
+                "S2": 5,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 3,
+                "S2": 3,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 360,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52637126",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780596635,
+        "I": 726684969,
+        "N": 180680,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780596000,
+        "HS": 1,
+        "SGC": 1,
+        "O1": "Crystal Palace",
+        "O2": "Luton Town",
+        "O1I": 3274445,
+        "O2I": 8310581,
+        "O1IS": [
+          3274445
+        ],
+        "O2IS": [
+          8310581
+        ],
+        "O1C": 39,
+        "O2C": 225,
+        "O1IMG": [
+          "0c5ac8809833a5ec65bd2ec4c1f046d6.png"
+        ],
+        "O2IMG": [
+          "b84afdfd65c4530618c6c1e8544ac840.png"
+        ],
+        "O1R": "Кристал Пэлэс",
+        "O2R": "Лутон Таун",
+        "O1E": "Crystal Palace",
+        "O2E": "Luton Town",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 24. 4x4. Championnat d'Angleterre",
+        "LR": "FC 24. 4x4. Чемпионат Англии",
+        "LE": "FC 24. 4x4. England Championship",
+        "LI": 2648573,
+        "CN": "Angleterre",
+        "CE": "England",
+        "COI": 231,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726673937,
+      "league": "FC 25. Italy Championship",
+      "sport": "FIFA",
+      "country": "Italie",
+      "team1": "Roma",
+      "team2": "Empoli",
+      "team1Code": "Roma",
+      "team2Code": "Empoli",
+      "startTime": 1780595700,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 0,
+        "away": 1
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 5400,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S2": 1
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S2": 1,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 5400,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52637037",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780596736,
+        "I": 726673937,
+        "N": 250437,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780595700,
+        "HS": 1,
+        "SGC": 1,
+        "O1": "Roma",
+        "O2": "Empoli",
+        "O1I": 202193,
+        "O2I": 2485077,
+        "O1IS": [
+          202193
+        ],
+        "O2IS": [
+          2485077
+        ],
+        "O1C": 79,
+        "O1CT": "Roma",
+        "O2C": 79,
+        "O1IMG": [
+          "170a368b96dafc46df284d2f5882be81.png"
+        ],
+        "O2IMG": [
+          "2485077.png"
+        ],
+        "O1R": "Рома",
+        "O2R": "Эмполи",
+        "O1E": "Roma",
+        "O2E": "Empoli",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 25. Italy Championship",
+        "LR": "FC 25. Чемпионат Италии",
+        "LE": "FC 25. Italy Championship",
+        "LI": 2837895,
+        "CN": "Italie",
+        "CE": "Italy",
+        "COI": 79,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726675890,
+      "league": "FC 26. Champions League",
+      "sport": "FIFA",
+      "country": "Monde",
+      "team1": "Borussia Dortmund",
+      "team2": "Club Atlético de Madrid",
+      "team1Code": "Borussia",
+      "team2Code": "Atletico Madrid",
+      "startTime": 1780596300,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 2,
+        "away": 2
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 5400,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 2,
+            "S2": 2
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S2": 2,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 2,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 5400,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52637211",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780597358,
+        "I": 726675890,
+        "N": 254100,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780596300,
+        "CHIMG": "fb9a7500abf2b6e9ba61e50f5cf9f64e.png",
+        "O1": "Borussia Dortmund",
+        "O2": "Club Atlético de Madrid",
+        "O1I": 180429,
+        "O2I": 180445,
+        "O1IS": [
+          180429
+        ],
+        "O2IS": [
+          180445
+        ],
+        "O1C": 53,
+        "O1CT": "Dortmund",
+        "O2C": 78,
+        "O2CT": "Madrid",
+        "O1IMG": [
+          "16e1f8a81f1c0bc02147460446de1333.png"
+        ],
+        "O2IMG": [
+          "180445.png"
+        ],
+        "O1R": "Боруссия",
+        "O2R": "Атлетико Мадрид",
+        "O1E": "Borussia",
+        "O2E": "Atletico Madrid",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 26. Champions League",
+        "LR": "FC 26. Лига чемпионов",
+        "LE": "FC 26. Champions League",
+        "LI": 3002692,
+        "CN": "Monde",
+        "CE": "World",
+        "COI": 225,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    },
+    {
+      "id": 726688257,
+      "league": "FC 25. 3x3. Ligue de conférence",
+      "sport": "FIFA",
+      "country": "Europe",
+      "team1": "Nice",
+      "team2": "Roma",
+      "team1Code": "Nice",
+      "team2Code": "Roma",
+      "startTime": 1780596900,
+      "status": "Terminé",
+      "statusNormalized": "terminé",
+      "currentScore": {
+        "home": 1,
+        "away": 5
+      },
+      "currentPeriod": null,
+      "currentPeriodString": "Jeu terminé",
+      "timeSeconds": 360,
+      "markets": [],
+      "odds": {
+        "home": null,
+        "draw": null,
+        "away": null
+      },
+      "raw": {
+        "R": 50,
+        "SC": {
+          "FS": {
+            "S1": 1,
+            "S2": 5
+          },
+          "PS": [
+            {
+              "Key": 1,
+              "Value": {
+                "S2": 1,
+                "NF": "1ère mi-temps"
+              }
+            },
+            {
+              "Key": 2,
+              "Value": {
+                "S1": 1,
+                "S2": 4,
+                "NF": "2ème mi-temps"
+              }
+            }
+          ],
+          "CPS": "Jeu terminé",
+          "GS": 1,
+          "TS": 360,
+          "TR": -1,
+          "I": "Match terminé",
+          "SLS": ""
+        },
+        "VI": "xgame7_52637378",
+        "VA": 1,
+        "F": true,
+        "HMH": 1,
+        "ICY": true,
+        "U": 1780597402,
+        "I": 726688257,
+        "N": 196131,
+        "T": 50,
+        "CO": 17,
+        "E": [],
+        "AE": [],
+        "TG": "",
+        "V": "",
+        "VE": "",
+        "PN": "",
+        "TN": "Mi-temps",
+        "DI": "",
+        "S": 1780596900,
+        "HS": 1,
+        "SGC": 1,
+        "CHIMG": "a10dbaa7f75233083bc972f07452a2f0.png",
+        "O1": "Nice",
+        "O2": "Roma",
+        "O1I": 2349357,
+        "O2I": 202193,
+        "O1IS": [
+          2349357
+        ],
+        "O2IS": [
+          202193
+        ],
+        "O1C": 225,
+        "O2C": 79,
+        "O2CT": "Roma",
+        "O1IMG": [
+          "2349357.png"
+        ],
+        "O2IMG": [
+          "170a368b96dafc46df284d2f5882be81.png"
+        ],
+        "O1R": "Ницца",
+        "O2R": "Рома",
+        "O1E": "Nice",
+        "O2E": "Roma",
+        "SI": 85,
+        "SN": "FIFA",
+        "SR": "FIFA",
+        "SE": "FIFA",
+        "L": "FC 25. 3x3. Ligue de conférence",
+        "LR": "FC 25. 3x3. Лига Конференций",
+        "LE": "FC 25. 3x3. Conference League",
+        "LI": 2860561,
+        "CN": "Europe",
+        "CE": "Europe",
+        "COI": 223,
+        "MS": [
+          0
+        ],
+        "KI": 1,
+        "CID": 2,
+        "SIMG": "/genfiles/cms/sport_preview_5a598a83300665a1d4192948ea1362e5.png",
+        "TNS": "Mi-temps"
+      }
+    }
+  ],
+  "totalCollected": 33,
+  "totalTracked": 16,
+  "lastClassification": {
+    "finished": 0,
+    "live": 7,
+    "upcoming": 33,
+    "total": 40,
+    "lastUpdate": "2026-06-04T23:09:10.918Z"
+  }
+}

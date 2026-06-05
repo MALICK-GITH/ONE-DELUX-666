@@ -2,6 +2,7 @@
 
 const https = require("https");
 const config = require("../server/config");
+const pendingRequests = new Map();
 
 function buildRequestHeaders(extraHeaders = {}) {
   return {
@@ -44,9 +45,15 @@ function fetchLiveFeedJson(options = {}) {
     ? Number(options.timeoutMs)
     : Number.isFinite(Number(config.liveFeedTimeoutMs))
       ? Number(config.liveFeedTimeoutMs)
-      : 30000;
+      : 45000;
 
-  return new Promise((resolve, reject) => {
+  const requestKey = requestUrl;
+  const pendingRequest = pendingRequests.get(requestKey);
+  if (pendingRequest) {
+    return pendingRequest;
+  }
+
+  const requestPromise = new Promise((resolve, reject) => {
     const request = https.get(parsedUrl, { headers }, (response) => {
       let data = "";
 
@@ -76,6 +83,11 @@ function fetchLiveFeedJson(options = {}) {
     });
 
     request.on("error", reject);
+  });
+
+  pendingRequests.set(requestKey, requestPromise);
+  return requestPromise.finally(() => {
+    pendingRequests.delete(requestKey);
   });
 }
 

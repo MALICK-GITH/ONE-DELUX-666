@@ -104,9 +104,7 @@ async function loadMatches() {
     allMatches = data.matches || [];
     updateLeagueFilter(allMatches);
     filterAndRenderMatches();
-    updateStatusStats().catch((statsError) => {
-      console.warn("Impossible de charger les statistiques de statut:", statsError);
-    });
+    updateStatusStats(allMatches);
 
     updatedAt.textContent = `Mis à jour: ${new Date().toLocaleTimeString("fr-FR")}`;
   } catch (error) {

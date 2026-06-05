@@ -82,7 +82,7 @@ module.exports = {
   liveFeedApiKey: liveFeedHeaders.apiKey,
   liveFeedHeaders: liveFeedHeaders.headers,
   liveFeedConfigured: parseBoolean(process.env.LIVE_FEED_ENABLED, true),
-  liveFeedTimeoutMs: parseNumber(process.env.LIVE_FEED_TIMEOUT_MS, 30000),
+  liveFeedTimeoutMs: parseNumber(process.env.LIVE_FEED_TIMEOUT_MS, 45000),
   cronSecret: String(process.env.CRON_SECRET || "").trim(),
   finishedMatchesStoreUrl: String(
     process.env.SUPABASE_DATABASE_URL ||

@@ -52,7 +52,12 @@ class CronLearningService {
   }
 
   async fetchMatches() {
-    return fetchLiveFeedEvents();
+    try {
+      return await fetchLiveFeedEvents();
+    } catch (error) {
+      console.error(`[Cron Learning] Live feed indisponible: ${error.message}`);
+      return [];
+    }
   }
 
   formatMatch(event) {

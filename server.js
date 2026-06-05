@@ -236,8 +236,13 @@ function resolvePredictionMatch(input = {}) {
 }
 
 async function fetchMatches() {
-  const events = await fetchLiveFeedEvents();
-  return events.map(formatMatch);
+  try {
+    const events = await fetchLiveFeedEvents();
+    return events.map(formatMatch);
+  } catch (error) {
+    console.error(`[Live Feed] Impossible de charger les matchs: ${error.message}`);
+    return [];
+  }
 }
 
 // Cron Learning Service Authentication Functions

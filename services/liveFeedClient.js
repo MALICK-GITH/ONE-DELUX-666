@@ -1,7 +1,11 @@
 "use strict";
 
+const fs = require("fs");
+const path = require("path");
 const https = require("https");
 const config = require("../server/config");
+
+const TRACKING_CACHE_PATH = path.join(process.cwd(), "data", "tracking", "match-tracking.json");
 
 function buildRequestHeaders(extraHeaders = {}) {
   return {
@@ -16,6 +20,40 @@ function createDisabledError() {
   const error = new Error("Live feed disabled by configuration");
   error.status = 503;
   return error;
+}
+
+function loadCachedMatches() {
+  try {
+    if (!fs.existsSync(TRACKING_CACHE_PATH)) {
+      return [];
+    }
+
+    const raw = fs.readFileSync(TRACKING_CACHE_PATH, "utf8");
+    const parsed = JSON.parse(raw);
+
+    if (Array.isArray(parsed?.trackedMatches)) {
+      return parsed.trackedMatches
+        .map((match) => match?.raw || match)
+        .filter(Boolean);
+    }
+
+    if (Array.isArray(parsed?.matches)) {
+      return parsed.matches
+        .map((match) => match?.raw || match)
+        .filter(Boolean);
+    }
+
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((match) => match?.raw || match)
+        .filter(Boolean);
+    }
+
+    return [];
+  } catch (error) {
+    console.error(`[Live Feed] Impossible de lire le cache local: ${error.message}`);
+    return [];
+  }
 }
 
 function fetchLiveFeedJson(options = {}) {
@@ -76,11 +114,22 @@ function fetchLiveFeedJson(options = {}) {
 }
 
 async function fetchLiveFeedEvents(options = {}) {
-  const payload = await fetchLiveFeedJson(options);
-  return Array.isArray(payload?.Value) ? payload.Value : [];
+  try {
+    const payload = await fetchLiveFeedJson(options);
+    return Array.isArray(payload?.Value) ? payload.Value : [];
+  } catch (error) {
+    const cachedMatches = loadCachedMatches();
+    if (cachedMatches.length > 0) {
+      console.warn(`[Live Feed] Utilisation du cache local (${cachedMatches.length} matchs) après erreur: ${error.message}`);
+      return cachedMatches;
+    }
+
+    throw error;
+  }
 }
 
 module.exports = {
   fetchLiveFeedJson,
   fetchLiveFeedEvents,
+  loadCachedMatches,
 };

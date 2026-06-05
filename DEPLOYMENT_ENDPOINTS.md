@@ -165,8 +165,13 @@ https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dr
 1. Service → Settings → Environment Variables
 2. Ajouter:
    - `CRON_SECRET` = `one-delux-cron-2026-secure`
-   - `FINISHED_MATCHES_STORE_URL` = votre URL PostgreSQL
+   - `SUPABASE_DB_URL` = votre URL de connexion Supabase (format: postgresql://postgres:[password]@[host]:5432/[database])
+   - `SUPABASE_SERVICE_KEY` = votre clé service Supabase (optionnel pour authentification)
    - `CRON_LEARNING_INTERVAL_MS` = `300000` (5 minutes)
+
+**Variables alternatives supportées:**
+- `DATABASE_URL` = URL de base de données (fallback)
+- `SUPABASE_ANON_KEY` = Clé anonyme Supabase (alternative)
 
 ---
 

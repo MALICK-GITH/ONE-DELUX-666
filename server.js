@@ -56,6 +56,10 @@ const sessionState = new Map();
 const visualGenerator = new VisualGenerator();
 
 // Initialize Cron Learning Service for automatic match collection
+console.log(`[System] Initialisation CronLearningService avec URL: ${config.finishedMatchesStoreUrl ? 'Configurée' : 'Non configurée'}`);
+if (config.finishedMatchesStoreUrl) {
+  console.log(`[System] Base de données configurée: ${config.finishedMatchesStoreUrl.substring(0, 20)}...`);
+}
 const cronLearningService = new CronLearningService({
   interval: config.cronLearningIntervalMs,
   databaseUrl: config.finishedMatchesStoreUrl,

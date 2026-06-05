@@ -23,6 +23,16 @@ class FinishedMatchStore {
     return Boolean(this.pool);
   }
 
+  maskDatabaseUrl(url) {
+    if (!url) return "non configurée";
+    try {
+      const masked = url.replace(/\/\/([^:]+):([^@]+)@/, "//***:***@");
+      return masked.substring(0, 50) + "...";
+    } catch {
+      return "***";
+    }
+  }
+
   async ensureReady() {
     if (!this.pool) return false;
     if (!this.readyPromise) {
@@ -33,8 +43,10 @@ class FinishedMatchStore {
   }
 
   async initialize() {
+    console.log(`[Database] Initialisation de la connexion à la base de données: ${this.maskDatabaseUrl(this.databaseUrl)}`);
     const client = await this.pool.connect();
     try {
+      console.log(`[Database] Connexion réussie à la base de données`);
       await client.query(`
         CREATE TABLE IF NOT EXISTS finished_matches_dataset (
           id BIGSERIAL PRIMARY KEY,
@@ -51,6 +63,7 @@ class FinishedMatchStore {
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `);
+      console.log(`[Database] Table finished_matches_dataset vérifiée/créée`);
       await client.query(`
         CREATE TABLE IF NOT EXISTS match_tracking_state (
           id BIGSERIAL PRIMARY KEY,
@@ -69,6 +82,7 @@ class FinishedMatchStore {
           last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `);
+      console.log(`[Database] Table match_tracking_state vérifiée/créée`);
       await client.query(`
         CREATE TABLE IF NOT EXISTS match_tracking_runs (
           id BIGSERIAL PRIMARY KEY,
@@ -84,9 +98,11 @@ class FinishedMatchStore {
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `);
+      console.log(`[Database] Table match_tracking_runs vérifiée/créée`);
     } finally {
       client.release();
     }
+    console.log(`[Database] Initialisation terminée avec succès`);
   }
 
   async upsertFinishedMatches(matches = []) {

@@ -84,15 +84,18 @@ module.exports = {
   liveFeedConfigured: parseBoolean(process.env.LIVE_FEED_ENABLED, true),
   cronSecret: String(process.env.CRON_SECRET || "").trim(),
   finishedMatchesStoreUrl: String(
+    process.env.SUPABASE_DB_URL ||
+    process.env.DATABASE_URL ||
     process.env.FINISHED_MATCHES_STORE_URL ||
     process.env.FINISHED_MATCHES_API_URL ||
-    process.env.DATABASE_URL ||
     ""
   ).trim(),
   finishedMatchesStoreToken: String(
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.DATABASE_TOKEN ||
     process.env.FINISHED_MATCHES_STORE_TOKEN ||
     process.env.FINISHED_MATCHES_API_TOKEN ||
-    process.env.DATABASE_TOKEN ||
     ""
   ).trim(),
   training: {

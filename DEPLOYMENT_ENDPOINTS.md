@@ -1,55 +1,54 @@
-# 🚀 DEPLOYMENT ENDPOINTS - SOLITAIRE HACK
+# DEPLOYMENT ENDPOINTS - SOLITAIRE HACK
 
-**Configuration de production pour Cron Learning Service**
-**URL Base:** https://one-delux-fast.onrender.com
-**Clé secrète:** one-delux-cron-2026-secure
+**Configuration de production pour Cron Learning Service**  
+**URL Base:** `https://one-delux-fast.onrender.com`  
+**Cle secrete:** definie via la variable d'environnement `CRON_SECRET`
 
 ---
 
-## 📋 LIENS ET EMPLACEMENTS DANS LES SYSTÈMES D'ARRIÈRE-PLAN
+## Liens et emplacements dans les systemes d'arriere-plan
 
-### 🔵 RENDER - CRON JOB (RECOMMANDÉ)
+### Render - Cron Job
 
 **Emplacement dans Render Dashboard:**
-1. Allez dans votre dashboard Render
-2. Sélectionnez votre service "one-delux-fast"
-3. Cliquez sur "Cron Jobs" dans le menu gauche
-4. Cliquez sur "+ New Cron Job"
-5. Collez ce lien dans "Command to run"
+1. Ouvrez votre dashboard Render
+2. Selectionnez votre service `one-delux-fast`
+3. Cliquez sur `Cron Jobs`
+4. Cliquez sur `+ New Cron Job`
+5. Collez cette commande dans `Command to run`
 
-**Lien à placer:**
-```
-curl -X GET "https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dryRun=0&debug=0"
+**Lien a placer:**
+```bash
+curl -X GET "https://one-delux-fast.onrender.com/cron/learn?key=<VOTRE_CRON_SECRET>&dryRun=0&debug=0"
 ```
 
 **Configuration du Cron Job:**
-- **Schedule:** `*/5 * * * *` (toutes les 5 minutes) OU `0 * * * *` (toutes les heures)
-- **Command:** Le lien ci-dessus
-- **Region:** Same as your web service
+- **Schedule:** `*/5 * * * *` ou `0 * * * *`
+- **Command:** la commande ci-dessus
+- **Region:** meme region que le web service
 
-**Alternative - Méthode POST pour Cron Job:**
-```
-curl -X POST "https://one-delux-fast.onrender.com/api/cron/learning/collect?key=one-delux-cron-2026-secure"
+**Alternative - methode POST:**
+```bash
+curl -X POST "https://one-delux-fast.onrender.com/api/cron/learning/collect?key=<VOTRE_CRON_SECRET>"
 ```
 
 ---
 
-### 🟢 RENDER - BACKGROUND WORKER
+### Render - Background Worker
 
 **Emplacement dans Render Dashboard:**
-1. Créez un nouveau "Background Worker" dans Render
-2. Dans "Start Command", placez:
+1. Creez un nouveau `Background Worker`
+2. Dans `Start Command`, utilisez une des options ci-dessous
 
-**Option 1 - Worker qui fait des appels périodiques:**
+**Option 1 - Appels periodiques:**
 ```bash
-node -e "setInterval(() => { require('https').get('https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dryRun=0&debug=0'); }, 300000);"
+node -e "setInterval(() => { require('https').get('https://one-delux-fast.onrender.com/cron/learn?key=<VOTRE_CRON_SECRET>&dryRun=0&debug=0'); }, 300000);"
 ```
 
-**Option 2 - Worker avec script dédié:**
-Créez un fichier `worker.js` avec:
+**Option 2 - Script dedie:**
 ```javascript
 const https = require('https');
-const CRON_URL = 'https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dryRun=0&debug=0';
+const CRON_URL = 'https://one-delux-fast.onrender.com/cron/learn?key=<VOTRE_CRON_SECRET>&dryRun=0&debug=0';
 
 setInterval(() => {
   https.get(CRON_URL, (res) => {
@@ -58,30 +57,30 @@ setInterval(() => {
 }, 300000); // 5 minutes
 ```
 
-**Commande de démarrage:** `node worker.js`
+**Commande de demarrage:** `node worker.js`
 
 ---
 
-### 🟡 LINUX CRON (serveur VPS/dédié)
+### Linux Cron
 
-**Emplacement:** Crontab de l'utilisateur
+**Emplacement:** crontab de l'utilisateur
 ```bash
 crontab -e
 ```
 
-**Lien à placer dans crontab:**
+**Lien a placer dans crontab:**
 ```bash
-*/5 * * * * curl -X GET "https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dryRun=0&debug=0"
+*/5 * * * * curl -X GET "https://one-delux-fast.onrender.com/cron/learn?key=<VOTRE_CRON_SECRET>&dryRun=0&debug=0"
 ```
 
 **Alternative avec logging:**
 ```bash
-*/5 * * * * curl -X GET "https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dryRun=0&debug=0" >> /var/log/cron-learning.log 2>&1
+*/5 * * * * curl -X GET "https://one-delux-fast.onrender.com/cron/learn?key=<VOTRE_CRON_SECRET>&dryRun=0&debug=0" >> /var/log/cron-learning.log 2>&1
 ```
 
 ---
 
-### 🟠 GITHUB ACTIONS
+### GitHub Actions
 
 **Emplacement:** `.github/workflows/cron-learning.yml`
 
@@ -89,8 +88,8 @@ crontab -e
 name: Cron Learning Service
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Toutes les 5 minutes
-  workflow_dispatch:       # Déclenchement manuel
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 jobs:
   cron-job:
@@ -98,39 +97,39 @@ jobs:
     steps:
       - name: Execute Cron Learning
         run: |
-          curl -X GET "https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dryRun=0&debug=0"
+          curl -X GET "https://one-delux-fast.onrender.com/cron/learn?key=<VOTRE_CRON_SECRET>&dryRun=0&debug=0"
 ```
 
 **Emplacement dans GitHub:**
-- Repository → Settings → Secrets (ajouter CRON_SECRET si besoin)
-- Repository → Actions → créer le fichier workflow
+- Repository -> Settings -> Secrets -> ajouter `CRON_SECRET`
+- Repository -> Actions -> creer le fichier workflow
 
 ---
 
-### 🟣 UPTIME ROBOT / PINGDOM (Monitoring)
+### Uptime Robot / Pingdom
 
-**Lien à placer comme "Monitor URL":**
-```
-https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dryRun=0&debug=0
+**Lien a placer comme Monitor URL:**
+```text
+https://one-delux-fast.onrender.com/cron/learn?key=<VOTRE_CRON_SECRET>&dryRun=0&debug=0
 ```
 
 **Configuration:**
 - **Check Type:** HTTPS
-- **URL:** Le lien ci-dessus
+- **URL:** le lien ci-dessus
 - **Check Interval:** 5 minutes
-- **Alert:** Si échec 3 fois consécutives
+- **Alert:** si echec 3 fois consecutives
 
 ---
 
-### 🔴 AWS CLOUDWATCH EVENTS
+### AWS CloudWatch Events
 
-**Emplacement:** AWS Console → CloudWatch → Events → Rules
+**Emplacement:** AWS Console -> CloudWatch -> Events -> Rules
 
-**Target à configurer:**
+**Target a configurer:**
 ```json
 {
   "httpRequest": {
-    "url": "https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dryRun=0&debug=0",
+    "url": "https://one-delux-fast.onrender.com/cron/learn?key=<VOTRE_CRON_SECRET>&dryRun=0&debug=0",
     "method": "GET"
   }
 }
@@ -140,77 +139,74 @@ https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dr
 
 ---
 
-## 📱 LIENS DE CONTRÔLE MANUEL (pour monitoring/debug)
+## Liens de controle manuel
 
-### Endpoint de STATUT
-**Lien:** `https://one-delux-fast.onrender.com/api/cron/learning/status?key=one-delux-cron-2026-secure`
-**Utilisation:** Vérifier si le cron est actif et combien de matchs ont été collectés
-**Emplacement:** Bookmark dans votre navigateur pour monitoring rapide
+### Endpoint de statut
+**Lien:** `https://one-delux-fast.onrender.com/api/cron/learning/status?key=<VOTRE_CRON_SECRET>`
+**Utilisation:** verifier si le cron est actif et combien de matchs ont ete collectes
 
-### Endpoint de DÉMARRAGE
-**Lien:** `https://one-delux-fast.onrender.com/api/cron/learning/start?key=one-delux-cron-2026-secure`
-**Utilisation:** Démarrer manuellement le service cron si arrêté
-**Emplacement:** Script d'urgence ou dashboard de monitoring
+### Endpoint de demarrage
+**Lien:** `https://one-delux-fast.onrender.com/api/cron/learning/start?key=<VOTRE_CRON_SECRET>`
+**Utilisation:** demarrer manuellement le service cron si arrete
 
-### Endpoint d'ARRÊT
-**Lien:** `https://one-delux-fast.onrender.com/api/cron/learning/stop?key=one-delux-cron-2026-secure`
-**Utilisation:** Arrêter manuellement le service cron pour maintenance
-**Emplacement:** Script de maintenance
+### Endpoint d'arret
+**Lien:** `https://one-delux-fast.onrender.com/api/cron/learning/stop?key=<VOTRE_CRON_SECRET>`
+**Utilisation:** arreter manuellement le service cron pour maintenance
 
 ---
 
-## 🔐 VARIABLES D'ENVIRONNEMENT À CONFIGURER
+## Variables d'environnement a configurer
 
 **Sur Render Dashboard:**
-1. Service → Settings → Environment Variables
+1. Service -> Settings -> Environment Variables
 2. Ajouter:
-   - `CRON_SECRET` = `one-delux-cron-2026-secure`
-   - `SUPABASE_DATABASE_URL` = votre URL de connexion Supabase (format: postgresql://postgres:[password]@[host]:5432/[database])
-   - `DATABASE_URL` = URL de base de données PostgreSQL (alternative si Supabase)
-   - `CRON_LEARNING_INTERVAL_MS` = `10000` (10 secondes pour activité continue)
+   - `CRON_SECRET` = votre valeur secrete, stockee uniquement cote serveur
+   - `SUPABASE_DATABASE_URL` = URL de connexion Supabase
+   - `DATABASE_URL` = URL de base de donnees PostgreSQL alternative
+   - `CRON_LEARNING_INTERVAL_MS` = `10000`
 
-**Variables alternatives supportées:**
-- `SUPABASE_DB_URL` = URL Supabase (fallback)
-- `SUPABASE_ANON_KEY` = Clé anonyme Supabase (optionnel)
-- `SUPABASE_SERVICE_KEY` = Clé service Supabase (optionnel)
+**Variables alternatives supportees:**
+- `SUPABASE_DB_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_KEY`
 
-**Note:** Le code priorise `SUPABASE_DATABASE_URL` puis `DATABASE_URL` pour la connexion à la base de données.
+**Note:** le code priorise `SUPABASE_DATABASE_URL`, puis `DATABASE_URL`.
 
 ---
 
-## 🧪 TESTS DE VALIDATION
+## Tests de validation
 
-**Test local avant déploiement:**
+**Test local avant deploiement:**
 ```bash
 # Test status
-curl "http://localhost:3029/api/cron/learning/status?key=one-delux-cron-2026-secure"
+curl "http://localhost:3029/api/cron/learning/status?key=<VOTRE_CRON_SECRET>"
 
 # Test collecte
-curl -X POST "http://localhost:3029/api/cron/learning/collect?key=one-delux-cron-2026-secure"
+curl -X POST "http://localhost:3029/api/cron/learning/collect?key=<VOTRE_CRON_SECRET>"
 
-# Test après déploiement
-curl "https://one-delux-fast.onrender.com/api/cron/learning/status?key=one-delux-cron-2026-secure"
+# Test apres deploiement
+curl "https://one-delux-fast.onrender.com/api/cron/learning/status?key=<VOTRE_CRON_SECRET>"
 ```
 
 ---
 
-## 📊 RECOMMANDATION FINALE - SOLITAIRE HACK
+## Recommandation finale - SOLITAIRE HACK
 
-**Option RECOMMANDÉE:** Render Cron Job
-- Plus simple à configurer
-- Monitoring intégré
-- Automatic retries
+**Option recommandee:** Render Cron Job
+- Plus simple a configurer
+- Monitoring integre
+- Retries automatiques
 - Logging natif
-- Coûts prévisibles
+- Couts previsibles
 
 **Configuration finale:**
-- **URL:** `https://one-delux-fast.onrender.com/cron/learn?key=one-delux-cron-2026-secure&dryRun=0&debug=0`
-- **Méthode:** GET
-- **Fréquence:** Toutes les 5 minutes
-- **Secret:** Configuré dans variables d'environnement Render
+- **URL:** `https://one-delux-fast.onrender.com/cron/learn?key=<VOTRE_CRON_SECRET>&dryRun=0&debug=0`
+- **Methode:** GET
+- **Frequence:** toutes les 5 minutes
+- **Secret:** configure dans les variables d'environnement Render
 
 ---
 
-**SIGNÉ:** SOLITAIRE HACK
+**SIGNE:** SOLITAIRE HACK
 **Date:** 2026-06-05
 **Version:** 1.0 - Production Ready

@@ -245,8 +245,12 @@ function isAuthorizedCronRequest(req) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const key = url.searchParams.get('key');
-    const cronSecret = config.cronSecret || process.env.CRON_SECRET || "default-secret";
-    return key === cronSecret;
+    if (!config.cronSecret) {
+      console.error("[Cron Auth] CRON_SECRET n'est pas configurée");
+      return false;
+    }
+
+    return key === config.cronSecret;
   } catch (error) {
     console.error("[Cron Auth] Erreur d'authentification:", error.message);
     return false;

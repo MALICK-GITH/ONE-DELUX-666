@@ -24,7 +24,7 @@ loadDotEnvFile(path.join(process.cwd(), ".env"));
 
 const DEFAULT_PORT = 3000;
 const DEFAULT_JSON_LIMIT = "1mb";
-const DEFAULT_CRON_LEARNING_INTERVAL_MS = 60 * 1000;
+const DEFAULT_CRON_LEARNING_INTERVAL_MS = 10 * 1000; // 10 secondes pour plus d'activité SQL
 const DEFAULT_LIVE_FEED_URL =
   "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip?sports=85&count=40&lng=fr&gr=789&mode=4&country=96&partner=233&getEmpty=true&virtualSports=true&noFilterBlockEvent=true";
 

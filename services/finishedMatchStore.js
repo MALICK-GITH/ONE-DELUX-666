@@ -23,6 +23,29 @@ class FinishedMatchStore {
     return Boolean(this.pool);
   }
 
+  async getActiveMatches() {
+    if (!this.pool) {
+      return { count: 0 };
+    }
+
+    await this.ensureReady();
+    const client = await this.pool.connect();
+
+    try {
+      const startTime = Date.now();
+      const result = await client.query(
+        "SELECT COUNT(*) as count FROM finished_matches_dataset WHERE created_at > NOW() - INTERVAL '1 hour'"
+      );
+      console.log(`📊 Query executed in ${Date.now() - startTime}ms`);
+      return { count: parseInt(result.rows[0]?.count || 0) };
+    } catch (error) {
+      console.error(`[Database] Erreur dans getActiveMatches: ${error.message}`);
+      return { count: 0 };
+    } finally {
+      client.release();
+    }
+  }
+
   maskDatabaseUrl(url) {
     if (!url) return "non configurée";
     try {
@@ -115,7 +138,9 @@ class FinishedMatchStore {
 
     try {
       let inserted = 0;
+      const startTime = Date.now();
       await client.query("BEGIN");
+      console.log(`📊 Query executed in ${Date.now() - startTime}ms`);
 
       for (const match of matches) {
         const result = await client.query(
@@ -159,9 +184,11 @@ class FinishedMatchStore {
         );
 
         if (result.rowCount > 0) inserted += 1;
+        console.log(`📊 Query executed in ${Date.now() - startTime}ms`);
       }
 
       await client.query("COMMIT");
+      console.log(`📊 Query executed in ${Date.now() - startTime}ms`);
       return { inserted };
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
@@ -182,6 +209,7 @@ class FinishedMatchStore {
     try {
       const now = new Date();
       const payload = JSON.stringify(snapshot || null);
+      const startTime = Date.now();
       const result = await client.query(
         `
           INSERT INTO match_tracking_state (
@@ -236,6 +264,7 @@ class FinishedMatchStore {
           payload,
         ]
       );
+      console.log(`📊 Query executed in ${Date.now() - startTime}ms`);
 
       return { inserted: result.rowCount > 0 ? 1 : 0 };
     } finally {

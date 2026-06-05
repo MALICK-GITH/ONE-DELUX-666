@@ -108,6 +108,13 @@ class CronLearningService {
       const finishedMatches = formattedMatches.filter((match) => match.statusNormalized === "terminé");
       const newFinishedMatches = finishedMatches.filter((match) => !this.collectedMatchIds.has(String(match.id)));
 
+      // Exécuter une requête de monitoring actif pour générer l'activité SQL
+      if (this.matchStore.isConfigured()) {
+        const queryStartTime = Date.now();
+        await this.matchStore.getActiveMatches();
+        console.log(`📊 Query executed in ${Date.now() - queryStartTime}ms`);
+      }
+
       if (newFinishedMatches.length > 0) {
         const enrichedMatches = await Promise.all(
           newFinishedMatches.map(async (match) => {

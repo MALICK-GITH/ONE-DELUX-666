@@ -23,13 +23,27 @@ function loadDotEnvFile(filePath) {
 loadDotEnvFile(path.join(process.cwd(), ".env"));
 
 const DEFAULT_PORT = 3000;
+const DEFAULT_LIVE_FEED_URL =
+  "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
 
 function parseNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function parseBoolean(value, fallback = false) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const normalized = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  return fallback;
+}
+
 module.exports = {
   port: parseNumber(process.env.PORT, DEFAULT_PORT),
   appSignature: "SOLITAIRE HACK",
+  liveFeedUrl: String(process.env.LIVE_FEED_URL || DEFAULT_LIVE_FEED_URL).trim() || DEFAULT_LIVE_FEED_URL,
+  liveFeedEnabled: parseBoolean(process.env.LIVE_FEED_ENABLED, true),
+  liveFeedTimeout: parseNumber(process.env.LIVE_FEED_TIMEOUT, 15000),
+  liveFeedCount: parseNumber(process.env.LIVE_FEED_COUNT, 40),
 };

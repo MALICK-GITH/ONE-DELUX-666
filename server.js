@@ -59,40 +59,174 @@ async function fetchMatches() {
 }
 
 function formatMatch(event) {
-  return {
+  // Informations de base du match
+  const matchInfo = {
     id: event.I,
     league: event.L || event.LE || "Compétition virtuelle",
+    leagueId: event.LI || null,
     sport: event.SN || "FIFA",
+    sportId: event.SI || null,
     country: event.CN || event.CE || "Monde",
     team1: event.O1 || "Équipe 1",
     team2: event.O2 || "Équipe 2",
-    team1Code: event.O1E || event.O1 || "Équipe 1",
-    team2Code: event.O2E || event.O2 || "Équipe 2",
-    startTime: event.S || null,
-    status: event.ST || "Unknown",
+    team1English: event.O1E || event.O1 || "Équipe 1",
+    team2English: event.O2E || event.O2 || "Équipe 2",
+    startTime: event.S ? new Date(Number(event.S)).toISOString() : null,
+    startTimeTimestamp: event.S || null,
+    status: event.TN || "Unknown",
+    periodName: event.TNS || null,
+    totalMarkets: event.EC || 0,
+  };
+
+  // Score et informations de temps
+  const scoreInfo = {
     currentScore: {
-      home: event.SC?.F?.[0] || 0,
-      away: event.SC?.F?.[1] || 0
+      home: event.SC?.FS?.S1 || 0,
+      away: event.SC?.FS?.S2 || 0
     },
-    markets: Array.isArray(event.E) ? event.E : [],
-    odds: extractOdds(event),
+    elapsedTime: event.SC?.TS || null,
+    timeRemaining: event.SC?.SLS || null,
+    periodScores: event.SC?.PS || null,
+    currentPeriod: event.SC?.CP || null,
+    currentPeriodName: event.SC?.CPS || null,
+  };
+
+  // États du match
+  const matchState = {
+    notStarted: event.GNS === true,
+    isActive: event.HS === 1,
+    isLive: event.ICY === true,
+    isHalftime: event.TN === "Mi-temps",
+  };
+
+  // Marchés et cotes
+  const markets = Array.isArray(event.E) ? event.E : [];
+  const odds = extractOdds(event);
+  
+  // Marchés avancés
+  const advancedMarkets = {
+    hasAdvanced: Array.isArray(event.AE) && event.AE.length > 0,
+    advancedMarkets: Array.isArray(event.AE) ? event.AE : []
+  };
+
+  return {
+    ...matchInfo,
+    ...scoreInfo,
+    ...matchState,
+    markets,
+    odds,
+    advancedMarkets,
     raw: event
   };
 }
 
 function extractOdds(event) {
   const markets = Array.isArray(event.E) ? event.E : [];
-  for (const market of markets) {
-    if (market.T !== 1) continue;
-    const odds = {};
-    for (const outcome of market.O || []) {
-      if (outcome.T === 1) odds.home = Number(outcome.C);
-      if (outcome.T === 2) odds.draw = Number(outcome.C);
-      if (outcome.T === 3) odds.away = Number(outcome.C);
+  const odds = {
+    home: null,
+    draw: null,
+    away: null,
+    doubleChance: {
+      homeDraw: null,
+      drawAway: null,
+      homeAway: null
+    },
+    totalGoals: {
+      over: {},
+      under: {}
+    },
+    btts: {
+      yes: null,
+      no: null
     }
-    if (Object.keys(odds).length === 3) return odds;
+  };
+
+  // Types de paris FIFA
+  const BET_TYPES = {
+    1: 'home',
+    2: 'away', 
+    3: 'draw',
+    4: 'homeDraw',
+    5: 'drawAway',
+    6: 'homeAway',
+    7: 'handicapHome',
+    8: 'handicapAway',
+    9: 'over',
+    10: 'under',
+    11: 'teamOver',
+    12: 'teamUnder',
+    13: 'bttsYes',
+    14: 'bttsNo'
+  };
+
+  // Groupes de marchés
+  const MARKET_GROUPS = {
+    1: 'matchResult',
+    2: 'handicap',
+    8: 'doubleChance',
+    15: 'teamTotals',
+    17: 'totalGoals',
+    62: 'btts'
+  };
+
+  for (const market of markets) {
+    const group = market.G;
+    const type = market.T;
+    const line = market.P;
+    const price = market.C;
+
+    // Résultat 1X2 (Groupe 1)
+    if (group === 1) {
+      if (type === 1) odds.home = Number(price);
+      if (type === 2) odds.away = Number(price);
+      if (type === 3) odds.draw = Number(price);
+    }
+
+    // Double chance (Groupe 8)
+    if (group === 8) {
+      if (type === 4) odds.doubleChance.homeDraw = Number(price);
+      if (type === 5) odds.doubleChance.drawAway = Number(price);
+      if (type === 6) odds.doubleChance.homeAway = Number(price);
+    }
+
+    // Total buts (Groupe 17)
+    if (group === 17) {
+      if (type === 9 && line) odds.totalGoals.over[line] = Number(price);
+      if (type === 10 && line) odds.totalGoals.under[line] = Number(price);
+    }
+
+    // BTTS (Groupe 62)
+    if (group === 62) {
+      if (type === 13) odds.btts.yes = Number(price);
+      if (type === 14) odds.btts.no = Number(price);
+    }
   }
-  return { home: null, draw: null, away: null };
+
+  // Marchés avancés (AE)
+  if (Array.isArray(event.AE)) {
+    for (const advancedGroup of event.AE) {
+      const group = advancedGroup.G;
+      const variants = Array.isArray(advancedGroup.ME) ? advancedGroup.ME : [];
+
+      for (const variant of variants) {
+        const type = variant.T;
+        const line = variant.P;
+        const price = variant.C;
+
+        // Total buts avancés
+        if (group === 17) {
+          if (type === 9 && line && !odds.totalGoals.over[line]) {
+            odds.totalGoals.over[line] = Number(price);
+          }
+          if (type === 10 && line && !odds.totalGoals.under[line]) {
+            odds.totalGoals.under[line] = Number(price);
+          }
+        }
+      }
+    }
+  }
+
+  return odds;
 }
 
 async function handleMatches(req, res) {

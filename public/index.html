@@ -9,9 +9,9 @@
   <meta name="theme-color" content="#0a1628" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="RUST SIT XPR" />
+  <meta name="apple-mobile-web-app-title" content="FURY X ONE 👿" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="application-name" content="RUST SIT XPR" />
+  <meta name="application-name" content="FURY X ONE 👿" />
   <meta name="msapplication-TileColor" content="#050508" />
   <meta name="format-detection" content="telephone=no" />
   <meta name="robots" content="noindex,nofollow" />
@@ -21,13 +21,20 @@
     content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self'; manifest-src 'self';">
 
   <!-- Open Graph / Social -->
-  <meta property="og:title" content="RUST SIT XPR - Predictions FIFA">
-  <meta property="og:description" content="Engine de predictions avance avec visualisation 3D, communaute et analytics">
+  <meta property="og:title" content="FURY X ONE 👿">
+  <meta property="og:description" content="Hub FIFA virtuel, matchs live, details et exports">
   <meta property="og:type" content="website">
   <meta property="og:url" content="/">
   <meta property="og:image" content="/icon-512.png">
 
-  <title>RUST SIT XPR</title>
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" sizes="192x192" href="/icons/icon-192x192.svg">
+  <link rel="icon" type="image/svg+xml" sizes="512x512" href="/icons/icon-512x512.svg">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.svg">
+  <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.svg">
+
+  <title>FURY X ONE 👿</title>
 
   <!-- Preconnect for performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -37,14 +44,15 @@
     href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+  <script src="/pwa.js" defer></script>
 </head>
 
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
   <header class="hero">
     <p class="tag">Live Feed</p>
-    <h1>RUST SIT XPR</h1>
-    <p id="subTitle">RUST SIT XPR - Le signal avant le coup d'envoi. Hub FIFA virtuel, matchs live, details et exports.</p>
+    <h1>FURY X ONE 👿</h1>
+    <p id="subTitle">FURY X ONE 👿 - Le signal avant le coup d'envoi. Hub FIFA virtuel, matchs live, details et exports.</p>
     <p class="hero-slogan">L'IA voit ce que les autres ignorent.</p>
     <p class="hero-slogan">Nous prédisons, vous gagnez.</p>
     <p class="hero-slogan">Objectif : DOMINATION.</p>
@@ -59,6 +67,7 @@
       </label>
       <a class="coupon-page-link" href="/coupon.html">Page Coupon</a>
       <a class="coupon-page-link" href="/match.html">Page Match</a>
+      <a class="coupon-page-link" href="/creator.html">Créateur</a>
     </div>
     
     <div class="hero-metric-strip" aria-hidden="true">
@@ -109,9 +118,6 @@
 
   <!-- API Client -->
   <script src="/site-api.js"></script>
-  
-  <!-- Advanced Match Search -->
-  <script src="/match-advanced-search.js"></script>
   
   <!-- Main Application Script -->
   <script src="/script.js"></script>

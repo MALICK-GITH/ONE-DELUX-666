@@ -1,5 +1,5 @@
 /**
- * RUST SIT XPR - Coupon Page Script
+ * FURY X ONE 👿 - Coupon Page Script
  * Adapté de ONE-DELUX
  * Signé: SOLITAIRE HACK
  */
@@ -14,8 +14,6 @@ const multiBtn = document.getElementById("multiBtn");
 const validateBtn = document.getElementById("validateBtn");
 const updatedAt = document.getElementById("updatedAt");
 const appVersionTag = document.getElementById("appVersionTag");
-const visualFormatSelect = document.getElementById("visualFormatSelect");
-const visualQualitySelect = document.getElementById("visualQualitySelect");
 
 let currentCoupon = null;
 const APP_VERSION = "2026.06.04-r1";
@@ -32,64 +30,7 @@ function setupEventListeners() {
   multiBtn.addEventListener("click", generateMulti);
   validateBtn.addEventListener("click", validateCoupon);
   
-  // Setup Visual Generator
-  const generateVisualBtn = document.getElementById('generateVisualBtn');
-  if (generateVisualBtn) {
-    generateVisualBtn.addEventListener('click', handleGenerateCouponVisual);
-  }
-}
 
-function getVisualSettings() {
-  return {
-    exportFormat: visualFormatSelect?.value || "png",
-    quality: Number(visualQualitySelect?.value || 0.92),
-  };
-}
-
-async function handleGenerateCouponVisual() {
-  if (!currentCoupon) {
-    alert('Veuillez générer un coupon d\'abord');
-    return;
-  }
-
-  const generateBtn = document.getElementById('generateVisualBtn');
-  generateBtn.disabled = true;
-  generateBtn.textContent = '⏳ Génération...';
-
-  try {
-    const coupon = currentCoupon.coupon || [];
-    const summary = currentCoupon.summary || {};
-
-    // Préparer les données pour le visuel du coupon - Système amélioré ONE-DELUX
-    const visualData = {
-      selections: coupon.map((item, index) => ({
-        team: item.teamHome,
-        awayTeam: item.teamAway,
-        prediction: item.pari,
-        odds: item.cote
-      })),
-      totalOdds: summary.combinedOdd ? summary.combinedOdd.toFixed(2) : 'N/A',
-      confidence: Math.floor(coupon.reduce((acc, item) => acc + (item.confidence || 50), 0) / coupon.length),
-      generatedAt: new Date().toISOString()
-    };
-
-    const result = await window.visualGenerator.generateCouponImage(visualData, {
-      ...getVisualSettings(),
-    });
-
-    if (result.success) {
-      window.visualGenerator.showShareModal(result.imageUrl, result.blob, result.pdfBlob, result.fileExtension);
-    } else {
-      throw new Error(result.error || 'Erreur lors de la génération');
-    }
-  } catch (error) {
-    console.error('Erreur lors de la génération du visuel coupon:', error);
-    alert('Erreur lors de la génération du visuel: ' + error.message);
-  } finally {
-    generateBtn.disabled = false;
-    generateBtn.textContent = '📸 Générer l\'image';
-  }
-}
 
 async function generateCoupon() {
   refreshBtn.disabled = true;
@@ -108,9 +49,26 @@ async function generateCoupon() {
       throw new Error(data.error || "Erreur inconnue");
     }
 
-    currentCoupon = data;
-    renderCoupon(data);
-    updateStats(data);
+    // Récupérer les détails complets de chaque match
+    const couponWithDetails = await Promise.all(
+      data.coupon.map(async (item) => {
+        try {
+          const matchResponse = await fetch(`/api/matches/${item.matchId}`);
+          const matchData = await matchResponse.json();
+          if (matchData.success && matchData.match) {
+            return { ...item, ...matchData.match };
+          }
+          return item;
+        } catch (error) {
+          console.error(`Erreur lors de la récupération des détails du match ${item.matchId}:`, error);
+          return item;
+        }
+      })
+    );
+
+    currentCoupon = { ...data, coupon: couponWithDetails };
+    renderCoupon(currentCoupon);
+    updateStats(currentCoupon);
 
     updatedAt.textContent = `Mis à jour: ${new Date().toLocaleTimeString("fr-FR")}`;
   } catch (error) {
@@ -148,11 +106,31 @@ function renderCoupon(data) {
             <div class="coupon-item-header">
               <span class="coupon-item-number">${index + 1}</span>
               <div class="coupon-item-teams">
-                <strong>${item.teamHome || "Équipe 1"}</strong>
+                ${item.homeLogo ? `<img src="${item.homeLogo}" alt="${item.teamHome || item.team1}" class="team-logo-small" onerror="this.style.display='none'">` : ''}
+                <strong>${item.teamHome || item.team1 || "Équipe 1"}</strong>
                 <span>vs</span>
-                <strong>${item.teamAway || "Équipe 2"}</strong>
+                <strong>${item.teamAway || item.team2 || "Équipe 2"}</strong>
+                ${item.awayLogo ? `<img src="${item.awayLogo}" alt="${item.teamAway || item.team2}" class="team-logo-small" onerror="this.style.display='none'">` : ''}
               </div>
             </div>
+            ${item.league ? `<div class="coupon-item-league">${item.league}</div>` : ''}
+            ${item.startTime ? `
+              <div class="coupon-item-time">
+                <span class="time-label">Début:</span>
+                <span class="time-value">${new Date(item.startTime).toLocaleString("fr-FR", { 
+                  day: "2-digit", 
+                  month: "2-digit", 
+                  hour: "2-digit", 
+                  minute: "2-digit" 
+                })}</span>
+              </div>
+            ` : ''}
+            ${item.status || item.statusText ? `
+              <div class="coupon-item-status">
+                <span class="status-label">Statut:</span>
+                <span class="status-value">${item.statusText || item.status || "N/A"}</span>
+              </div>
+            ` : ''}
             <div class="coupon-item-details">
               <span class="coupon-prediction">${item.pari || "1"}</span>
               <span class="coupon-odd">Cote: ${typeof item.cote === 'number' ? item.cote.toFixed(2) : item.cote || "N/A"}</span>
@@ -167,10 +145,6 @@ function renderCoupon(data) {
           <div class="summary-item">
             <span>Cote combinée</span>
             <strong>${summary.combinedOdd ? summary.combinedOdd.toFixed(3) : "N/A"}</strong>
-          </div>
-          <div class="summary-item">
-            <span>Gain potentiel</span>
-            <strong>${summary.expectedReturn ? summary.expectedReturn.toFixed(2) + " FCFA" : "N/A"}</strong>
           </div>
           <div class="summary-item">
             <span>Sélections</span>
@@ -196,10 +170,6 @@ function updateStats(data) {
     <div class="stat-item">
       <span>Cote</span>
       <strong>${summary.combinedOdd ? summary.combinedOdd.toFixed(3) : "N/A"}</strong>
-    </div>
-    <div class="stat-item">
-      <span>Gain</span>
-      <strong>${summary.expectedReturn ? summary.expectedReturn.toFixed(0) + " F" : "N/A"}</strong>
     </div>
   `;
 }
@@ -257,10 +227,10 @@ function renderLadder(ladder) {
               <span class="ladder-item-stake">Mise: ${item.stake || 0} FCFA</span>
             </div>
             <div class="ladder-item-matches">
-              ${(item.matches || []).slice(0, 3).map(m => `
+              ${(item.matches || []).map(m => `
                 <div class="ladder-match">
                   <span>${m.homeTeam} vs ${m.awayTeam}</span>
-                  <span>${m.prediction?.recommendation || "1"}</span>
+                  <span>1</span>
                   <span>${Number(m.odds || 1.5).toFixed(2)}</span>
                 </div>
               `).join("")}
@@ -325,11 +295,11 @@ function renderMulti(strategies) {
               <span class="multi-item-risk">${strategy.risk || "balanced"}</span>
             </div>
             <div class="multi-item-matches">
-              ${(strategy.matches || []).slice(0, 3).map(m => `
+              ${(strategy.matches || []).map(m => `
                 <div class="multi-match">
                   <span>${m.homeTeam} vs ${m.awayTeam}</span>
-                  <span>${m.prediction?.recommendation || "1"}</span>
-                  <span>${(m.prediction?.confidence || 0).toFixed(1)}%</span>
+                  <span>1</span>
+                  <span>0%</span>
                 </div>
               `).join("")}
             </div>
@@ -420,4 +390,5 @@ function renderValidation(data) {
   `;
 
   couponSection.innerHTML = html;
+}
 }

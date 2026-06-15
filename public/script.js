@@ -1,5 +1,5 @@
 /**
- * RUST SIT XPR - Main Application Script
+ * FURY X ONE 👿 - Main Application Script
  * Adapté de ONE-DELUX
  * Signé: SOLITAIRE HACK
  */
@@ -83,21 +83,9 @@ async function loadMatches() {
   refreshBtn.textContent = "Chargement...";
 
   try {
-    let endpoint = "/api/matches";
-
-    // Charger les données selon le mode actuel
-    if (currentMode === "upcoming") {
-      endpoint = "/api/matches/upcoming";
-    } else if (currentMode === "live") {
-      endpoint = "/api/matches/live";
-    } else if (currentMode === "finished") {
-      endpoint = "/api/matches/finished";
-    }
-
-    const response = await fetch(endpoint);
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
+    const data = await window.SiteAPI.matches();
+    
+    if (!data.success) {
       throw new Error(data.error || "Erreur inconnue");
     }
 
@@ -188,14 +176,13 @@ function renderMatches(matches) {
 async function updateStatusStats() {
   if (!statsContainer) return;
 
-  if (!globalThis.SiteAPI?.matchStatus) {
-    statsContainer.innerHTML = "";
-    return;
-  }
-
-  const data = await globalThis.SiteAPI.matchStatus();
-  const breakdown = data?.statusBreakdown || {};
-  const total = Number(data?.totalMatches || 0);
+  const matches = allMatches || [];
+  const breakdown = {
+    a_venir: matches.filter(m => m.isUpcoming).length,
+    en_cours: matches.filter(m => m.isLive).length,
+    terminé: matches.filter(m => m.isFinished).length,
+  };
+  const total = matches.length;
 
   statsContainer.innerHTML = `
     <article class="stat-item">
@@ -204,15 +191,15 @@ async function updateStatusStats() {
     </article>
     <article class="stat-item">
       <span>A venir</span>
-      <strong>${Number(breakdown.a_venir || 0)}</strong>
+      <strong>${breakdown.a_venir}</strong>
     </article>
     <article class="stat-item">
       <span>En cours</span>
-      <strong>${Number(breakdown.en_cours || 0)}</strong>
+      <strong>${breakdown.en_cours}</strong>
     </article>
     <article class="stat-item">
       <span>Termines</span>
-      <strong>${Number(breakdown["terminé"] || 0)}</strong>
+      <strong>${breakdown.terminé}</strong>
     </article>
   `;
 }
@@ -222,7 +209,6 @@ function createMatchCard(match) {
   article.className = "match-card";
   article.dataset.matchId = match.id;
 
-  const prediction = match.primaryPrediction || {};
   const odds = match.odds || {};
   const score = getMatchScore(match);
   const isLiveOrFinished = getMatchStatusKey(match) === "en_cours" || getMatchStatusKey(match) === "live" || getMatchStatusKey(match) === "terminé" || getMatchStatusKey(match) === "finished";
@@ -231,7 +217,11 @@ function createMatchCard(match) {
     <div class="match-header">
       <div class="match-info">
         <p class="match-league">${match.league || "Compétition virtuelle"}</p>
-        <h3 class="match-title">${match.team1} vs ${match.team2}</h3>
+        <div class="match-teams">
+          ${match.homeLogo ? `<img src="${match.homeLogo}" alt="${match.team1}" class="team-logo" onerror="this.style.display='none'">` : ''}
+          <h3 class="match-title">${match.team1} vs ${match.team2}</h3>
+          ${match.awayLogo ? `<img src="${match.awayLogo}" alt="${match.team2}" class="team-logo" onerror="this.style.display='none'">` : ''}
+        </div>
         <p class="match-meta">
           <span class="match-status">${match.status || "Disponible"}</span>
           ${match.startTime ? `<span class="match-kickoff">Début: ${formatKickoffTime(match.startTime)}</span>` : ""}
@@ -265,9 +255,62 @@ function createMatchCard(match) {
     </div>
     
     <div class="prediction-section">
-      <a class="detail-link" href="/match.html?id=${encodeURIComponent(match.id)}">Voir les détails et prédictions →</a>
+      <button class="prediction-btn" onclick="loadPrediction('${match.id}', '${match.team1}', '${match.team2}', '${match.league}')">🔮 Prédiction IA</button>
+      <a class="detail-link" href="/match.html?id=${encodeURIComponent(match.id)}">Voir les détails →</a>
     </div>
   `;
 
   return article;
+}
+
+async function loadPrediction(matchId, team1, team2, league) {
+  try {
+    const data = await window.SiteAPI.prediction(team1, team2, league);
+    
+    if (!data.success) {
+      throw new Error(data.error || "Erreur inconnue");
+    }
+
+    const prediction = data.prediction;
+    const matchCard = document.querySelector(`[data-match-id="${matchId}"]`);
+    
+    if (matchCard && prediction.predictions) {
+      const predictionSection = matchCard.querySelector('.prediction-section');
+      const x2 = prediction.predictions['1x2'] || {};
+      
+      predictionSection.innerHTML = `
+        <div class="prediction-result">
+          <span class="prediction-label">🔮 IA Prediction:</span>
+          <div class="prediction-bars">
+            <div class="prediction-bar">
+              <span class="prediction-team">1</span>
+              <div class="bar-container">
+                <div class="bar-fill" style="width: ${(x2.home * 100).toFixed(0)}%"></div>
+              </div>
+              <span class="prediction-percent">${(x2.home * 100).toFixed(0)}%</span>
+            </div>
+            <div class="prediction-bar">
+              <span class="prediction-team">X</span>
+              <div class="bar-container">
+                <div class="bar-fill" style="width: ${(x2.draw * 100).toFixed(0)}%"></div>
+              </div>
+              <span class="prediction-percent">${(x2.draw * 100).toFixed(0)}%</span>
+            </div>
+            <div class="prediction-bar">
+              <span class="prediction-team">2</span>
+              <div class="bar-container">
+                <div class="bar-fill" style="width: ${(x2.away * 100).toFixed(0)}%"></div>
+              </div>
+              <span class="prediction-percent">${(x2.away * 100).toFixed(0)}%</span>
+            </div>
+          </div>
+          ${prediction.predictions.exact_score ? `<span class="prediction-score">Score: ${prediction.predictions.exact_score.prediction}</span>` : ''}
+        </div>
+        <a class="detail-link" href="/match.html?id=${encodeURIComponent(matchId)}">Voir les détails →</a>
+      `;
+    }
+  } catch (error) {
+    console.error("Erreur de prédiction:", error);
+    alert("Impossible de charger la prédiction: " + error.message);
+  }
 }

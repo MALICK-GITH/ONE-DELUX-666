@@ -11,7 +11,7 @@ function normalizeText(value) {
 
 function extractCouponSize(text, defaultValue = 3) {
   const match = text.match(/size\s*=\s*(\d+)/i);
-  return match ? Math.max(1, Math.min(10, Number(match[1]))) : defaultValue;
+  return match ? Math.max(1, Number(match[1])) : defaultValue;
 }
 
 function extractCouponLeague(text, defaultValue = "all") {
@@ -99,12 +99,12 @@ function buildTelegramMultiText(strategies = [], size = 3, league = "all", risk 
     ""
   ];
 
-  strategies.slice(0, 4).forEach((strategy, index) => {
+  strategies.forEach((strategy, index) => {
     const matches = Array.isArray(strategy?.matches) ? strategy.matches : [];
     lines.push(
       `${index + 1}. ${strategy?.name || strategy?.risk || "Stratégie"} | ${matches.length} match(s)`
     );
-    matches.slice(0, 4).forEach((m, i) => {
+    matches.forEach((m, i) => {
       lines.push(
         `   ${i + 1}) ${m?.homeTeam || "Équipe 1"} vs ${m?.awayTeam || "Équipe 2"} | ` +
         `${m?.prediction?.recommendation || "1"} | ${Number(m?.prediction?.confidence || 0).toFixed(1)}%`
@@ -127,7 +127,7 @@ function buildTelegramValidationText(validation) {
     ""
   ];
 
-  issues.slice(0, 5).forEach((issue, index) => {
+  issues.forEach((issue, index) => {
     lines.push(`${index + 1}. ${issue?.message || issue?.code || "Alerte"}`);
   });
 

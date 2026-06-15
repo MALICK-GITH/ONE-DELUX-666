@@ -23,8 +23,9 @@ function loadDotEnvFile(filePath) {
 loadDotEnvFile(path.join(process.cwd(), ".env"));
 
 const DEFAULT_PORT = 3000;
-const DEFAULT_LIVE_FEED_URL =
-  "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
+const DEFAULT_LIVE_FEED_URL = "https://livefeedsht.onrender.com/live-feed";
+const DEFAULT_PREDICTION_API_URL = "https://top-modele-train-api.onrender.com";
+const DEFAULT_PENALTY_API_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
 
 function parseNumber(value, fallback) {
   const parsed = Number(value);
@@ -42,8 +43,7 @@ function parseBoolean(value, fallback = false) {
 module.exports = {
   port: parseNumber(process.env.PORT, DEFAULT_PORT),
   appSignature: "SOLITAIRE HACK",
-  liveFeedUrl: String(process.env.LIVE_FEED_URL || DEFAULT_LIVE_FEED_URL).trim() || DEFAULT_LIVE_FEED_URL,
-  liveFeedEnabled: parseBoolean(process.env.LIVE_FEED_ENABLED, true),
-  liveFeedTimeout: parseNumber(process.env.LIVE_FEED_TIMEOUT, 15000),
-  liveFeedCount: parseNumber(process.env.LIVE_FEED_COUNT, 40),
+  predictionApiUrl: process.env.PREDICTION_API_URL || DEFAULT_PREDICTION_API_URL,
+  liveFeedUrl: process.env.LIVE_FEED_URL || DEFAULT_LIVE_FEED_URL,
+  penaltyApiUrl: process.env.PENALTY_API_URL || DEFAULT_PENALTY_API_URL,
 };

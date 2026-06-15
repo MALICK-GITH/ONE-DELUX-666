@@ -1,5 +1,5 @@
 /**
- * Site API Client - Adapté pour RUST SIT XPR
+ * Site API Client - Adapté pour FURY X ONE 👿
  * Signé: SOLITAIRE HACK
  */
 
@@ -40,14 +40,25 @@
     post(path, body, options) {
       return requestJson(path, { ...(options || {}), method: "POST", body });
     },
+    // Matches endpoints
     matches() {
       return requestJson("/matches");
     },
-    matchStatus() {
-      return requestJson("/matches/status");
+    matchById(id) {
+      return requestJson(`/matches/${encodeURIComponent(id)}`);
     },
-    matchById(matchId) {
-      return requestJson(`/matches/${encodeURIComponent(matchId)}`);
+    // Prediction endpoints
+    prediction(teamHome, teamAway, league) {
+      return requestJson("/prediction", { method: "POST", body: { team_home: teamHome, team_away: teamAway, league } });
+    },
+    predictionHealth() {
+      return requestJson("/prediction/health");
+    },
+    predictionFamilies() {
+      return requestJson("/prediction/families");
+    },
+    predictionLeagues(family) {
+      return requestJson(`/prediction/leagues/${encodeURIComponent(family)}`);
     },
     // Coupon endpoints
     coupon(params = {}) {
@@ -63,31 +74,11 @@
     couponValidate(body) {
       return requestJson("/coupon/validate", { method: "POST", body });
     },
-    aiPrediction(params = {}) {
-      const query = new URLSearchParams(params).toString();
-      return requestJson(`/ai/prediction?${query}`);
-    },
-    advancedPrediction(params = {}) {
-      const query = new URLSearchParams(params).toString();
-      return requestJson(`/ai/advanced?${query}`);
-    },
     system() {
       return requestJson("/system");
     },
     health() {
       return requestJson("/health");
-    },
-    cronLearningStatus() {
-      return requestJson("/cron/learning/status");
-    },
-    cronLearningStart() {
-      return requestJson("/cron/learning/start", { method: "POST" });
-    },
-    cronLearningStop() {
-      return requestJson("/cron/learning/stop", { method: "POST" });
-    },
-    cronLearningCollect() {
-      return requestJson("/cron/learning/collect", { method: "POST" });
     },
   };
 

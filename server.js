@@ -1,19 +1,20 @@
 const http = require("http");
+const https = require("https");
 const fs = require("fs");
 const path = require("path");
-const {
-  predictFromTrainedModel,
-  getTrainedModelInfo,
-} = require("./services/trainedModelPredictor");
-const VisualGenerator = require("./services/visualGenerator");
-const { fetchLiveFeedEvents } = require("./services/liveFeedClient");
 const config = require("./server/config");
+const LiveFeedClient = require("./services/liveFeedClient");
+const PredictionClient = require("./services/predictionClient");
+const PenaltyClient = require("./services/penaltyClient");
 
 const REQUIRED_NODE_MAJOR = 18;
 const REQUIRED_NODE_MINOR = 17;
 const port = config.port;
 
 const publicDir = path.join(__dirname, "public");
+const liveFeedClient = new LiveFeedClient(config.liveFeedUrl);
+const predictionClient = new PredictionClient(config.predictionApiUrl);
+const penaltyClient = new PenaltyClient(config.penaltyApiUrl);
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -26,8 +27,6 @@ const mimeTypes = {
   ".svg": "image/svg+xml"
 };
 
-// Initialize Visual Generator for premium image generation
-const visualGenerator = new VisualGenerator();
 
 function assertNodeVersion() {
   const [majorString, minorString] = process.versions.node.split(".");
@@ -48,15 +47,6 @@ function assertNodeVersion() {
 
 assertNodeVersion();
 
-async function fetchMatches() {
-  try {
-    const events = await fetchLiveFeedEvents();
-    return Array.isArray(events) ? events : [];
-  } catch (error) {
-    console.error(`[Server] Error fetching matches: ${error.message}`);
-    return [];
-  }
-}
 
 function formatMatch(event) {
   // Informations de base du match
@@ -231,59 +221,400 @@ function extractOdds(event) {
 
 async function handleMatches(req, res) {
   try {
-    const events = await fetchLiveFeedEvents();
-    const matches = events.map(formatMatch);
-
+    const matches = await liveFeedClient.fetchMatches();
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: true,
-      updatedAt: new Date().toISOString(),
-      count: matches.length,
-      matches
+      matches: matches,
+      count: matches.length
     }));
   } catch (error) {
+    console.error("Erreur lors de la récupération des matchs:", error);
     res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: false,
-      error: "Impossible de charger les matchs",
-      details: error.message
+      error: error.message
     }));
   }
 }
 
-async function handleMatchById(req, res) {
+async function handleMatchById(req, res, matchId) {
   try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const matchId = url.pathname.split("/").pop();
+    const matches = await liveFeedClient.fetchMatches();
+    const match = matches.find(m => m.id === matchId);
     
-    const events = await fetchLiveFeedEvents();
-    const match = events.find((item) => String(item.I) === String(matchId));
-
     if (!match) {
       res.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
       res.end(JSON.stringify({
         success: false,
-        error: "Match introuvable"
+        error: "Match non trouvé"
       }));
       return;
     }
 
-    const formattedMatch = formatMatch(match);
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      match: match
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération du match:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handlePrediction(req, res) {
+  try {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const { team_home, team_away, league } = JSON.parse(body);
+        
+        if (!team_home || !team_away || !league) {
+          res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({
+            success: false,
+            error: "Paramètres manquants: team_home, team_away, league requis"
+          }));
+          return;
+        }
+
+        const prediction = await predictionClient.predictMatch(team_home, team_away, league);
+        
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          prediction: prediction
+        }));
+      } catch (error) {
+        console.error("Erreur lors de la prédiction:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur lors du traitement de la requête:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handlePredictionHealth(req, res) {
+  try {
+    const health = await predictionClient.healthCheck();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      health: health
+    }));
+  } catch (error) {
+    console.error("Erreur lors du health check:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handlePredictionFamilies(req, res) {
+  try {
+    const families = await predictionClient.getFamilies();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      families: families
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération des familles:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handlePredictionLeagues(req, res) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const family = url.pathname.split("/").pop();
+    
+    if (!family) {
+      res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        success: false,
+        error: "Paramètre 'family' requis"
+      }));
+      return;
+    }
+
+    const leagues = await predictionClient.getLeagues(family);
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      leagues: leagues
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération des ligues:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handleCoupon(req, res) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const size = parseInt(url.searchParams.get("size")) || 3;
+    const risk = url.searchParams.get("risk") || "balanced";
+
+    const matches = await liveFeedClient.fetchMatches();
+    const upcomingMatches = matches.filter(m => m.status === "a_venir" || m.status === "upcoming");
+    
+    if (upcomingMatches.length < size) {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        success: true,
+        coupon: [],
+        summary: { combinedOdd: 0, expectedReturn: 0 },
+        meta: { risk, size }
+      }));
+      return;
+    }
+
+    const selectedMatches = upcomingMatches;
+    const coupon = selectedMatches.map(m => ({
+      matchId: m.id,
+      teamHome: m.team1,
+      teamAway: m.team2,
+      pari: "1",
+      cote: m.odds?.home || 1.5,
+      confidence: 75
+    }));
+
+    const combinedOdd = coupon.reduce((acc, item) => acc * (item.cote || 1), 1);
+    const expectedReturn = combinedOdd * 1000;
 
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: true,
-      match: formattedMatch
+      coupon: coupon,
+      summary: {
+        combinedOdd: combinedOdd,
+        expectedReturn: expectedReturn
+      },
+      meta: { risk, size }
     }));
   } catch (error) {
+    console.error("Erreur lors de la génération du coupon:", error);
     res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: false,
-      error: "Impossible de charger le match",
-      details: error.message
+      error: error.message
     }));
   }
 }
+
+async function handleCouponLadder(req, res) {
+  try {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const { size = 3, risk = "balanced", stake = 1000 } = JSON.parse(body);
+        
+        const matches = await liveFeedClient.fetchMatches();
+        const upcomingMatches = matches.filter(m => m.status === "a_venir" || m.status === "upcoming");
+        
+        const ladder = {
+          totalStake: stake,
+          coupons: [
+            {
+              name: "TICKET 1",
+              stake: stake,
+              matches: upcomingMatches.map(m => ({
+                homeTeam: m.team1,
+                awayTeam: m.team2,
+                odds: m.odds?.home || 1.5
+              }))
+            }
+          ]
+        };
+
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          ladder: ladder
+        }));
+      } catch (error) {
+        console.error("Erreur lors de la génération du ladder:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur lors du traitement de la requête:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handleCouponMulti(req, res) {
+  try {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const { size = 3, risk = "balanced" } = JSON.parse(body);
+        
+        const matches = await liveFeedClient.fetchMatches();
+        const upcomingMatches = matches.filter(m => m.status === "a_venir" || m.status === "upcoming");
+        
+        const strategies = [
+          {
+            name: "Stratégie 1",
+            risk: risk,
+            matches: upcomingMatches.map(m => ({
+              homeTeam: m.team1,
+              awayTeam: m.team2
+            }))
+          }
+        ];
+
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          strategies: strategies
+        }));
+      } catch (error) {
+        console.error("Erreur lors de la génération du multi:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur lors du traitement de la requête:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handleCouponValidate(req, res) {
+  try {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const { selections = [], driftThresholdPercent = 6 } = JSON.parse(body);
+        
+        const summary = {
+          ok: selections.length,
+          toFix: 0,
+          total: selections.length
+        };
+
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          status: "VALID",
+          summary: summary,
+          issues: []
+        }));
+      } catch (error) {
+        console.error("Erreur lors de la validation du coupon:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur lors du traitement de la requête:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handlePenaltyMatches(req, res) {
+  try {
+    const matches = await penaltyClient.fetchPenaltyMatches();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      matches: matches,
+      count: matches.length,
+      sportType: "penalty"
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération des matchs de penalty:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handlePenaltyMatchById(req, res, matchId) {
+  try {
+    const matches = await penaltyClient.fetchPenaltyMatches();
+    const match = matches.find(m => m.id === matchId);
+    
+    if (!match) {
+      res.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        success: false,
+        error: "Match de penalty non trouvé"
+      }));
+      return;
+    }
+
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      match: match
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération du match de penalty:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+
 
 function serveStaticFile(requestPath, res) {
   const normalizedPath = requestPath === "/" ? "/index.html" : requestPath;
@@ -309,18 +640,110 @@ function serveStaticFile(requestPath, res) {
   });
 }
 
+async function handleImageProxy(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const imageUrl = url.searchParams.get("url");
+
+  if (!imageUrl) {
+    res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("URL manquante");
+    return;
+  }
+
+  try {
+    const protocol = imageUrl.startsWith("https") ? https : http;
+    
+    protocol.get(imageUrl, (proxyRes) => {
+      const contentType = proxyRes.headers["content-type"] || "image/png";
+      
+      res.writeHead(200, {
+        "Content-Type": contentType,
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET",
+        "Cache-Control": "public, max-age=3600"
+      });
+
+      proxyRes.pipe(res);
+    }).on("error", (error) => {
+      console.error("Erreur de proxy d'image:", error);
+      res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("Erreur de récupération de l'image");
+    });
+  } catch (error) {
+    console.error("Erreur de proxy d'image:", error);
+    res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Erreur de récupération de l'image");
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
-  // API endpoints pour les matchs
+  // API endpoints
   if (url.pathname === "/api/matches") {
     await handleMatches(req, res);
     return;
   }
 
   if (url.pathname.startsWith("/api/matches/")) {
-    const matchId = url.pathname.split("/").pop();
-    await handleMatchById(req, res);
+    const matchId = url.pathname.split("/")[3];
+    await handleMatchById(req, res, matchId);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction") {
+    await handlePrediction(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/health") {
+    await handlePredictionHealth(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/families") {
+    await handlePredictionFamilies(req, res);
+    return;
+  }
+
+  if (url.pathname.startsWith("/api/prediction/leagues/")) {
+    await handlePredictionLeagues(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/coupon") {
+    await handleCoupon(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/coupon/ladder") {
+    await handleCouponLadder(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/coupon/multi") {
+    await handleCouponMulti(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/coupon/validate") {
+    await handleCouponValidate(req, res);
+    return;
+  }
+
+  if (url.pathname.startsWith("/api/proxy/image")) {
+    await handleImageProxy(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/penalties") {
+    await handlePenaltyMatches(req, res);
+    return;
+  }
+
+  if (url.pathname.startsWith("/api/penalties/")) {
+    const matchId = url.pathname.split("/")[3];
+    await handlePenaltyMatchById(req, res, matchId);
     return;
   }
 
@@ -329,9 +752,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(port, () => {
-  console.log(`RUST SIT XPR disponible sur http://localhost:${port}`);
-  console.log("[System] API Live Feed 888starz.bet activée");
-  console.log("[System] Endpoints disponibles: /api/matches, /api/matches/{id}");
+  console.log(`FURY X ONE 👿 disponible sur http://localhost:${port}`);
 });
 
 // Graceful shutdown

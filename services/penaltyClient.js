@@ -1,21 +1,49 @@
 /**
- * FURY X ONE 👿 - Live Feed Client
- * Client pour l'API live-feed: https://livefeedsht.onrender.com/live-feed
+ * FURY X ONE 👿 - Penalty Client
+ * Client pour l'API 888starz.bet pour les matchs de penalty
+ * Signé: SOLITAIRE HACK
  */
 
 const https = require("https");
 const http = require("http");
 
-class LiveFeedClient {
+class PenaltyClient {
   constructor(url) {
     this.url = url;
+    this.defaultParams = {
+      sports: "85",
+      count: "40",
+      lng: "fr",
+      gr: "789",
+      mode: "4",
+      country: "96",
+      partner: "233",
+      getEmpty: "true",
+      virtualSports: "true",
+      noFilterBlockEvent: "true"
+    };
   }
 
-  async fetchMatches() {
+  async fetchPenaltyMatches(params = {}) {
     return new Promise((resolve, reject) => {
+      const queryParams = { ...this.defaultParams, ...params };
+      const queryString = Object.keys(queryParams)
+        .map(key => `${key}=${encodeURIComponent(queryParams[key])}`)
+        .join("&");
+      
+      const fullUrl = `${this.url}?${queryString}`;
       const protocol = this.url.startsWith("https") ? https : http;
       
-      protocol.get(this.url, (res) => {
+      const options = {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+          'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Cache-Control': 'max-age=0'
+        }
+      };
+      
+      protocol.get(fullUrl, options, (res) => {
         let data = "";
 
         res.on("data", (chunk) => {
@@ -28,7 +56,7 @@ class LiveFeedClient {
             if (json.Success && json.Value) {
               resolve(this.transformMatches(json.Value));
             } else {
-              reject(new Error(json.Error || "Erreur inconnue de l'API"));
+              reject(new Error(json.Error || "Erreur inconnue de l'API penalties"));
             }
           } catch (error) {
             reject(new Error(`Erreur de parsing JSON: ${error.message}`));
@@ -67,6 +95,7 @@ class LiveFeedClient {
       isUpcoming: status === "a_venir" || status === "upcoming",
       statusText: apiMatch.SC?.SLS || "",
       period: apiMatch.SC?.CPS || "",
+      sportType: "penalty",
     };
   }
 
@@ -77,8 +106,8 @@ class LiveFeedClient {
     
     for (const event of events) {
       if (event.T === 1) odds.home = event.C;
-      if (event.T === 2) odds.draw = event.C;
-      if (event.T === 3) odds.away = event.C;
+      if (event.T === 2) odds.away = event.C;
+      if (event.T === 3) odds.draw = event.C;
     }
 
     return odds;
@@ -142,4 +171,4 @@ class LiveFeedClient {
   }
 }
 
-module.exports = LiveFeedClient;
+module.exports = PenaltyClient;

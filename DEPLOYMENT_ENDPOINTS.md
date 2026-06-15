@@ -1,6 +1,6 @@
 # 🚀 DEPLOYMENT CONFIGURATION - SOLITAIRE HACK
 
-**Configuration simplifiée pour serveur web statique**
+**Configuration pour serveur web avec API Live Feed**
 **URL Base:** https://one-delux-fast.onrender.com
 
 ---
@@ -9,24 +9,27 @@
 
 ### ✅ Ce qui fonctionne
 - Serveur web statique (fichiers HTML/CSS/JS)
+- **API Live Feed 888starz.bet** (matchs en direct)
 - Génération visuelle locale (VisualGenerator)
 - Modèles de prédiction IA entraînés (TrainedModelPredictor)
 
-### ❌ Ce qui a été désactivé
-- **Tous les API REST** (plus aucun endpoint `/api/*`)
-- **Système CRON complet** (plus de collecte automatique)
-- **API Live Feed** (plus d'API de matchs en direct)
+### ❌ Ce qui reste désactivé
+- **Système CRON** (plus de collecte automatique)
 - **Base de données Supabase** (plus de connexion externe)
+- **Anciens endpoints API** (seuls les endpoints matchs sont actifs)
 
 ---
 
 ## 🌐 DÉPLOIEMENT SUR RENDER
 
-### Variables d'environnement minimales
+### Variables d'environnement
 **Sur Render Dashboard:**
 1. Service → Settings → Environment Variables
-2. Ajouter uniquement:
+2. Ajouter:
    - `PORT` = `3029` (optionnel, utilise 3000 par défaut)
+   - `LIVE_FEED_ENABLED` = `true` (activer l'API Live Feed)
+   - `LIVE_FEED_TIMEOUT` = `15000` (timeout en ms, optionnel)
+   - `LIVE_FEED_COUNT` = `40` (nombre de matchs, optionnel)
 
 ### Commande de démarrage
 ```
@@ -35,7 +38,59 @@ node server.js
 
 ---
 
-## 🔧 CONFIGURATION LOCALE
+## � API ENDPOINTS DISPONIBLES
+
+### Matchs en direct
+**GET** `/api/matches`
+- Retourne tous les matchs disponibles
+- Format JSON avec données complètes
+- Cache: 30 secondes par défaut
+
+**GET** `/api/matches/{id}`
+- Retourne un match spécifique par ID
+- Format JSON avec données détaillées
+- Cache: 30 secondes par défaut
+
+### Exemple d'utilisation
+```bash
+# Obtenir tous les matchs
+curl https://one-delux-fast.onrender.com/api/matches
+
+# Obtenir un match spécifique
+curl https://one-delux-fast.onrender.com/api/matches/123456
+```
+
+### Format de réponse
+```json
+{
+  "success": true,
+  "updatedAt": "2026-06-09T10:30:00.000Z",
+  "count": 40,
+  "matches": [
+    {
+      "id": "123456",
+      "league": "FC 26. Superligue",
+      "team1": "Real Madrid",
+      "team2": "Barcelona",
+      "startTime": "2026-06-09T12:00:00.000Z",
+      "status": "Live",
+      "currentScore": {
+        "home": 2,
+        "away": 1
+      },
+      "odds": {
+        "home": 1.85,
+        "draw": 3.50,
+        "away": 4.20
+      }
+    }
+  ]
+}
+```
+
+---
+
+## �🔧 CONFIGURATION LOCALE
 
 ### Installation des dépendances
 ```bash
@@ -90,7 +145,7 @@ Le serveur sera disponible sur `http://localhost:3029`
 
 ### Logs de déploiement
 - Dashboard Render → votre service → Logs
-- Vérifiez les messages: "RUST SIT XPR disponible sur http://localhost:3029"
+- Vérifiez les messages: "FURY X ONE 👿 disponible sur http://localhost:3029"
 - Message de confirmation: "Tous les API et CRON ont été désactivés"
 
 ### Vérification du statut

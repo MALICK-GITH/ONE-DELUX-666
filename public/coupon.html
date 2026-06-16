@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0a1628" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FURY X ONE 👿" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="FURY X ONE 👿" />
+  <meta name="msapplication-TileColor" content="#050508" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="robots" content="noindex,nofollow" />
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" sizes="192x192" href="/icons/icon-192x192.svg">
+  <link rel="icon" type="image/svg+xml" sizes="512x512" href="/icons/icon-512x512.svg">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.svg">
+  <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.svg">
+
+  <title>FURY X ONE 👿 - Coupon</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/pwa.js" defer></script>
+</head>
+
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  
+  <header class="hero">
+    <p class="tag">Coupon Generator</p>
+    <h1>FURY X ONE 👿</h1>
+    <p id="subTitle">Générateur de coupons intelligents avec IA</p>
+    
+    <div class="controls">
+      <button id="refreshBtn" type="button">Générer Coupon</button>
+      <label class="league-filter" for="sizeSelect">
+        <span>Taille</span>
+        <select id="sizeSelect">
+          <option value="3">3 matchs</option>
+          <option value="5">5 matchs</option>
+          <option value="7">7 matchs</option>
+        </select>
+      </label>
+      <label class="league-filter" for="riskSelect">
+        <span>Risque</span>
+        <select id="riskSelect">
+          <option value="conservative">Conservateur</option>
+          <option value="balanced" selected>Équilibré</option>
+          <option value="aggressive">Agressif</option>
+        </select>
+      </label>
+      <a class="coupon-page-link" href="/">← Retour accueil</a>
+      <a class="coupon-page-link" href="/creator.html">👤 Créateur</a>
+      <button id="generateVisualBtn" type="button" class="visual-btn">📸 Générer l'image</button>
+    </div>
+    <div class="visual-options" aria-label="Options de génération d'image">
+      <label class="visual-option" for="visualFormatSelect">
+        <span>Format</span>
+        <select id="visualFormatSelect">
+          <option value="png" selected>PNG</option>
+          <option value="jpeg">JPEG</option>
+          <option value="webp">WebP</option>
+        </select>
+      </label>
+      <label class="visual-option" for="visualQualitySelect">
+        <span>Qualité</span>
+        <select id="visualQualitySelect">
+          <option value="0.85">Économie</option>
+          <option value="0.92" selected>Équilibrée</option>
+          <option value="0.98">Haute</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="stats" id="couponStats"></section>
+    
+    <section class="coupon-section" id="couponSection">
+      <div class="loading-card">Cliquez sur "Générer Coupon" pour commencer</div>
+    </section>
+    
+    <section class="coupon-actions" id="couponActions">
+      <button id="ladderBtn" type="button" class="action-btn">Générer Ladder</button>
+      <button id="multiBtn" type="button" class="action-btn">Générer Multi</button>
+      <button id="validateBtn" type="button" class="action-btn">Valider Coupon</button>
+    </section>
+  </main>
+
+  <footer>
+    <small id="updatedAt"></small>
+    <small id="appVersionTag"></small>
+    <p class="legal-foot">
+      Informations et scores a titre indicatif. Paris interdits aux mineurs. Joue avec moderation.
+    </p>
+    <div class="site-signature">😈 Signé par <strong>SOLITAIRE HACK 🇨🇮</strong></div>
+  </footer>
+
+  <!-- API Client -->
+  <script src="/site-api.js"></script>
+
+  <!-- Visual Generator -->
+  <script src="/visualGenerator.js"></script>
+
+  <!-- Coupon Application Script -->
+  <script src="/coupon.js"></script>
+</body>
+
+</html>

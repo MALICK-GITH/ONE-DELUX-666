@@ -38,17 +38,27 @@
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
 
+  <!-- Mobile Navigation Bar -->
+  <nav class="mobile-nav">
+    <a href="/" class="nav-item">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Accueil</span>
+    </a>
+    <a href="/coupon.html" class="nav-item">
+      <span class="nav-icon">🎫</span>
+      <span class="nav-label">Coupon</span>
+    </a>
+    <a href="/creator.html" class="nav-item active">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Créateur</span>
+    </a>
+  </nav>
+
   <header class="hero">
-    <p class="tag">Créateur</p>
-    <h1>FURY X ONE 👿</h1>
-    <p id="subTitle">Le créateur de cette plateforme</p>
-    
-    <div class="controls">
-      <div class="nav-links">
-        <a class="nav-link" href="/">← Accueil</a>
-        <a class="nav-link" href="/match.html">🤖 IA Prediction</a>
-        <a class="nav-link" href="/coupon.html">🎫 Coupon</a>
-      </div>
+    <div class="hero-top">
+      <p class="tag">Créateur</p>
+      <h1>FURY X ONE 👿</h1>
+      <p id="subTitle">Le créateur de cette plateforme</p>
     </div>
   </header>
 
@@ -105,24 +115,25 @@
   <style>
     .creator-card {
       max-width: 600px;
-      margin: 2rem auto;
+      margin: 1rem auto;
+      margin-bottom: 80px;
       background: rgba(255, 255, 255, 0.03);
       border-radius: 20px;
-      padding: 2rem;
+      padding: 1.5rem;
       border: 1px solid rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(10px);
     }
 
     .creator-header {
       text-align: center;
-      margin-bottom: 2rem;
-      padding-bottom: 2rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .creator-avatar {
-      width: 100px;
-      height: 100px;
+      width: 80px;
+      height: 80px;
       margin: 0 auto 1rem;
       border-radius: 50%;
       background: linear-gradient(135deg, rgba(66, 245, 108, 0.2), rgba(36, 215, 255, 0.1));
@@ -141,7 +152,7 @@
     }
 
     .creator-name {
-      font-size: 2rem;
+      font-size: 1.5rem;
       font-weight: 700;
       color: var(--text);
       margin-bottom: 0.5rem;
@@ -149,7 +160,7 @@
     }
 
     .creator-title {
-      font-size: 1rem;
+      font-size: 0.9rem;
       color: var(--muted);
       font-family: 'Sora', sans-serif;
     }
@@ -157,18 +168,18 @@
     .creator-info {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1rem;
     }
 
     .info-section {
       background: rgba(255, 255, 255, 0.05);
       border-radius: 12px;
-      padding: 1.5rem;
+      padding: 1rem;
       border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .info-title {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       color: var(--muted);
       margin-bottom: 0.5rem;
       text-transform: uppercase;
@@ -177,7 +188,7 @@
     }
 
     .info-value {
-      font-size: 1.2rem;
+      font-size: 1rem;
       color: var(--text);
       font-weight: 600;
       font-family: 'Sora', sans-serif;
@@ -185,7 +196,7 @@
 
     .signature {
       color: var(--brand);
-      font-size: 1.1rem;
+      font-size: 1rem;
     }
 
     .contact-numbers {
@@ -197,10 +208,10 @@
     .contact-link {
       color: var(--brand-2);
       text-decoration: none;
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
       transition: all 0.3s var(--ease);
-      padding: 0.5rem;
+      padding: 0.75rem;
       border-radius: 8px;
       background: rgba(66, 245, 108, 0.05);
       text-align: center;
@@ -221,16 +232,16 @@
       display: flex;
       align-items: center;
       gap: 1rem;
-      padding: 1rem;
+      padding: 0.75rem;
       border-radius: 12px;
       text-decoration: none;
       transition: all 0.3s var(--ease);
-      font-size: 1rem;
+      font-size: 0.9rem;
       font-weight: 600;
     }
 
     .social-icon {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
     }
 
     .social-text {
@@ -262,29 +273,59 @@
     }
 
     .creator-footer {
-      margin-top: 2rem;
-      padding-top: 1.5rem;
+      margin-top: 1.5rem;
+      padding-top: 1rem;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       text-align: center;
     }
 
     .footer-text {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--muted);
     }
 
-    @media (max-width: 768px) {
+    @media (min-width: 768px) {
       .creator-card {
-        margin: 1rem;
-        padding: 1.5rem;
+        margin: 2rem auto;
+        margin-bottom: 2rem;
+        padding: 2rem;
+      }
+
+      .creator-avatar {
+        width: 100px;
+        height: 100px;
       }
 
       .creator-name {
-        font-size: 1.5rem;
+        font-size: 2rem;
+      }
+
+      .creator-title {
+        font-size: 1rem;
+      }
+
+      .creator-info {
+        gap: 1.5rem;
+      }
+
+      .info-section {
+        padding: 1.5rem;
       }
 
       .info-value {
+        font-size: 1.2rem;
+      }
+
+      .contact-link {
+        font-size: 1.1rem;
+      }
+
+      .social-link {
         font-size: 1rem;
+      }
+
+      .social-icon {
+        font-size: 1.5rem;
       }
     }
   </style>

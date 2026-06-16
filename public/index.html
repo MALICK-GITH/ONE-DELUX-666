@@ -49,25 +49,37 @@
 
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
+
+  <!-- Mobile Navigation Bar -->
+  <nav class="mobile-nav">
+    <a href="/" class="nav-item active">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Accueil</span>
+    </a>
+    <a href="/coupon.html" class="nav-item">
+      <span class="nav-icon">🎫</span>
+      <span class="nav-label">Coupon</span>
+    </a>
+    <a href="/creator.html" class="nav-item">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Créateur</span>
+    </a>
+  </nav>
+
   <header class="hero">
-    <p class="tag">Live Feed</p>
-    <h1>FURY X ONE 👿</h1>
-    <p id="subTitle">FURY X ONE 👿 - Le signal avant le coup d'envoi. Hub FIFA virtuel, matchs live, details et exports.</p>
-    <p class="hero-slogan">L'IA voit ce que les autres ignorent.</p>
-    <p class="hero-slogan">Nous prédisons, vous gagnez.</p>
-    <p class="hero-slogan">Objectif : DOMINATION.</p>
+    <div class="hero-top">
+      <p class="tag">Live Feed</p>
+      <h1>FURY X ONE 👿</h1>
+      <p id="subTitle">Le signal avant le coup d'envoi. Hub FIFA virtuel, matchs live, details et exports.</p>
+    </div>
     
     <div class="controls">
-      <button id="refreshBtn" type="button">Actualiser</button>
+      <button id="refreshBtn" type="button" class="action-btn primary">🔄 Actualiser</button>
       <label class="league-filter" for="leagueSelect">
-        <span>Ligue</span>
         <select id="leagueSelect">
           <option value="all">Toutes les ligues</option>
         </select>
       </label>
-      <a class="coupon-page-link" href="/coupon.html">Page Coupon</a>
-      <a class="coupon-page-link" href="/match.html">Page Match</a>
-      <a class="coupon-page-link" href="/creator.html">Créateur</a>
     </div>
     
     <div class="hero-metric-strip" aria-hidden="true">

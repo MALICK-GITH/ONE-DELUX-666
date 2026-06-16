@@ -38,6 +38,22 @@
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
 
+  <!-- Mobile Navigation Bar -->
+  <nav class="mobile-nav">
+    <a href="/" class="nav-item">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Accueil</span>
+    </a>
+    <a href="/coupon.html" class="nav-item">
+      <span class="nav-icon">🎫</span>
+      <span class="nav-label">Coupon</span>
+    </a>
+    <a href="/creator.html" class="nav-item">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Créateur</span>
+    </a>
+  </nav>
+
   <header class="hero">
     <div class="hero-top">
       <p class="tag">🤖 IA Prediction</p>
@@ -46,15 +62,8 @@
     </div>
 
     <div class="controls">
-      <div class="nav-links">
-        <a class="nav-link" href="/">← Accueil</a>
-        <a class="nav-link" href="/coupon.html">🎫 Coupon</a>
-        <a class="nav-link" href="/creator.html">👤 Créateur</a>
-      </div>
-      <div class="action-buttons">
-        <button id="refreshPredictionBtn" type="button" class="action-btn">🔄 Rafraîchir</button>
-        <button id="generateVisualBtn" type="button" class="visual-btn">📸 Image</button>
-      </div>
+      <button id="refreshPredictionBtn" type="button" class="action-btn primary">🔄 Rafraîchir</button>
+      <button id="generateVisualBtn" type="button" class="action-btn secondary">📸 Image</button>
     </div>
     
     <div class="visual-options" aria-label="Options de génération d'image">

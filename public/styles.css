@@ -1834,11 +1834,283 @@ footer small {
   .action-buttons {
     width: 100%;
     justify-content: center;
+    flex-wrap: wrap;
   }
   
   .nav-link,
   .action-btn {
     flex: 1;
     text-align: center;
+    min-width: 120px;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.8rem;
+  }
+
+  .hero {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .hero h1 {
+    font-size: 1.8rem;
+  }
+
+  .hero p {
+    font-size: 0.9rem;
+  }
+
+  .match-card {
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .match-teams {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  .match-teams h3 {
+    font-size: 1rem;
+  }
+
+  .match-odds {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .odd-box {
+    padding: 0.5rem;
+    min-width: 80px;
+  }
+
+  .prediction-detail {
+    padding: 1rem;
+  }
+
+  .prediction-main-result {
+    padding: 1rem;
+  }
+
+  .prediction-main-value {
+    font-size: 1.4rem;
+  }
+
+  .prediction-bars {
+    gap: 0.8rem;
+  }
+
+  .prediction-bar {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .prediction-value-box {
+    padding: 1rem;
+  }
+
+  .prediction-value {
+    font-size: 2rem;
+  }
+
+  .prediction-over-under-grid,
+  .prediction-handicap-grid {
+    gap: 0.8rem;
+  }
+
+  .over-under-item,
+  .handicap-item {
+    padding: 0.8rem;
+  }
+
+  .threshold-bar,
+  .prob-bar {
+    height: 8px;
+  }
+
+  .handicap-probs {
+    gap: 0.5rem;
+  }
+
+  .handicap-prob {
+    min-width: 60px;
+  }
+
+  .parity-item {
+    padding: 0.8rem;
+    min-width: 100px;
+  }
+
+  .prediction-status {
+    padding: 0.8rem 1rem;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .loading-spinner {
+    width: 30px;
+    height: 30px;
+  }
+
+  .error-message {
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .footer-info {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .hero p {
+    font-size: 0.85rem;
+  }
+
+  .nav-links,
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .nav-link,
+  .action-btn {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .match-card {
+    padding: 0.8rem;
+  }
+
+  .match-teams h3 {
+    font-size: 0.9rem;
+  }
+
+  .odd-box {
+    padding: 0.4rem;
+    min-width: 70px;
+  }
+
+  .odd-label {
+    font-size: 0.8rem;
+  }
+
+  .odd-value {
+    font-size: 1rem;
+  }
+
+  .prediction-main-value {
+    font-size: 1.2rem;
+  }
+
+  .prediction-value {
+    font-size: 1.8rem;
+  }
+
+  .over-under-item,
+  .handicap-item {
+    padding: 0.6rem;
+  }
+
+  .threshold-label,
+  .handicap-label,
+  .prob-label {
+    font-size: 0.8rem;
+  }
+
+  .threshold-percent,
+  .prob-value {
+    font-size: 0.85rem;
+  }
+
+  .parity-item {
+    padding: 0.6rem;
+    min-width: 80px;
+  }
+
+  .parity-label {
+    font-size: 0.85rem;
+  }
+
+  .parity-value {
+    font-size: 1.2rem;
+  }
+}
+
+/* Améliorations spécifiques pour mobile */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  .hero {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .hero-slogan {
+    font-size: 0.85rem;
+  }
+
+  .match-detail-container {
+    padding: 1rem;
+  }
+
+  .match-header {
+    padding: 1rem;
+  }
+
+  .match-teams-detail {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .team-logo-large {
+    width: 50px;
+    height: 50px;
+  }
+
+  .match-title {
+    font-size: 1.2rem;
+  }
+
+  .match-score {
+    font-size: 2rem;
+  }
+
+  .match-odds-section,
+  .match-prediction-section,
+  .match-details-section {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+
+  .odds-grid {
+    gap: 0.5rem;
+  }
+
+  .odd-box {
+    padding: 0.6rem;
+  }
+
+  .prediction-1x2,
+  .prediction-exact,
+  .prediction-goals,
+  .prediction-parity,
+  .prediction-handicap {
+    padding: 1rem;
+    margin: 0.8rem 0;
+  }
+
+  .prediction-1x2 h4,
+  .prediction-exact h4,
+  .prediction-goals h4,
+  .prediction-parity h4,
+  .prediction-handicap h4 {
+    font-size: 1rem;
   }
 }

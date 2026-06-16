@@ -323,10 +323,24 @@ async function loadMatchPrediction() {
                 <span class="prediction-value">${totalGoals.predicted.toFixed(1)}</span>
                 <span class="prediction-value-label">buts</span>
               </div>
-              ${totalGoals.over ? `
-                <div class="prediction-over-under">
-                  <span class="prediction-over">Over 2.5: ${(totalGoals.over['2.5'] * 100).toFixed(1)}%</span>
-                  <span class="prediction-under">Under 2.5: ${(totalGoals.under['2.5'] * 100).toFixed(1)}%</span>
+              ${totalGoals.over_under ? `
+                <div class="prediction-over-under-grid">
+                  ${Object.keys(totalGoals.over_under).sort((a, b) => parseFloat(a) - parseFloat(b)).map(threshold => `
+                    <div class="over-under-item">
+                      <span class="threshold-label">Over ${threshold}</span>
+                      <div class="threshold-bar">
+                        <div class="bar-fill over" style="width: ${(totalGoals.over_under[threshold].over * 100).toFixed(0)}%;"></div>
+                      </div>
+                      <span class="threshold-percent">${(totalGoals.over_under[threshold].over * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="over-under-item">
+                      <span class="threshold-label">Under ${threshold}</span>
+                      <div class="threshold-bar">
+                        <div class="bar-fill under" style="width: ${(totalGoals.over_under[threshold].under * 100).toFixed(0)}%;"></div>
+                      </div>
+                      <span class="threshold-percent">${(totalGoals.over_under[threshold].under * 100).toFixed(1)}%</span>
+                    </div>
+                  `).join('')}
                 </div>
               ` : ''}
             </div>
@@ -338,22 +352,59 @@ async function loadMatchPrediction() {
               <div class="prediction-parity-box">
                 <div class="parity-item">
                   <span class="parity-label">Pair</span>
+                  <div class="parity-bar">
+                    <div class="bar-fill" style="width: ${(data.prediction.predictions.parity.pair * 100).toFixed(0)}%; background: #00ff88;"></div>
+                  </div>
                   <span class="parity-value" style="color: #00ff88">${(data.prediction.predictions.parity.pair * 100).toFixed(1)}%</span>
                 </div>
                 <div class="parity-item">
                   <span class="parity-label">Impair</span>
+                  <div class="parity-bar">
+                    <div class="bar-fill" style="width: ${(data.prediction.predictions.parity.impair * 100).toFixed(0)}%; background: #ff4444;"></div>
+                  </div>
                   <span class="parity-value" style="color: #ff4444">${(data.prediction.predictions.parity.impair * 100).toFixed(1)}%</span>
                 </div>
               </div>
             </div>
           ` : ''}
           
-          ${handicap.home ? `
+          ${handicap && Object.keys(handicap).length > 0 ? `
             <div class="prediction-handicap">
               <h4>⚖️ Handicap</h4>
-              <div class="prediction-handicap-box">
-                <span class="handicap-home">Domicile +${handicap.home}</span>
-                <span class="handicap-away">Extérieur +${handicap.away}</span>
+              <div class="prediction-handicap-grid">
+                ${Object.keys(handicap).sort((a, b) => parseFloat(a) - parseFloat(b)).map(h => {
+                  const hData = handicap[h];
+                  const hNum = parseFloat(h);
+                  const hLabel = hNum > 0 ? `+${hNum}` : hNum;
+                  return `
+                    <div class="handicap-item">
+                      <span class="handicap-label">${hLabel}</span>
+                      <div class="handicap-probs">
+                        <div class="handicap-prob">
+                          <span class="prob-label">Home</span>
+                          <div class="prob-bar">
+                            <div class="bar-fill" style="width: ${(hData.home * 100).toFixed(0)}%; background: #00ff88;"></div>
+                          </div>
+                          <span class="prob-value">${(hData.home * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="handicap-prob">
+                          <span class="prob-label">Nul</span>
+                          <div class="prob-bar">
+                            <div class="bar-fill" style="width: ${(hData.draw * 100).toFixed(0)}%; background: #ffaa00;"></div>
+                          </div>
+                          <span class="prob-value">${(hData.draw * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="handicap-prob">
+                          <span class="prob-label">Away</span>
+                          <div class="prob-bar">
+                            <div class="bar-fill" style="width: ${(hData.away * 100).toFixed(0)}%; background: #ff4444;"></div>
+                          </div>
+                          <span class="prob-value">${(hData.away * 100).toFixed(1)}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
               </div>
             </div>
           ` : ''}

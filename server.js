@@ -614,6 +614,90 @@ async function handlePenaltyMatchById(req, res, matchId) {
   }
 }
 
+async function handleUpdateHistory(req, res) {
+  try {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const { team_home, team_away, league, score_home, score_away, finished_at, family } = JSON.parse(body);
+        
+        if (!team_home || !team_away || !league || score_home === undefined || score_away === undefined || !finished_at) {
+          res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({
+            success: false,
+            error: "Paramètres manquants: team_home, team_away, league, score_home, score_away, finished_at requis"
+          }));
+          return;
+        }
+
+        const result = await predictionClient.updateHistory(team_home, team_away, league, score_home, score_away, finished_at, family);
+        
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          result: result
+        }));
+      } catch (error) {
+        console.error("Erreur lors de la mise à jour de l'historique:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur lors du traitement de la requête:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handleSaveHistory(req, res) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const family = url.searchParams.get("family");
+    
+    const result = await predictionClient.saveHistory(family);
+    
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      result: result
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde de l'historique:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handleClearCache(req, res) {
+  try {
+    const result = await predictionClient.clearCache();
+    
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      result: result
+    }));
+  } catch (error) {
+    console.error("Erreur lors du nettoyage du cache:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
 
 
 function serveStaticFile(requestPath, res) {
@@ -744,6 +828,21 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname.startsWith("/api/penalties/")) {
     const matchId = url.pathname.split("/")[3];
     await handlePenaltyMatchById(req, res, matchId);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/update-history") {
+    await handleUpdateHistory(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/save-history") {
+    await handleSaveHistory(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/clear-cache") {
+    await handleClearCache(req, res);
     return;
   }
 

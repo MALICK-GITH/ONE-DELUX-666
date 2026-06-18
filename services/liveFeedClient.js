@@ -7,37 +7,48 @@ const https = require("https");
 const http = require("http");
 
 class LiveFeedClient {
-  constructor(url) {
+  constructor(url, options = {}) {
     this.url = url;
+    this.fallbackUrl = options.fallbackUrl || "";
+    this.timeoutMs = Number.isFinite(Number(options.timeoutMs)) ? Number(options.timeoutMs) : 15000;
+    this.lastSuccessfulMatches = [];
   }
 
   async fetchMatches() {
+    try {
+      const matches = await this.fetchFromUrl(this.url);
+      this.lastSuccessfulMatches = matches;
+      return matches;
+    } catch (primaryError) {
+      if (this.fallbackUrl) {
+        try {
+          const fallbackMatches = await this.fetchFromUrl(this.fallbackUrl);
+          this.lastSuccessfulMatches = fallbackMatches;
+          return fallbackMatches;
+        } catch (fallbackError) {
+          if (this.lastSuccessfulMatches.length) return this.lastSuccessfulMatches;
+          throw new Error(`${primaryError.message} | Fallback: ${fallbackError.message}`);
+        }
+      }
+
+      if (this.lastSuccessfulMatches.length) return this.lastSuccessfulMatches;
+      throw primaryError;
+    }
+  }
+
+  fetchFromUrl(sourceUrl) {
     return new Promise((resolve, reject) => {
-      const protocol = this.url.startsWith("https") ? https : http;
-      const requestUrl = new URL(this.url);
+      const protocol = sourceUrl.startsWith("https") ? https : http;
+      const requestUrl = new URL(sourceUrl);
       const options = {
         hostname: requestUrl.hostname,
-        port: requestUrl.port || (this.url.startsWith("https") ? 443 : 80),
+        port: requestUrl.port || (sourceUrl.startsWith("https") ? 443 : 80),
         path: `${requestUrl.pathname}${requestUrl.search}`,
         method: "GET",
-        headers: {
-          authority: requestUrl.hostname,
-          accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-          "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-          "cache-control": "max-age=0",
-          "sec-ch-ua": "\"Chromium\";v=\"139\", \"Not;A=Brand\";v=\"99\"",
-          "sec-ch-ua-mobile": "?0",
-          "sec-ch-ua-platform": "\"Linux\"",
-          "sec-fetch-dest": "document",
-          "sec-fetch-mode": "navigate",
-          "sec-fetch-site": "cross-site",
-          "sec-fetch-user": "?1",
-          "upgrade-insecure-requests": "1",
-          "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
-        },
+        headers: this.buildHeaders(requestUrl.hostname),
       };
 
-      protocol.get(options, (res) => {
+      const request = protocol.get(options, (res) => {
         let data = "";
 
         res.on("data", (chunk) => {
@@ -47,19 +58,43 @@ class LiveFeedClient {
         res.on("end", () => {
           try {
             const json = JSON.parse(data);
-            if (json.Success && json.Value) {
+            if (json.Success && Array.isArray(json.Value)) {
               resolve(this.transformMatches(json.Value));
-            } else {
-              reject(new Error(json.Error || "Erreur inconnue de l'API"));
+              return;
             }
+            reject(new Error(json.Error || `Réponse API invalide (${res.statusCode})`));
           } catch (error) {
             reject(new Error(`Erreur de parsing JSON: ${error.message}`));
           }
         });
-      }).on("error", (error) => {
+      });
+
+      request.setTimeout(this.timeoutMs, () => {
+        request.destroy(new Error(`Timeout après ${this.timeoutMs}ms`));
+      });
+
+      request.on("error", (error) => {
         reject(new Error(`Erreur de connexion: ${error.message}`));
       });
     });
+  }
+
+  buildHeaders(hostname) {
+    return {
+      authority: hostname,
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+      "accept-language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+      "cache-control": "max-age=0",
+      "sec-ch-ua": "\"Chromium\";v=\"139\", \"Not;A=Brand\";v=\"99\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Linux\"",
+      "sec-fetch-dest": "document",
+      "sec-fetch-mode": "navigate",
+      "sec-fetch-site": "cross-site",
+      "sec-fetch-user": "?1",
+      "upgrade-insecure-requests": "1",
+      "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    };
   }
 
   transformMatches(apiMatches) {

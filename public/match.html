@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0a1628" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FURY X ONE 👿" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="FURY X ONE 👿" />
+  <meta name="msapplication-TileColor" content="#050508" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="robots" content="noindex,nofollow" />
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" sizes="192x192" href="/icons/icon-192x192.svg">
+  <link rel="icon" type="image/svg+xml" sizes="512x512" href="/icons/icon-512x512.svg">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.svg">
+  <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.svg">
+
+  <title>FURY X ONE 👿 - Analyse IA du Match</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/pwa.js" defer></script>
+</head>
+
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <header class="hero">
+    <div class="hero-top">
+      <p class="tag">🤖 IA Prediction</p>
+      <h1>FURY X ONE 👿</h1>
+      <p id="subTitle">Analyse prédictive avancée par intelligence artificielle</p>
+    </div>
+
+    <div class="controls">
+      <div class="nav-links">
+        <a class="nav-link" href="/">← Accueil</a>
+        <a class="nav-link" href="/coupon.html">🎫 Coupon</a>
+        <a class="nav-link" href="/creator.html">👤 Créateur</a>
+      </div>
+      <div class="action-buttons">
+        <button id="refreshPredictionBtn" type="button" class="action-btn">🔄 Rafraîchir</button>
+        <button id="generateVisualBtn" type="button" class="visual-btn">📸 Image</button>
+      </div>
+    </div>
+    
+    <div class="visual-options" aria-label="Options de génération d'image">
+      <label class="visual-option" for="visualFormatSelect">
+        <span>Format</span>
+        <select id="visualFormatSelect">
+          <option value="png" selected>PNG</option>
+          <option value="jpeg">JPEG</option>
+          <option value="webp">WebP</option>
+        </select>
+      </label>
+      <label class="visual-option" for="visualQualitySelect">
+        <span>Qualité</span>
+        <select id="visualQualitySelect">
+          <option value="0.85">Économie</option>
+          <option value="0.92" selected>Équilibrée</option>
+          <option value="0.98">Haute</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <div class="prediction-status" id="predictionStatus">
+      <div class="status-indicator"></div>
+      <span class="status-text">Connexion à l'API de prédiction...</span>
+    </div>
+
+    <section class="match-detail-section" id="matchDetail">
+      <div class="loading-card">
+        <div class="loading-spinner"></div>
+        <p>Chargement de l'analyse IA...</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-info">
+      <small id="updatedAt"></small>
+      <small id="appVersionTag"></small>
+      <small id="apiStatus"></small>
+    </div>
+    <p class="legal-foot">
+      Informations et prédictions à titre indicatif. Paris interdits aux mineurs. Joue avec modération.
+    </p>
+    <div class="site-signature">😈 Signé par <strong>SOLITAIRE HACK 🇨🇮</strong></div>
+  </footer>
+
+  <!-- API Client -->
+  <script src="/site-api.js"></script>
+
+  <!-- Visual Generator -->
+  <script src="/visualGenerator.js"></script>
+
+  <!-- Match Detail Script -->
+  <script src="/match.js"></script>
+</body>
+
+</html>

@@ -1,5 +1,5 @@
 /**
- * Site API Client - Adapté pour FURY X ONE 👿
+ * Site API Client - Adapté pour FURY X ONE
  * Signé: SOLITAIRE HACK
  */
 
@@ -15,19 +15,23 @@
       "Content-Type": "application/json",
       ...(options.headers || {}),
     };
+
     const response = await fetch(`${DEFAULT_BASE_URL}${path}`, {
       method,
       headers,
       body: options.body ? JSON.stringify(options.body) : undefined,
       credentials: "same-origin",
     });
+
     const data = await response.json().catch(() => null);
+
     if (!response.ok) {
       const error = new Error(`HTTP ${response.status} for ${path}`);
       error.response = response;
       error.data = data;
       throw error;
     }
+
     return data;
   }
 
@@ -40,16 +44,17 @@
     post(path, body, options) {
       return requestJson(path, { ...(options || {}), method: "POST", body });
     },
-    // Matches endpoints
     matches() {
       return requestJson("/matches");
     },
     matchById(id) {
       return requestJson(`/matches/${encodeURIComponent(id)}`);
     },
-    // Prediction endpoints
     prediction(teamHome, teamAway, league) {
-      return requestJson("/prediction", { method: "POST", body: { team_home: teamHome, team_away: teamAway, league } });
+      return requestJson("/prediction", {
+        method: "POST",
+        body: { team_home: teamHome, team_away: teamAway, league },
+      });
     },
     predictionHealth() {
       return requestJson("/prediction/health");
@@ -60,7 +65,16 @@
     predictionLeagues(family) {
       return requestJson(`/prediction/leagues/${encodeURIComponent(family)}`);
     },
-    // Coupon endpoints
+    predictionUpdateHistory(body) {
+      return requestJson("/prediction/update-history", { method: "POST", body });
+    },
+    predictionSaveHistory(family) {
+      const query = family ? `?family=${encodeURIComponent(family)}` : "";
+      return requestJson(`/prediction/save-history${query}`, { method: "POST" });
+    },
+    predictionClearCache() {
+      return requestJson("/prediction/clear-cache", { method: "POST" });
+    },
     coupon(params = {}) {
       const query = new URLSearchParams(params).toString();
       return requestJson(`/coupon?${query}`);

@@ -23,9 +23,7 @@ function loadDotEnvFile(filePath) {
 loadDotEnvFile(path.join(process.cwd(), ".env"));
 
 const DEFAULT_PORT = 3000;
-const DEFAULT_LIVE_FEED_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip?sports=85&count=40&lng=fr&gr=789&mode=4&country=96&partner=233&getEmpty=true&virtualSports=true&noFilterBlockEvent=true";
-const DEFAULT_LIVE_FEED_FALLBACK_URL = "";
-const DEFAULT_LIVE_FEED_TIMEOUT_MS = 15000;
+const DEFAULT_LIVE_FEED_URL = "https://livefeedsht-vmp.onrender.com/live-feed";
 const DEFAULT_PREDICTION_API_URL = "https://top-modele-train-api-vmp.onrender.com";
 const DEFAULT_PENALTY_API_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
 
@@ -47,7 +45,5 @@ module.exports = {
   appSignature: "SOLITAIRE HACK",
   predictionApiUrl: process.env.PREDICTION_API_URL || DEFAULT_PREDICTION_API_URL,
   liveFeedUrl: process.env.LIVE_FEED_URL || DEFAULT_LIVE_FEED_URL,
-  liveFeedFallbackUrl: process.env.LIVE_FEED_FALLBACK_URL || DEFAULT_LIVE_FEED_FALLBACK_URL,
-  liveFeedTimeoutMs: parseNumber(process.env.LIVE_FEED_TIMEOUT_MS, DEFAULT_LIVE_FEED_TIMEOUT_MS),
   penaltyApiUrl: process.env.PENALTY_API_URL || DEFAULT_PENALTY_API_URL,
 };

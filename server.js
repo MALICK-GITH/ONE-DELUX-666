@@ -12,10 +12,7 @@ const REQUIRED_NODE_MINOR = 17;
 const port = config.port;
 
 const publicDir = path.join(__dirname, "public");
-const liveFeedClient = new LiveFeedClient(config.liveFeedUrl, {
-  fallbackUrl: config.liveFeedFallbackUrl,
-  timeoutMs: config.liveFeedTimeoutMs,
-});
+const liveFeedClient = new LiveFeedClient(config.liveFeedUrl);
 const predictionClient = new PredictionClient(config.predictionApiUrl);
 const penaltyClient = new PenaltyClient(config.penaltyApiUrl);
 

@@ -9,7 +9,7 @@
 
 ### ✅ Ce qui fonctionne
 - Serveur web statique (fichiers HTML/CSS/JS)
-- **API Live Feed 888starz.bet** (matchs en direct)
+- **API Live Feed livefeedsht-vmp** (matchs en direct)
 - Génération visuelle locale (VisualGenerator)
 - Modèles de prédiction IA entraînés (TrainedModelPredictor)
 
@@ -27,9 +27,7 @@
 1. Service → Settings → Environment Variables
 2. Ajouter:
    - `PORT` = `3029` (optionnel, utilise 3000 par défaut)
-   - `LIVE_FEED_ENABLED` = `true` (activer l'API Live Feed)
-   - `LIVE_FEED_TIMEOUT` = `15000` (timeout en ms, optionnel)
-   - `LIVE_FEED_COUNT` = `40` (nombre de matchs, optionnel)
+   - `LIVE_FEED_URL` = `https://livefeedsht-vmp.onrender.com/live-feed`
 
 ### Commande de démarrage
 ```
@@ -121,7 +119,7 @@ Le serveur sera disponible sur `http://localhost:3029`
 
 ### Services supprimés
 - ~~`services/cronLearningService.js`~~ - Collecte automatique
-- ~~`services/liveFeedClient.js`~~ - API de matchs
+- `services/liveFeedClient.js` - API de matchs
 - ~~`services/finishedMatchStore.js`~~ - Stockage base de données
 - ~~`services/matchStatus.js`~~ - Statut de matchs
 

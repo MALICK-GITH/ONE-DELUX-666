@@ -23,7 +23,7 @@ function loadDotEnvFile(filePath) {
 loadDotEnvFile(path.join(process.cwd(), ".env"));
 
 const DEFAULT_PORT = 3000;
-const DEFAULT_LIVE_FEED_URL = "https://livefeedsht-vmp.onrender.com/live-feed";
+const DEFAULT_LIVE_FEED_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip?sports=85&count=40&lng=fr&gr=789&mode=4&country=96&partner=233&getEmpty=true&virtualSports=true&noFilterBlockEvent=true";
 const DEFAULT_PREDICTION_API_URL = "https://top-modele-train-api-vmp.onrender.com";
 const DEFAULT_PENALTY_API_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
 

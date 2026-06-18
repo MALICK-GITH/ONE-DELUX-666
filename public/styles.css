@@ -904,6 +904,8 @@ footer small {
   align-items: center;
   gap: 0.5rem;
   font-size: 1rem;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .coupon-item-teams strong {
@@ -1050,6 +1052,14 @@ footer small {
   gap: 1rem;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
+}
+
+.coupon-page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  text-align: center;
 }
 
 .action-btn {
@@ -1228,6 +1238,7 @@ footer small {
   background: var(--panel);
   backdrop-filter: var(--ios-blur-med);
   padding: 1.5rem;
+  overflow: hidden;
 }
 
 .match-detail-header {
@@ -1288,6 +1299,7 @@ footer small {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .detail-score {
@@ -1518,6 +1530,268 @@ footer small {
 }
 
 /* Styles améliorés pour les prédictions IA */
+.prediction-detail {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.prediction-over-under-grid,
+.prediction-handicap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.threshold-bar,
+.prob-bar,
+.parity-bar {
+  min-width: 0;
+}
+
+.handicap-probs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.prediction-status,
+.footer-info,
+.coupon-item,
+.coupon-container,
+.prediction-main-result,
+.prediction-1x2,
+.prediction-exact,
+.prediction-goals,
+.prediction-parity,
+.prediction-handicap {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .hero,
+  main,
+  footer {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .hero .tag,
+  .hero h1,
+  .hero #subTitle,
+  .hero .controls,
+  .hero-top,
+  .visual-options {
+    margin-left: 0.95rem;
+    margin-right: 0.95rem;
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controls > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .visual-options {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .visual-option {
+    min-width: 0;
+  }
+
+  .visual-option select,
+  .league-filter select,
+  .nav-link,
+  .action-btn,
+  .visual-btn,
+  .coupon-page-link,
+  #refreshBtn {
+    width: 100%;
+  }
+
+  .coupon-container {
+    padding: 1rem;
+  }
+
+  .coupon-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .coupon-item {
+    padding: 0.9rem;
+  }
+
+  .coupon-item-header {
+    align-items: flex-start;
+  }
+
+  .coupon-item-number {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+  }
+
+  .coupon-item-teams {
+    font-size: 0.95rem;
+    gap: 0.35rem;
+  }
+
+  .coupon-item-time,
+  .coupon-item-status,
+  .coupon-item-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .coupon-summary {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .coupon-actions {
+    flex-direction: column;
+  }
+
+  .coupon-actions .action-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .match-detail-container {
+    padding: 1rem;
+  }
+
+  .match-detail-header h2 {
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+
+  .match-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .match-score-banner {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .detail-score {
+    font-size: 1.5rem;
+  }
+
+  .prediction-detail {
+    padding: 0.9rem;
+  }
+
+  .prediction-main-result {
+    padding: 0.9rem;
+  }
+
+  .prediction-main-label {
+    font-size: 0.78rem;
+  }
+
+  .prediction-main-value {
+    font-size: 1.15rem;
+    line-height: 1.25;
+  }
+
+  .prediction-main-confidence,
+  .status-text,
+  .coupon-meta,
+  .match-detail-meta {
+    font-size: 0.85rem;
+  }
+
+  .prediction-bars {
+    gap: 0.7rem;
+  }
+
+  .prediction-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .prediction-team,
+  .prediction-percent {
+    text-align: left;
+  }
+
+  .prediction-score-box,
+  .prediction-value-box,
+  .prediction-parity-box,
+  .prediction-handicap-box {
+    padding: 0.85rem;
+  }
+
+  .prediction-score,
+  .prediction-value {
+    font-size: 1.6rem;
+  }
+
+  .prediction-over-under {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .prediction-parity-box {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .handicap-probs {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero::before {
+    height: 74px;
+  }
+
+  .tag {
+    margin-top: -54px;
+  }
+
+  .hero h1 {
+    font-size: 1.45rem;
+  }
+
+  #subTitle {
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+
+  .coupon-item-teams {
+    font-size: 0.9rem;
+  }
+
+  .team-logo-small {
+    width: 20px;
+    height: 20px;
+  }
+
+  .prediction-main-value {
+    font-size: 1.05rem;
+  }
+
+  .prediction-score,
+  .prediction-value,
+  .parity-value {
+    font-size: 1.35rem;
+  }
+
+  .prediction-over-under-grid,
+  .prediction-handicap-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .prediction-detail {
   display: grid;
   gap: 1.5rem;

@@ -635,6 +635,97 @@ async function handleClearCache(req, res) {
   }
 }
 
+async function handle888starzProxy(req, res, url) {
+  try {
+    // Extraire le chemin de l'endpoint 888starz
+    const apiPath = url.pathname.replace("/api/888starz/", "");
+    const baseUrl = "https://888starz.bet/service-api";
+    const targetUrl = `${baseUrl}/${apiPath}`;
+    
+    // Paramètres par défaut obligatoires
+    const defaultParams = {
+      lng: "fr",
+      gr: "789",
+      country: "96",
+      partner: "233"
+    };
+    
+    // Fusionner les paramètres de la requête avec les paramètres par défaut
+    const params = new URLSearchParams(url.search);
+    for (const [key, value] of Object.entries(defaultParams)) {
+      if (!params.has(key)) {
+        params.set(key, value);
+      }
+    }
+    
+    // Construire l'URL complète
+    const fullUrl = `${targetUrl}?${params.toString()}`;
+    
+    // Headers requis par l'API 888starz
+    const headers = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      "Accept": "application/json, text/plain, */*",
+      "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+      "Referer": "https://888starz.bet/fr/live/",
+      "Origin": "https://888starz.bet"
+    };
+    
+    // Faire la requête vers l'API 888starz
+    const protocol = https;
+    
+    const proxyReq = protocol.request(fullUrl, {
+      method: req.method,
+      headers: headers
+    }, (proxyRes) => {
+      let data = "";
+      
+      proxyRes.on("data", (chunk) => {
+        data += chunk;
+      });
+      
+      proxyRes.on("end", () => {
+        try {
+          const jsonData = JSON.parse(data);
+          
+          res.writeHead(200, {
+            "Content-Type": "application/json; charset=utf-8",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type"
+          });
+          res.end(JSON.stringify(jsonData));
+        } catch (error) {
+          console.error("Erreur de parsing JSON:", error);
+          res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({
+            success: false,
+            error: "Erreur de parsing de la réponse"
+          }));
+        }
+      });
+    });
+    
+    proxyReq.on("error", (error) => {
+      console.error("Erreur de proxy 888starz:", error);
+      res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        success: false,
+        error: error.message
+      }));
+    });
+    
+    proxyReq.end();
+    
+  } catch (error) {
+    console.error("Erreur lors du proxy 888starz:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
 
 
 function serveStaticFile(requestPath, res) {
@@ -771,6 +862,12 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === "/api/prediction/clear-cache") {
     await handleClearCache(req, res);
+    return;
+  }
+
+  // 888starz API proxy endpoints
+  if (url.pathname.startsWith("/api/888starz/")) {
+    await handle888starzProxy(req, res, url);
     return;
   }
 

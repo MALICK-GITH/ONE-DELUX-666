@@ -260,8 +260,122 @@ function computeRiskLabel(score) {
   return "Eleve";
 }
 
-function mapCouponItem(match, riskMode, preferredMarket = "all") {
-  const selection = computeSelection(match, riskMode, preferredMarket);
+async function getPredictionFromAPI(match) {
+  try {
+    const data = await window.SiteAPI.prediction(match.team1, match.team2, match.league);
+    if (data.success && data.prediction && data.prediction.predictions) {
+      return data.prediction;
+    }
+    return null;
+  } catch (error) {
+    console.error("Erreur de prédiction API:", error);
+    return null;
+  }
+}
+
+function selectIntelligentPrediction(prediction, preferredMarket, match) {
+  if (!prediction || !prediction.predictions) {
+    return null;
+  }
+
+  const predictions = prediction.predictions;
+  const x2 = predictions['1x2'] || {};
+  const totalGoals = predictions['total_goals'] || {};
+  const btts = predictions['btts'] || {};
+  const parity = predictions['parity'] || {};
+  const handicap = predictions['handicap'] || {};
+  const exactScore = predictions['exact_score'] || {};
+
+  let selectedPrediction = null;
+  let selectedOdd = 1.5;
+  let selectedConfidence = 50;
+
+  // Sélection selon le marché préféré
+  if (preferredMarket === "1x2") {
+    const maxProb = Math.max(x2.home || 0, x2.draw || 0, x2.away || 0);
+    if (maxProb === x2.home) {
+      selectedPrediction = { type: "1x2", label: "1", confidence: x2.home * 100 };
+      selectedOdd = match.odds?.home || 1.5;
+    } else if (maxProb === x2.draw) {
+      selectedPrediction = { type: "1x2", label: "X", confidence: x2.draw * 100 };
+      selectedOdd = match.odds?.draw || 1.5;
+    } else if (maxProb === x2.away) {
+      selectedPrediction = { type: "1x2", label: "2", confidence: x2.away * 100 };
+      selectedOdd = match.odds?.away || 1.5;
+    }
+  } else if (preferredMarket === "over" || preferredMarket === "all") {
+    if (totalGoals.over_under) {
+      const overProb = totalGoals.over_under.over || 0;
+      const underProb = totalGoals.over_under.under || 0;
+      if (overProb > underProb) {
+        selectedPrediction = { type: "over", label: "Over", confidence: overProb * 100 };
+        selectedOdd = match.odds?.totalGoals?.over?.[2.5] || 1.5;
+      } else {
+        selectedPrediction = { type: "under", label: "Under", confidence: underProb * 100 };
+        selectedOdd = match.odds?.totalGoals?.under?.[2.5] || 1.5;
+      }
+    }
+  } else if (preferredMarket === "parity") {
+    if (parity.pair !== undefined && parity.impair !== undefined) {
+      if (parity.pair > parity.impair) {
+        selectedPrediction = { type: "parity", label: "Pair", confidence: parity.pair * 100 };
+        selectedOdd = 1.72;
+      } else {
+        selectedPrediction = { type: "parity", label: "Impair", confidence: parity.impair * 100 };
+        selectedOdd = 1.78;
+      }
+    }
+  } else if (preferredMarket === "exact") {
+    if (exactScore.prediction) {
+      selectedPrediction = { type: "exact", label: exactScore.prediction, confidence: (exactScore.confidence || 0.5) * 100 };
+      selectedOdd = match.odds?.exactScore || 5.0;
+    }
+  } else if (preferredMarket === "handicap") {
+    if (handicap.predicted !== undefined) {
+      const hValue = handicap.predicted;
+      const hLabel = hValue > 0 ? `+${hValue.toFixed(1)}` : hValue.toFixed(1);
+      selectedPrediction = { type: "handicap", label: hLabel, confidence: 70 };
+      selectedOdd = match.odds?.handicap || 1.5;
+    }
+  }
+
+  // Fallback: utiliser 1X2 si aucune sélection
+  if (!selectedPrediction && x2.home) {
+    const maxProb = Math.max(x2.home || 0, x2.draw || 0, x2.away || 0);
+    if (maxProb === x2.home) {
+      selectedPrediction = { type: "1x2", label: "1", confidence: x2.home * 100 };
+      selectedOdd = match.odds?.home || 1.5;
+    } else if (maxProb === x2.draw) {
+      selectedPrediction = { type: "1x2", label: "X", confidence: x2.draw * 100 };
+      selectedOdd = match.odds?.draw || 1.5;
+    } else if (maxProb === x2.away) {
+      selectedPrediction = { type: "1x2", label: "2", confidence: x2.away * 100 };
+      selectedOdd = match.odds?.away || 1.5;
+    }
+  }
+
+  return {
+    type: selectedPrediction?.type || "1x2",
+    label: selectedPrediction?.label || "1",
+    odd: selectedOdd,
+    confidence: selectedPrediction?.confidence || 50,
+    riskBase: 30,
+  };
+}
+
+async function mapCouponItem(match, riskMode, preferredMarket = "all") {
+  // Essayer d'obtenir la prédiction depuis l'API
+  const prediction = await getPredictionFromAPI(match);
+  
+  let selection;
+  if (prediction) {
+    // Utiliser la prédiction de l'API
+    selection = selectIntelligentPrediction(prediction, preferredMarket, match);
+  } else {
+    // Fallback: utiliser la logique locale
+    selection = computeSelection(match, riskMode, preferredMarket);
+  }
+  
   const riskScore = computeRiskScore(match, selection);
 
   return {
@@ -452,16 +566,20 @@ async function generateCoupon() {
   const risk = Number(selectedRiskPreset) >= 70 ? "conservative" : Number(selectedRiskPreset) >= 55 ? "balanced" : "aggressive";
   const selectedMarket = preMarketSelect?.value || "all";
 
-  couponSection.innerHTML = '<div class="loading-card">Generation du coupon en cours...</div>';
+  couponSection.innerHTML = '<div class="loading-card"><div class="loading-spinner"></div><p>Generation du coupon avec IA en cours...</p></div>';
 
   try {
     const matchesResponse = await window.SiteAPI.matches();
     const matches = matchesResponse.matches || [];
     availableMatches = matches.filter((match) => ["live", "upcoming", "unknown"].includes(normalizeStatus(match)));
 
+    // Mapper les matchs avec les prédictions de l'API (async)
+    const couponItems = await Promise.all(
+      availableMatches.map((match) => mapCouponItem(match, risk, selectedMarket))
+    );
+
     const coupon = applyPreGenerationFilters(
-      availableMatches
-      .map((match) => mapCouponItem(match, risk, selectedMarket))
+      couponItems
       .sort((left, right) => {
         const leftScore = Number(left.confidence || 0) - Number(left.riskScore || 0);
         const rightScore = Number(right.confidence || 0) - Number(right.riskScore || 0);

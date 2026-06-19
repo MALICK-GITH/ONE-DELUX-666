@@ -14,6 +14,17 @@ const apiStatus = document.getElementById("apiStatus");
 const predictionStatus = document.getElementById("predictionStatus");
 const refreshPredictionBtn = document.getElementById("refreshPredictionBtn");
 
+// Mobile elements
+const mobileRefreshPredictionBtn = document.getElementById("mobileRefreshPredictionBtn");
+const mobileGenerateVisualBtn = document.getElementById("mobileGenerateVisualBtn");
+const mobileVisualFormatSelect = document.getElementById("mobileVisualFormatSelect");
+const mobileVisualQualitySelect = document.getElementById("mobileVisualQualitySelect");
+const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+const mobileNav = document.getElementById("mobileNav");
+const mobileUpdatedAt = document.getElementById("mobileUpdatedAt");
+const mobileAppVersionTag = document.getElementById("mobileAppVersionTag");
+const mobileApiStatus = document.getElementById("mobileApiStatus");
+
 const APP_VERSION = "2026.06.15-r2";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -33,6 +44,65 @@ window.currentPredictionData = currentPredictionData;
 function setupEventListeners() {
   if (refreshPredictionBtn) {
     refreshPredictionBtn.addEventListener("click", refreshPrediction);
+  }
+  
+  // Mobile menu toggle
+  if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener("click", () => {
+      mobileNav.classList.toggle("active");
+    });
+  }
+  
+  // Sync mobile and desktop refresh buttons
+  if (mobileRefreshPredictionBtn && refreshPredictionBtn) {
+    mobileRefreshPredictionBtn.addEventListener("click", () => {
+      refreshPredictionBtn.click();
+    });
+  }
+  
+  // Sync mobile and desktop visual format selects
+  const visualFormatSelect = document.getElementById("visualFormatSelect");
+  if (mobileVisualFormatSelect && visualFormatSelect) {
+    mobileVisualFormatSelect.addEventListener("change", () => {
+      visualFormatSelect.value = mobileVisualFormatSelect.value;
+    });
+    
+    visualFormatSelect.addEventListener("change", () => {
+      mobileVisualFormatSelect.value = visualFormatSelect.value;
+    });
+  }
+  
+  // Sync mobile and desktop visual quality selects
+  const visualQualitySelect = document.getElementById("visualQualitySelect");
+  if (mobileVisualQualitySelect && visualQualitySelect) {
+    mobileVisualQualitySelect.addEventListener("change", () => {
+      visualQualitySelect.value = mobileVisualQualitySelect.value;
+    });
+    
+    visualQualitySelect.addEventListener("change", () => {
+      mobileVisualQualitySelect.value = visualQualitySelect.value;
+    });
+  }
+  
+  // Sync mobile generate visual button with desktop
+  const generateVisualBtn = document.getElementById("generateVisualBtn");
+  if (mobileGenerateVisualBtn && generateVisualBtn) {
+    mobileGenerateVisualBtn.addEventListener("click", () => {
+      generateVisualBtn.click();
+    });
+  }
+  
+  // Sync updated time and version for mobile
+  if (mobileUpdatedAt && updatedAt) {
+    mobileUpdatedAt.textContent = updatedAt.textContent;
+  }
+  
+  if (mobileAppVersionTag && appVersionTag) {
+    mobileAppVersionTag.textContent = appVersionTag.textContent;
+  }
+  
+  if (mobileApiStatus && apiStatus) {
+    mobileApiStatus.textContent = apiStatus.textContent;
   }
 }
 

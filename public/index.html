@@ -49,7 +49,32 @@
 
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
-  <header class="hero">
+  
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <div class="mobile-header-top">
+      <div class="mobile-brand">
+        <span class="mobile-logo">👿</span>
+        <h1 class="mobile-title">FURY X ONE</h1>
+      </div>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav" id="mobileNav">
+      <a class="mobile-nav-link" href="/">🏠 Accueil</a>
+      <a class="mobile-nav-link" href="/coupon.html">🎫 Coupon</a>
+      <a class="mobile-nav-link" href="/match.html">🤖 Prédiction</a>
+      <a class="mobile-nav-link" href="/creator.html">👤 Créateur</a>
+    </nav>
+  </header>
+
+  <!-- Desktop Hero (hidden on mobile) -->
+  <header class="hero desktop-only">
     <p class="tag">Live Feed</p>
     <h1>FURY X ONE 👿</h1>
     <p id="subTitle">FURY X ONE 👿 - Le signal avant le coup d'envoi. Hub FIFA virtuel, matchs live, details et exports.</p>
@@ -94,20 +119,56 @@
     </div>
   </header>
 
+  <!-- Mobile Controls (visible on mobile) -->
+  <div class="mobile-controls mobile-only">
+    <button id="mobileRefreshBtn" type="button" class="mobile-action-btn">
+      <span class="mobile-btn-icon">🔄</span>
+      <span class="mobile-btn-text">Actualiser</span>
+    </button>
+    <label class="mobile-league-filter" for="mobileLeagueSelect">
+      <select id="mobileLeagueSelect">
+        <option value="all">Toutes les ligues</option>
+      </select>
+    </label>
+  </div>
+
   <main id="main-content">
     <section class="stats" id="stats"></section>
-    <section class="match-modes" id="matchModes">
+    
+    <!-- Mobile Match Modes -->
+    <section class="match-modes mobile-only" id="mobileMatchModes">
+      <button class="match-mode active" type="button" data-mode="upcoming">📅 À venir</button>
+      <button class="match-mode" type="button" data-mode="live">🔴 En cours</button>
+      <button class="match-mode" type="button" data-mode="finished">✅ Terminés</button>
+    </section>
+    
+    <!-- Desktop Match Modes -->
+    <section class="match-modes desktop-only" id="matchModes">
       <button class="match-mode active" type="button" data-mode="upcoming">A venir</button>
       <button class="match-mode" type="button" data-mode="live">En cours</button>
       <button class="match-mode" type="button" data-mode="finished">Termines</button>
     </section>
+    
     <section class="matches" id="matches"></section>
     <p class="empty hidden" id="emptyState">
       Aucun match FIFA detecte pour le moment.
     </p>
   </main>
 
-  <footer>
+  <!-- Mobile Footer -->
+  <footer class="mobile-footer mobile-only">
+    <div class="mobile-footer-nav">
+      <a class="mobile-footer-link" href="/">🏠</a>
+      <a class="mobile-footer-link" href="/coupon.html">🎫</a>
+      <a class="mobile-footer-link" href="/match.html">🤖</a>
+      <a class="mobile-footer-link" href="/creator.html">👤</a>
+    </div>
+    <small id="mobileUpdatedAt"></small>
+    <small id="mobileAppVersionTag"></small>
+  </footer>
+
+  <!-- Desktop Footer -->
+  <footer class="desktop-footer desktop-only">
     <small id="updatedAt"></small>
     <small id="appVersionTag"></small>
     <p class="legal-foot">

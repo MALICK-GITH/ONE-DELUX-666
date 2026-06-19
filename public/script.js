@@ -13,6 +13,15 @@ const updatedAt = document.getElementById("updatedAt");
 const appVersionTag = document.getElementById("appVersionTag");
 const matchModes = document.getElementById("matchModes");
 
+// Mobile elements
+const mobileRefreshBtn = document.getElementById("mobileRefreshBtn");
+const mobileLeagueSelect = document.getElementById("mobileLeagueSelect");
+const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+const mobileNav = document.getElementById("mobileNav");
+const mobileMatchModes = document.getElementById("mobileMatchModes");
+const mobileUpdatedAt = document.getElementById("mobileUpdatedAt");
+const mobileAppVersionTag = document.getElementById("mobileAppVersionTag");
+
 let allMatches = [];
 let currentMode = "upcoming";
 const APP_VERSION = "2026.06.04-r1";
@@ -321,4 +330,83 @@ async function loadPrediction(matchId, team1, team2, league) {
     console.error("Erreur de prédiction:", error);
     alert("Impossible de charger la prédiction: " + error.message);
   }
+}
+
+// Mobile menu toggle
+if (mobileMenuBtn) {
+  mobileMenuBtn.addEventListener("click", () => {
+    mobileNav.classList.toggle("active");
+  });
+}
+
+// Sync mobile and desktop refresh buttons
+if (mobileRefreshBtn && refreshBtn) {
+  mobileRefreshBtn.addEventListener("click", () => {
+    refreshBtn.click();
+  });
+}
+
+// Sync mobile and desktop league selects
+if (mobileLeagueSelect && leagueSelect) {
+  mobileLeagueSelect.addEventListener("change", () => {
+    leagueSelect.value = mobileLeagueSelect.value;
+    loadMatches();
+  });
+  
+  leagueSelect.addEventListener("change", () => {
+    mobileLeagueSelect.value = leagueSelect.value;
+  });
+}
+
+// Sync mobile and desktop match modes
+if (mobileMatchModes && matchModes) {
+  const mobileModeButtons = mobileMatchModes.querySelectorAll(".match-mode");
+  const desktopModeButtons = matchModes.querySelectorAll(".match-mode");
+  
+  mobileModeButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const mode = btn.dataset.mode;
+      currentMode = mode;
+      
+      // Update mobile buttons
+      mobileModeButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      
+      // Update desktop buttons
+      desktopModeButtons.forEach(b => {
+        b.classList.remove("active");
+        if (b.dataset.mode === mode) b.classList.add("active");
+      });
+      
+      loadMatches();
+    });
+  });
+  
+  desktopModeButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const mode = btn.dataset.mode;
+      currentMode = mode;
+      
+      // Update desktop buttons
+      desktopModeButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      
+      // Update mobile buttons
+      mobileModeButtons.forEach(b => {
+        b.classList.remove("active");
+        if (b.dataset.mode === mode) b.classList.add("active");
+      });
+      
+      loadMatches();
+    });
+  });
+}
+
+// Sync updated time and version for mobile
+if (mobileUpdatedAt && updatedAt) {
+  mobileUpdatedAt.textContent = updatedAt.textContent;
+}
+
+if (mobileAppVersionTag && appVersionTag) {
+  mobileAppVersionTag.textContent = appVersionTag.textContent;
 }

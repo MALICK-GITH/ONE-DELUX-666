@@ -37,8 +37,32 @@
 
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
+  
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <div class="mobile-header-top">
+      <div class="mobile-brand">
+        <span class="mobile-logo">🤖</span>
+        <h1 class="mobile-title">Prédiction IA</h1>
+      </div>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav" id="mobileNav">
+      <a class="mobile-nav-link" href="/">🏠 Accueil</a>
+      <a class="mobile-nav-link" href="/coupon.html">🎫 Coupon</a>
+      <a class="mobile-nav-link" href="/match.html">🤖 Prédiction</a>
+      <a class="mobile-nav-link" href="/creator.html">👤 Créateur</a>
+    </nav>
+  </header>
 
-  <header class="hero">
+  <!-- Desktop Hero (hidden on mobile) -->
+  <header class="hero desktop-only">
     <div class="hero-top">
       <p class="tag">🤖 IA Prediction</p>
       <h1>FURY X ONE 👿</h1>
@@ -77,6 +101,38 @@
     </div>
   </header>
 
+  <!-- Mobile Actions (visible on mobile) -->
+  <div class="mobile-actions mobile-only">
+    <button id="mobileRefreshPredictionBtn" type="button" class="mobile-action-btn">
+      <span class="mobile-btn-icon">🔄</span>
+      <span class="mobile-btn-text">Rafraîchir</span>
+    </button>
+    <button id="mobileGenerateVisualBtn" type="button" class="mobile-action-btn">
+      <span class="mobile-btn-icon">📸</span>
+      <span class="mobile-btn-text">Image</span>
+    </button>
+  </div>
+
+  <!-- Mobile Visual Options (visible on mobile) -->
+  <div class="mobile-visual-options mobile-only">
+    <label class="mobile-visual-option" for="mobileVisualFormatSelect">
+      <span>Format</span>
+      <select id="mobileVisualFormatSelect">
+        <option value="png" selected>PNG</option>
+        <option value="jpeg">JPEG</option>
+        <option value="webp">WebP</option>
+      </select>
+    </label>
+    <label class="mobile-visual-option" for="mobileVisualQualitySelect">
+      <span>Qualité</span>
+      <select id="mobileVisualQualitySelect">
+        <option value="0.85">Économie</option>
+        <option value="0.92" selected>Équilibrée</option>
+        <option value="0.98">Haute</option>
+      </select>
+    </label>
+  </div>
+
   <main id="main-content">
     <div class="prediction-status" id="predictionStatus">
       <div class="status-indicator"></div>
@@ -91,7 +147,21 @@
     </section>
   </main>
 
-  <footer>
+  <!-- Mobile Footer -->
+  <footer class="mobile-footer mobile-only">
+    <div class="mobile-footer-nav">
+      <a class="mobile-footer-link" href="/">🏠</a>
+      <a class="mobile-footer-link" href="/coupon.html">🎫</a>
+      <a class="mobile-footer-link" href="/match.html">🤖</a>
+      <a class="mobile-footer-link" href="/creator.html">👤</a>
+    </div>
+    <small id="mobileUpdatedAt"></small>
+    <small id="mobileAppVersionTag"></small>
+    <small id="mobileApiStatus"></small>
+  </footer>
+
+  <!-- Desktop Footer -->
+  <footer class="desktop-footer desktop-only">
     <div class="footer-info">
       <small id="updatedAt"></small>
       <small id="appVersionTag"></small>

@@ -260,6 +260,21 @@ function computeRiskLabel(score) {
   return "Eleve";
 }
 
+function computeConfidenceGrade(confidence, riskScore) {
+  const conf = Number(confidence) || 0;
+  const risk = Number(riskScore) || 50;
+  
+  // Score combiné: confiance élevée + risque faible = meilleur grade
+  const combinedScore = conf - (risk * 0.5);
+  
+  if (combinedScore >= 75) return { grade: "A+", color: "#00ff88", label: "Excellent" };
+  if (combinedScore >= 60) return { grade: "A", color: "#00cc6a", label: "Très bon" };
+  if (combinedScore >= 45) return { grade: "B", color: "#ffaa00", label: "Bon" };
+  if (combinedScore >= 30) return { grade: "C", color: "#ff8800", label: "Moyen" };
+  if (combinedScore >= 15) return { grade: "D", color: "#ff6600", label: "Faible" };
+  return { grade: "E", color: "#ff4444", label: "Très faible" };
+}
+
 async function getPredictionFromAPI(match) {
   try {
     const data = await window.SiteAPI.prediction(match.team1, match.team2, match.league);
@@ -368,15 +383,28 @@ async function mapCouponItem(match, riskMode, preferredMarket = "all") {
   const prediction = await getPredictionFromAPI(match);
   
   let selection;
+  let predictionDetails = null;
+  
   if (prediction) {
     // Utiliser la prédiction de l'API
     selection = selectIntelligentPrediction(prediction, preferredMarket, match);
+    predictionDetails = {
+      x2: prediction.predictions['1x2'] || {},
+      totalGoals: prediction.predictions['total_goals'] || {},
+      btts: prediction.predictions['btts'] || {},
+      parity: prediction.predictions['parity'] || {},
+      handicap: prediction.predictions['handicap'] || {},
+      exactScore: prediction.predictions['exact_score'] || {},
+      meta: prediction.meta || {},
+      family: prediction.family || "N/A",
+    };
   } else {
     // Fallback: utiliser la logique locale
     selection = computeSelection(match, riskMode, preferredMarket);
   }
   
   const riskScore = computeRiskScore(match, selection);
+  const confidenceGrade = computeConfidenceGrade(selection.confidence, riskScore);
 
   return {
     matchId: match.id,
@@ -394,7 +422,9 @@ async function mapCouponItem(match, riskMode, preferredMarket = "all") {
     confidence: Number(selection.confidence || 50),
     riskScore,
     riskLabel: computeRiskLabel(riskScore),
+    confidenceGrade,
     liveState: normalizeStatus(match),
+    predictionDetails,
     availableMarkets: {
       exactScore: false,
       oneXTwo: Boolean(match.odds?.home || match.odds?.draw || match.odds?.away),
@@ -440,16 +470,21 @@ function renderCoupon(data) {
   const html = `
     <div class="coupon-container">
       <div class="coupon-header">
-        <h2>Coupon</h2>
-        <p class="coupon-meta">${coupon.length} matchs · ${riskLabel}</p>
+        <h2>Coupon IA Professionnel</h2>
+        <p class="coupon-meta">${coupon.length} matchs · ${riskLabel} · ${familyLabel}</p>
         <div class="coupon-combined-odd">
           <span class="combined-odd-label">Cote Combinée:</span>
           <span class="combined-odd-value">${combinedOdd.toFixed(2)}</span>
+          <span class="combined-odd-return">Gain potentiel: ${(combinedOdd * 1000).toFixed(0)} FCFA pour 1000 FCFA</span>
         </div>
       </div>
 
       <div class="coupon-items" id="couponItemsList">
-        ${coupon.map((item, index) => `
+        ${coupon.map((item, index) => {
+          const grade = item.confidenceGrade || computeConfidenceGrade(item.confidence, item.riskScore);
+          const details = item.predictionDetails;
+          
+          return `
           <div class="coupon-item"
                data-league="${escapeHtml(item.league || "")}"
                data-confidence="${Number(item.confidence || 0)}"
@@ -468,19 +503,24 @@ function renderCoupon(data) {
               <div class="coupon-item-time">
                 <span class="match-time">${item.startTime ? formatDate(item.startTime) : "N/A"}</span>
               </div>
+              <div class="coupon-item-grade" style="background-color: ${grade.color}20; color: ${grade.color}; border: 2px solid ${grade.color}">
+                <span class="grade-letter">${grade.grade}</span>
+                <span class="grade-label">${grade.label}</span>
+              </div>
             </div>
 
             ${item.league ? `<div class="coupon-item-league">${escapeHtml(item.league)} · ${escapeHtml(getFamilyFromLeague(item.league))}</div>` : ""}
 
             <div class="coupon-pick-line">
               <div class="pick-prediction">
-                <strong>${escapeHtml(item.pari || "1")}</strong>
-                <span>${escapeHtml(
-                  item.marketType === "parity" ? "Parité" :
+                <strong class="pick-value">${escapeHtml(item.pari || "1")}</strong>
+                <span class="pick-market">${escapeHtml(
+                  item.marketType === "parity" ? "Parité (Pair/Impair)" :
                   item.marketType === "handicap" ? "Handicap" :
-                  item.marketType === "over" || item.marketType === "under" ? "Over / Under" :
-                  item.marketType === "exact" ? "Score exact" :
-                  "1X2"
+                  item.marketType === "over" ? "Over (Plus de buts)" :
+                  item.marketType === "under" ? "Under (Moins de buts)" :
+                  item.marketType === "exact" ? "Score Exact" :
+                  "Résultat du match (1X2)"
                 )}</span>
               </div>
               <div class="pick-odd">
@@ -489,12 +529,53 @@ function renderCoupon(data) {
               </div>
             </div>
 
+            ${details ? `
+              <div class="coupon-prediction-details">
+                <div class="prediction-analysis">
+                  <h5>📊 Analyse IA</h5>
+                  <div class="analysis-grid">
+                    ${details.x2.home ? `
+                      <div class="analysis-item">
+                        <span class="analysis-label">Victoire Domicile</span>
+                        <span class="analysis-value">${(details.x2.home * 100).toFixed(1)}%</span>
+                      </div>
+                    ` : ''}
+                    ${details.x2.draw ? `
+                      <div class="analysis-item">
+                        <span class="analysis-label">Match Nul</span>
+                        <span class="analysis-value">${(details.x2.draw * 100).toFixed(1)}%</span>
+                      </div>
+                    ` : ''}
+                    ${details.x2.away ? `
+                      <div class="analysis-item">
+                        <span class="analysis-label">Victoire Extérieur</span>
+                        <span class="analysis-value">${(details.x2.away * 100).toFixed(1)}%</span>
+                      </div>
+                    ` : ''}
+                    ${details.totalGoals.predicted ? `
+                      <div class="analysis-item">
+                        <span class="analysis-label">Buts Prédits</span>
+                        <span class="analysis-value">${details.totalGoals.predicted.toFixed(1)}</span>
+                      </div>
+                    ` : ''}
+                    ${details.btts.yes ? `
+                      <div class="analysis-item">
+                        <span class="analysis-label">BTTS Oui</span>
+                        <span class="analysis-value">${(details.btts.yes * 100).toFixed(1)}%</span>
+                      </div>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            ` : ''}
+
             <div class="coupon-item-details">
               <span class="coupon-confidence">Confiance: ${formatPercent(item.confidence)}</span>
               <span class="coupon-risk">Risque: ${item.riskLabel || computeRiskLabel(item.riskScore)}</span>
+              <span class="coupon-family">Famille: ${details?.family || "N/A"}</span>
             </div>
           </div>
-        `).join("")}
+        `}).join("")}
       </div>
     </div>
   `;
@@ -511,12 +592,23 @@ function updateStats(data) {
     ? coupon.reduce((acc, item) => acc + Number(item.riskScore || 0), 0) / coupon.length
     : 0;
   const combinedOdd = coupon.reduce((acc, item) => acc * (Number(item.cote) || 1), 1);
+  
+  // Calculer la distribution des grades
+  const gradeDistribution = coupon.reduce((acc, item) => {
+    const grade = item.confidenceGrade?.grade || computeConfidenceGrade(item.confidence, item.riskScore).grade;
+    acc[grade] = (acc[grade] || 0) + 1;
+    return acc;
+  }, {});
 
   couponStats.innerHTML = `
     <div class="stats-grid">
       <div class="stat-item">
         <span class="stat-label">Cote Combinée</span>
         <strong class="stat-value">${combinedOdd.toFixed(2)}</strong>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Gain Potentiel (1000 FCFA)</span>
+        <strong class="stat-value">${(combinedOdd * 1000).toFixed(0)} FCFA</strong>
       </div>
       <div class="stat-item">
         <span class="stat-label">Confiance Moyenne</span>
@@ -529,6 +621,18 @@ function updateStats(data) {
       <div class="stat-item">
         <span class="stat-label">Nombre de Matchs</span>
         <strong class="stat-value">${coupon.length}</strong>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Grade A+</span>
+        <strong class="stat-value">${gradeDistribution['A+'] || 0}</strong>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Grade A</span>
+        <strong class="stat-value">${gradeDistribution['A'] || 0}</strong>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Grade B+</span>
+        <strong class="stat-value">${gradeDistribution['B'] || 0}</strong>
       </div>
     </div>
   `;

@@ -150,7 +150,7 @@ function getParityMarkets(match) {
   ];
 }
 
-function computeSelection(match, riskMode) {
+function computeSelection(match, riskMode, preferredMarket = "all") {
   const homeOdd = Number(match.odds?.home);
   const drawOdd = Number(match.odds?.draw);
   const awayOdd = Number(match.odds?.away);
@@ -194,13 +194,33 @@ function computeSelection(match, riskMode) {
     });
   });
 
-  const sorted = candidates
-    .filter((item) => Number.isFinite(item.odd))
-    .sort((left, right) => {
-      const leftScore = left.confidence - left.riskBase;
-      const rightScore = right.confidence - right.riskBase;
-      return rightScore - leftScore;
-    });
+  // Filtrer par marché préféré si spécifié
+  let filteredCandidates = candidates.filter((item) => Number.isFinite(item.odd));
+  
+  if (preferredMarket !== "all") {
+    if (preferredMarket === "1x2") {
+      filteredCandidates = filteredCandidates.filter((item) => item.type === "1x2");
+    } else if (preferredMarket === "over") {
+      filteredCandidates = filteredCandidates.filter((item) => item.type === "over" || item.type === "under");
+    } else if (preferredMarket === "parity") {
+      filteredCandidates = filteredCandidates.filter((item) => item.type === "parity");
+    } else if (preferredMarket === "exact") {
+      filteredCandidates = filteredCandidates.filter((item) => item.type === "exact");
+    } else if (preferredMarket === "handicap") {
+      filteredCandidates = filteredCandidates.filter((item) => item.type === "handicap");
+    }
+  }
+
+  // Si aucun candidat après filtrage, utiliser tous les candidats
+  if (filteredCandidates.length === 0) {
+    filteredCandidates = candidates.filter((item) => Number.isFinite(item.odd));
+  }
+
+  const sorted = filteredCandidates.sort((left, right) => {
+    const leftScore = left.confidence - left.riskBase;
+    const rightScore = right.confidence - right.riskBase;
+    return rightScore - leftScore;
+  });
 
   const conservative = sorted.find((item) => ["1x2", "under", "over"].includes(item.type)) || sorted[0];
   const balanced = sorted.find((item) => ["1x2", "over", "parity"].includes(item.type)) || sorted[0];
@@ -240,8 +260,8 @@ function computeRiskLabel(score) {
   return "Eleve";
 }
 
-function mapCouponItem(match, riskMode) {
-  const selection = computeSelection(match, riskMode);
+function mapCouponItem(match, riskMode, preferredMarket = "all") {
+  const selection = computeSelection(match, riskMode, preferredMarket);
   const riskScore = computeRiskScore(match, selection);
 
   return {
@@ -430,6 +450,7 @@ async function generateCoupon() {
   const size = parseInt(sizeSelect.value, 10) || 3;
   const selectedRiskPreset = document.querySelector('input[name="riskPreset"]:checked')?.value || "55";
   const risk = Number(selectedRiskPreset) >= 70 ? "conservative" : Number(selectedRiskPreset) >= 55 ? "balanced" : "aggressive";
+  const selectedMarket = preMarketSelect?.value || "all";
 
   couponSection.innerHTML = '<div class="loading-card">Generation du coupon en cours...</div>';
 
@@ -440,7 +461,7 @@ async function generateCoupon() {
 
     const coupon = applyPreGenerationFilters(
       availableMatches
-      .map((match) => mapCouponItem(match, risk))
+      .map((match) => mapCouponItem(match, risk, selectedMarket))
       .sort((left, right) => {
         const leftScore = Number(left.confidence || 0) - Number(left.riskScore || 0);
         const rightScore = Number(right.confidence || 0) - Number(right.riskScore || 0);

@@ -277,6 +277,9 @@ async function loadPrediction(matchId, team1, team2, league) {
     if (matchCard && prediction.predictions) {
       const predictionSection = matchCard.querySelector('.prediction-section');
       const x2 = prediction.predictions['1x2'] || {};
+      const totalGoals = prediction.predictions.total_goals || {};
+      const btts = prediction.predictions.btts || {};
+      const meta = prediction.meta || {};
       
       predictionSection.innerHTML = `
         <div class="prediction-result">
@@ -304,7 +307,12 @@ async function loadPrediction(matchId, team1, team2, league) {
               <span class="prediction-percent">${(x2.away * 100).toFixed(0)}%</span>
             </div>
           </div>
-          ${prediction.predictions.exact_score ? `<span class="prediction-score">Score: ${prediction.predictions.exact_score.prediction}</span>` : ''}
+          <div class="prediction-details">
+            ${prediction.predictions.exact_score ? `<span class="prediction-score">Score: ${prediction.predictions.exact_score.prediction}</span>` : ''}
+            ${totalGoals.predicted ? `<span class="prediction-total">Total Buts: ${totalGoals.predicted.toFixed(1)} ${totalGoals.platform_value ? `(Plateforme: ${totalGoals.platform_value})` : ''}</span>` : ''}
+            ${btts.yes ? `<span class="prediction-btts">BTTS: OUI ${(btts.yes * 100).toFixed(0)}% / NON ${(btts.no * 100).toFixed(0)}%</span>` : ''}
+            ${meta.lambda_home ? `<span class="prediction-meta">λ Home: ${meta.lambda_home.toFixed(2)} / Away: ${meta.lambda_away.toFixed(2)}</span>` : ''}
+          </div>
         </div>
         <a class="detail-link" href="/match.html?id=${encodeURIComponent(matchId)}">Voir les détails →</a>
       `;

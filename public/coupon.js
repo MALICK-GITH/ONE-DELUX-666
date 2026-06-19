@@ -300,11 +300,18 @@ function renderCoupon(data) {
     return;
   }
 
+  // Calculer la cote combinée
+  const combinedOdd = coupon.reduce((acc, item) => acc * (Number(item.cote) || 1), 1);
+  
   const html = `
     <div class="coupon-container">
       <div class="coupon-header">
         <h2>Coupon</h2>
         <p class="coupon-meta">${coupon.length} matchs · ${riskLabel}</p>
+        <div class="coupon-combined-odd">
+          <span class="combined-odd-label">Cote Combinée:</span>
+          <span class="combined-odd-value">${combinedOdd.toFixed(2)}</span>
+        </div>
       </div>
 
       <div class="coupon-items" id="couponItemsList">
@@ -324,27 +331,33 @@ function renderCoupon(data) {
                 <strong>${escapeHtml(item.teamAway || item.team2 || "Equipe 2")}</strong>
                 ${item.awayLogo ? `<img src="${item.awayLogo}" alt="${escapeHtml(item.teamAway || item.team2)}" class="team-logo-small" onerror="this.style.display='none'">` : ""}
               </div>
+              <div class="coupon-item-time">
+                <span class="match-time">${item.startTime ? formatDate(item.startTime) : "N/A"}</span>
+              </div>
             </div>
 
             ${item.league ? `<div class="coupon-item-league">${escapeHtml(item.league)} · ${escapeHtml(getFamilyFromLeague(item.league))}</div>` : ""}
 
-            <div class="coupon-badges">
-              <span class="coupon-market-badge">${escapeHtml(item.pari || "Auto")}</span>
-            </div>
-
             <div class="coupon-pick-line">
-              <strong>${escapeHtml(item.pari || "1")}</strong>
-              <span>${escapeHtml(
-                item.marketType === "parity" ? "Parité · Total pair/impair" :
-                item.marketType === "handicap" ? "Handicap intelligent" :
-                item.marketType === "over" || item.marketType === "under" ? "Over / Under" :
-                item.marketType === "exact" ? "Score exact" :
-                "Marché 1X2"
-              )}</span>
+              <div class="pick-prediction">
+                <strong>${escapeHtml(item.pari || "1")}</strong>
+                <span>${escapeHtml(
+                  item.marketType === "parity" ? "Parité" :
+                  item.marketType === "handicap" ? "Handicap" :
+                  item.marketType === "over" || item.marketType === "under" ? "Over / Under" :
+                  item.marketType === "exact" ? "Score exact" :
+                  "1X2"
+                )}</span>
+              </div>
+              <div class="pick-odd">
+                <span class="odd-label">Cote:</span>
+                <span class="odd-value">${Number(item.cote || 1.5).toFixed(2)}</span>
+              </div>
             </div>
 
             <div class="coupon-item-details">
-              <span class="coupon-confidence">${formatPercent(item.confidence)}</span>
+              <span class="coupon-confidence">Confiance: ${formatPercent(item.confidence)}</span>
+              <span class="coupon-risk">Risque: ${item.riskLabel || computeRiskLabel(item.riskScore)}</span>
             </div>
           </div>
         `).join("")}
@@ -363,8 +376,28 @@ function updateStats(data) {
   const averageRisk = coupon.length
     ? coupon.reduce((acc, item) => acc + Number(item.riskScore || 0), 0) / coupon.length
     : 0;
+  const combinedOdd = coupon.reduce((acc, item) => acc * (Number(item.cote) || 1), 1);
 
-  couponStats.innerHTML = "";
+  couponStats.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-item">
+        <span class="stat-label">Cote Combinée</span>
+        <strong class="stat-value">${combinedOdd.toFixed(2)}</strong>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Confiance Moyenne</span>
+        <strong class="stat-value">${averageConfidence.toFixed(1)}%</strong>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Risque Moyen</span>
+        <strong class="stat-value">${computeRiskLabel(averageRisk)}</strong>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Nombre de Matchs</span>
+        <strong class="stat-value">${coupon.length}</strong>
+      </div>
+    </div>
+  `;
 }
 
 function applyPreGenerationFilters(items) {

@@ -1,12 +1,12 @@
-/**
- * FURY X ONE 👿 - Coupon Page Script
- * Adapté de ONE-DELUX
- * Signé: SOLITAIRE HACK
- */
-
 const refreshBtn = document.getElementById("refreshBtn");
 const sizeSelect = document.getElementById("sizeSelect");
-const riskSelect = document.getElementById("riskSelect");
+const familySelect = document.getElementById("familySelect");
+const sourceSelect = document.getElementById("sourceSelect");
+const preLeagueSelect = document.getElementById("preLeagueSelect");
+const preMarketSelect = document.getElementById("preMarketSelect");
+const preStatusSelect = document.getElementById("preStatusSelect");
+const preConfidenceSelect = document.getElementById("preConfidenceSelect");
+const preRiskThresholdSelect = document.getElementById("preRiskThresholdSelect");
 const couponSection = document.getElementById("couponSection");
 const couponStats = document.getElementById("couponStats");
 const ladderBtn = document.getElementById("ladderBtn");
@@ -15,78 +15,285 @@ const validateBtn = document.getElementById("validateBtn");
 const updatedAt = document.getElementById("updatedAt");
 const appVersionTag = document.getElementById("appVersionTag");
 
-let currentCoupon = null;
-const APP_VERSION = "2026.06.04-r1";
+const APP_VERSION = "2026.06.18-r2";
 
-// Initialize
+let currentCoupon = null;
+let availableMatches = [];
+let filteredMatches = [];
+
 document.addEventListener("DOMContentLoaded", () => {
   appVersionTag.textContent = `v${APP_VERSION}`;
   setupEventListeners();
+  renderEmptyCoupon();
+  loadLeagueOptions().finally(() => generateCoupon());
 });
 
 function setupEventListeners() {
-  refreshBtn.addEventListener("click", generateCoupon);
-  ladderBtn.addEventListener("click", generateLadder);
-  multiBtn.addEventListener("click", generateMulti);
-  validateBtn.addEventListener("click", validateCoupon);
-  
+  refreshBtn?.addEventListener("click", generateCoupon);
+  ladderBtn?.addEventListener("click", generateLadder);
+  multiBtn?.addEventListener("click", generateMulti);
+  validateBtn?.addEventListener("click", validateCoupon);
+  preLeagueSelect?.addEventListener("change", generateCoupon);
+  familySelect?.addEventListener("change", syncLeagueOptions);
+  familySelect?.addEventListener("change", generateCoupon);
+  preMarketSelect?.addEventListener("change", generateCoupon);
+  preStatusSelect?.addEventListener("change", generateCoupon);
+  preConfidenceSelect?.addEventListener("change", generateCoupon);
+  preRiskThresholdSelect?.addEventListener("change", generateCoupon);
+  document.querySelectorAll('input[name="riskPreset"]').forEach((input) => {
+    input.addEventListener("change", generateCoupon);
+  });
+}
 
-
-async function generateCoupon() {
-  refreshBtn.disabled = true;
-  refreshBtn.textContent = "Génération...";
-
-  const size = parseInt(sizeSelect.value) || 3;
-  const risk = riskSelect.value || "balanced";
-
-  couponSection.innerHTML = '<div class="loading-card">Génération du coupon en cours...</div>';
-
+async function loadLeagueOptions() {
   try {
-    const response = await fetch(`/api/coupon?size=${size}&risk=${risk}`);
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || "Erreur inconnue");
-    }
-
-    // Récupérer les détails complets de chaque match
-    const couponWithDetails = await Promise.all(
-      data.coupon.map(async (item) => {
-        try {
-          const matchResponse = await fetch(`/api/matches/${item.matchId}`);
-          const matchData = await matchResponse.json();
-          if (matchData.success && matchData.match) {
-            return { ...item, ...matchData.match };
-          }
-          return item;
-        } catch (error) {
-          console.error(`Erreur lors de la récupération des détails du match ${item.matchId}:`, error);
-          return item;
-        }
-      })
-    );
-
-    currentCoupon = { ...data, coupon: couponWithDetails };
-    renderCoupon(currentCoupon);
-    updateStats(currentCoupon);
-
-    updatedAt.textContent = `Mis à jour: ${new Date().toLocaleTimeString("fr-FR")}`;
+    const matchesResponse = await window.SiteAPI.matches();
+    const matches = matchesResponse.matches || [];
+    availableMatches = matches;
+    syncLeagueOptions();
   } catch (error) {
-    console.error("Erreur de génération:", error);
-    couponSection.innerHTML = `
-      <div class="error-message">
-        <p>Impossible de générer le coupon: ${error.message}</p>
-      </div>
-    `;
-  } finally {
-    refreshBtn.disabled = false;
-    refreshBtn.textContent = "Générer Coupon";
+    console.error("Erreur chargement ligues:", error);
   }
+}
+
+function getFamilyFromLeague(leagueName) {
+  const league = String(leagueName || "").toLowerCase();
+  if (league.includes("penalty")) return "Penalty";
+  if (league.includes("highscore")) return "Highscore";
+  if (league.includes("rush")) return "Rush";
+  return "Classic";
+}
+
+function syncLeagueOptions() {
+  const selectedFamily = familySelect?.value || "all";
+  const matches = availableMatches || [];
+  const leagues = [...new Set(
+    matches
+      .filter((match) => selectedFamily === "all" || getFamilyFromLeague(match.league) === selectedFamily)
+      .map((match) => match.league)
+      .filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, "fr"));
+
+  if (preLeagueSelect) {
+    preLeagueSelect.innerHTML = `
+      <option value="all">Toutes</option>
+      ${leagues.map((league) => `<option value="${escapeHtml(league)}">${escapeHtml(league)}</option>`).join("")}
+    `;
+  }
+}
+
+function formatPercent(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? `${numeric.toFixed(1)}%` : "N/A";
+}
+
+function formatDate(dateValue) {
+  if (!dateValue) return "Non disponible";
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "Non disponible";
+
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function normalizeStatus(match) {
+  const rawStatus = String(match.status || match.statusText || "").toLowerCase();
+  if (rawStatus.includes("live") || rawStatus.includes("direct") || rawStatus.includes("playing")) return "live";
+  if (rawStatus.includes("en_cours")) return "live";
+  if (rawStatus.includes("venir") || rawStatus.includes("upcoming") || rawStatus.includes("not started")) return "upcoming";
+  return rawStatus || "unknown";
+}
+
+function getTotalMarkets(match) {
+  const totals = [];
+  const over = match.odds?.totalGoals?.over || {};
+  const under = match.odds?.totalGoals?.under || {};
+  Object.entries(over).forEach(([line, odd]) => {
+    totals.push({ label: `Over ${line}`, value: odd, family: "over" });
+  });
+  Object.entries(under).forEach(([line, odd]) => {
+    totals.push({ label: `Under ${line}`, value: odd, family: "under" });
+  });
+  return totals.filter((item) => Number.isFinite(Number(item.value)));
+}
+
+function getHandicapMarkets(match) {
+  const homeOdd = Number(match.odds?.home);
+  const awayOdd = Number(match.odds?.away);
+  if (!Number.isFinite(homeOdd) && !Number.isFinite(awayOdd)) return [];
+
+  return [
+    Number.isFinite(homeOdd)
+      ? { label: "Handicap Home -0.5", value: Number((homeOdd * 1.08).toFixed(2)), side: "home" }
+      : null,
+    Number.isFinite(awayOdd)
+      ? { label: "Handicap Away +0.5", value: Number((awayOdd * 1.08).toFixed(2)), side: "away" }
+      : null,
+  ].filter(Boolean);
+}
+
+function getParityMarkets(match) {
+  const homeOdd = Number(match.odds?.home);
+  const awayOdd = Number(match.odds?.away);
+  const drawOdd = Number(match.odds?.draw);
+  const hasBaseMarket = Number.isFinite(homeOdd) || Number.isFinite(awayOdd) || Number.isFinite(drawOdd);
+
+  if (!hasBaseMarket) return [];
+
+  return [
+    { label: "Pair", value: 1.72, side: "pair" },
+    { label: "Impair", value: 1.78, side: "impair" },
+  ];
+}
+
+function computeSelection(match, riskMode) {
+  const homeOdd = Number(match.odds?.home);
+  const drawOdd = Number(match.odds?.draw);
+  const awayOdd = Number(match.odds?.away);
+  const totals = getTotalMarkets(match);
+  const handicaps = getHandicapMarkets(match);
+  const parities = getParityMarkets(match);
+
+  const candidates = [];
+
+  if (Number.isFinite(homeOdd)) candidates.push({ type: "1x2", label: "1", odd: homeOdd, confidence: 77, riskBase: 24 });
+  if (Number.isFinite(drawOdd)) candidates.push({ type: "1x2", label: "X", odd: drawOdd, confidence: 58, riskBase: 50 });
+  if (Number.isFinite(awayOdd)) candidates.push({ type: "1x2", label: "2", odd: awayOdd, confidence: 72, riskBase: 29 });
+
+  totals.forEach((item) => {
+    candidates.push({
+      type: item.family,
+      label: item.label,
+      odd: Number(item.value),
+      confidence: item.family === "over" ? 69 : 67,
+      riskBase: item.family === "over" ? 35 : 33,
+    });
+  });
+
+  handicaps.forEach((item) => {
+    candidates.push({
+      type: "handicap",
+      label: item.label,
+      odd: Number(item.value),
+      confidence: 68,
+      riskBase: 32,
+    });
+  });
+
+  parities.forEach((item) => {
+    candidates.push({
+      type: "parity",
+      label: item.label,
+      odd: Number(item.value),
+      confidence: 69,
+      riskBase: 28,
+    });
+  });
+
+  const sorted = candidates
+    .filter((item) => Number.isFinite(item.odd))
+    .sort((left, right) => {
+      const leftScore = left.confidence - left.riskBase;
+      const rightScore = right.confidence - right.riskBase;
+      return rightScore - leftScore;
+    });
+
+  const conservative = sorted.find((item) => ["1x2", "under", "over"].includes(item.type)) || sorted[0];
+  const balanced = sorted.find((item) => ["1x2", "over", "parity"].includes(item.type)) || sorted[0];
+  const aggressive = sorted.find((item) => ["handicap", "parity", "over"].includes(item.type)) || sorted[0];
+
+  const selectionByRisk = {
+    conservative,
+    balanced,
+    aggressive,
+  };
+
+  return selectionByRisk[riskMode] || balanced || sorted[0] || {
+    type: "1x2",
+    label: "1",
+    odd: 1.5,
+    confidence: 50,
+    riskBase: 50,
+  };
+}
+
+function computeRiskScore(match, selection) {
+  const oddFactor = Math.min(40, Math.max(8, (Number(selection.odd) - 1) * 18));
+  const statusFactor = normalizeStatus(match) === "live" ? 18 : 8;
+  const marketFactor =
+    selection.type === "handicap" ? 18 :
+    selection.type === "parity" ? 14 :
+    selection.type === "over" || selection.type === "under" ? 12 : 8;
+  const confidenceFactor = Math.max(0, 100 - Number(selection.confidence || 50));
+
+  return Math.round((oddFactor * 0.35) + (statusFactor * 0.15) + (marketFactor * 0.2) + (confidenceFactor * 0.3));
+}
+
+function computeRiskLabel(score) {
+  if (score <= 28) return "Faible";
+  if (score <= 45) return "Controle";
+  if (score <= 65) return "Moyen";
+  return "Eleve";
+}
+
+function mapCouponItem(match, riskMode) {
+  const selection = computeSelection(match, riskMode);
+  const riskScore = computeRiskScore(match, selection);
+
+  return {
+    matchId: match.id,
+    teamHome: match.team1,
+    teamAway: match.team2,
+    league: match.league,
+    startTime: match.startTime,
+    status: match.status,
+    statusText: match.statusText,
+    homeLogo: match.homeLogo,
+    awayLogo: match.awayLogo,
+    pari: selection.label,
+    marketType: selection.type,
+    cote: Number(selection.odd || 1.5),
+    confidence: Number(selection.confidence || 50),
+    riskScore,
+    riskLabel: computeRiskLabel(riskScore),
+    liveState: normalizeStatus(match),
+    availableMarkets: {
+      exactScore: false,
+      oneXTwo: Boolean(match.odds?.home || match.odds?.draw || match.odds?.away),
+      totals: getTotalMarkets(match).length > 0,
+      parity: getParityMarkets(match).length > 0,
+      handicap: getHandicapMarkets(match).length > 0,
+    },
+    rawMatch: match,
+  };
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function renderEmptyCoupon() {
+  couponSection.innerHTML = '<div class="loading-card">Cliquez sur "Generer Coupon" pour commencer</div>';
+  couponStats.innerHTML = "";
 }
 
 function renderCoupon(data) {
   const coupon = data.coupon || [];
   const summary = data.summary || {};
+  const familyLabel = data.meta?.family && data.meta.family !== "all" ? data.meta.family : "Toutes";
+  const riskLabel =
+    Number(data.meta?.confidenceFloor || 55) >= 70 ? "Super Safe" :
+    Number(data.meta?.confidenceFloor || 55) >= 55 ? "Safe" :
+    "Agressif";
 
   if (!coupon.length) {
     couponSection.innerHTML = '<div class="loading-card">Aucun match disponible pour le coupon</div>';
@@ -96,62 +303,52 @@ function renderCoupon(data) {
   const html = `
     <div class="coupon-container">
       <div class="coupon-header">
-        <h2>🎫 Coupon Généré</h2>
-        <p class="coupon-meta">Taille: ${coupon.length} matchs | Risque: ${data.meta?.risk || "balanced"}</p>
+        <h2>Coupon</h2>
+        <p class="coupon-meta">${coupon.length} matchs · ${riskLabel}</p>
       </div>
-      
-      <div class="coupon-items">
+
+      <div class="coupon-items" id="couponItemsList">
         ${coupon.map((item, index) => `
-          <div class="coupon-item">
+          <div class="coupon-item"
+               data-league="${escapeHtml(item.league || "")}"
+               data-confidence="${Number(item.confidence || 0)}"
+               data-status="${escapeHtml(item.liveState || "unknown")}"
+               data-market="${escapeHtml(item.marketType || "1x2")}"
+               data-risk-score="${Number(item.riskScore || 0)}">
             <div class="coupon-item-header">
               <span class="coupon-item-number">${index + 1}</span>
               <div class="coupon-item-teams">
-                ${item.homeLogo ? `<img src="${item.homeLogo}" alt="${item.teamHome || item.team1}" class="team-logo-small" onerror="this.style.display='none'">` : ''}
-                <strong>${item.teamHome || item.team1 || "Équipe 1"}</strong>
+                ${item.homeLogo ? `<img src="${item.homeLogo}" alt="${escapeHtml(item.teamHome || item.team1)}" class="team-logo-small" onerror="this.style.display='none'">` : ""}
+                <strong>${escapeHtml(item.teamHome || item.team1 || "Equipe 1")}</strong>
                 <span>vs</span>
-                <strong>${item.teamAway || item.team2 || "Équipe 2"}</strong>
-                ${item.awayLogo ? `<img src="${item.awayLogo}" alt="${item.teamAway || item.team2}" class="team-logo-small" onerror="this.style.display='none'">` : ''}
+                <strong>${escapeHtml(item.teamAway || item.team2 || "Equipe 2")}</strong>
+                ${item.awayLogo ? `<img src="${item.awayLogo}" alt="${escapeHtml(item.teamAway || item.team2)}" class="team-logo-small" onerror="this.style.display='none'">` : ""}
               </div>
             </div>
-            ${item.league ? `<div class="coupon-item-league">${item.league}</div>` : ''}
-            ${item.startTime ? `
-              <div class="coupon-item-time">
-                <span class="time-label">Début:</span>
-                <span class="time-value">${new Date(item.startTime).toLocaleString("fr-FR", { 
-                  day: "2-digit", 
-                  month: "2-digit", 
-                  hour: "2-digit", 
-                  minute: "2-digit" 
-                })}</span>
-              </div>
-            ` : ''}
-            ${item.status || item.statusText ? `
-              <div class="coupon-item-status">
-                <span class="status-label">Statut:</span>
-                <span class="status-value">${item.statusText || item.status || "N/A"}</span>
-              </div>
-            ` : ''}
+
+            ${item.league ? `<div class="coupon-item-league">${escapeHtml(item.league)} · ${escapeHtml(getFamilyFromLeague(item.league))}</div>` : ""}
+
+            <div class="coupon-badges">
+              <span class="coupon-market-badge">${escapeHtml(item.pari || "Auto")}</span>
+            </div>
+
+            <div class="coupon-pick-line">
+              <strong>${escapeHtml(item.pari || "1")}</strong>
+              <span>${escapeHtml(
+                item.marketType === "parity" ? "Parité · Total pair/impair" :
+                item.marketType === "handicap" ? "Handicap intelligent" :
+                item.marketType === "over" || item.marketType === "under" ? "Over / Under" :
+                item.marketType === "exact" ? "Score exact" :
+                "Marché 1X2"
+              )}</span>
+            </div>
+
             <div class="coupon-item-details">
-              <span class="coupon-prediction">${item.pari || "1"}</span>
-              <span class="coupon-odd">Cote: ${typeof item.cote === 'number' ? item.cote.toFixed(2) : item.cote || "N/A"}</span>
-              ${item.confidence ? `<span class="coupon-confidence">Confiance: ${item.confidence}%</span>` : ""}
+              <span class="coupon-confidence">${formatPercent(item.confidence)}</span>
             </div>
           </div>
         `).join("")}
       </div>
-      
-      ${summary ? `
-        <div class="coupon-summary">
-          <div class="summary-item">
-            <span>Cote combinée</span>
-            <strong>${summary.combinedOdd ? summary.combinedOdd.toFixed(3) : "N/A"}</strong>
-          </div>
-          <div class="summary-item">
-            <span>Sélections</span>
-            <strong>${summary.totalSelections || coupon.length}</strong>
-          </div>
-        </div>
-      ` : ""}
     </div>
   `;
 
@@ -160,188 +357,251 @@ function renderCoupon(data) {
 
 function updateStats(data) {
   const coupon = data.coupon || [];
-  const summary = data.summary || {};
+  const averageConfidence = coupon.length
+    ? coupon.reduce((acc, item) => acc + Number(item.confidence || 0), 0) / coupon.length
+    : 0;
+  const averageRisk = coupon.length
+    ? coupon.reduce((acc, item) => acc + Number(item.riskScore || 0), 0) / coupon.length
+    : 0;
 
-  couponStats.innerHTML = `
-    <div class="stat-item">
-      <span>Matchs</span>
-      <strong>${coupon.length}</strong>
-    </div>
-    <div class="stat-item">
-      <span>Cote</span>
-      <strong>${summary.combinedOdd ? summary.combinedOdd.toFixed(3) : "N/A"}</strong>
-    </div>
-  `;
+  couponStats.innerHTML = "";
+}
+
+function applyPreGenerationFilters(items) {
+  const selectedFamily = familySelect?.value || "all";
+  const selectedLeague = preLeagueSelect?.value || "all";
+  const selectedMarket = preMarketSelect?.value || "all";
+  const selectedStatus = preStatusSelect?.value || "all";
+  const minConfidence = Number(preConfidenceSelect?.value || 0);
+  const maxRisk = Number(preRiskThresholdSelect?.value || 100);
+
+  return items.filter((item) => {
+    const familyMatches = selectedFamily === "all" || getFamilyFromLeague(item.league) === selectedFamily;
+    const leagueMatches = selectedLeague === "all" || item.league === selectedLeague;
+    const statusMatches = selectedStatus === "all" || item.liveState === selectedStatus;
+    const confidenceMatches = Number(item.confidence || 0) >= minConfidence;
+    const riskMatches = Number(item.riskScore || 0) <= maxRisk;
+    const marketMatches =
+      selectedMarket === "all" ||
+      item.marketType === selectedMarket ||
+      (selectedMarket === "over" && (item.marketType === "over" || item.marketType === "under"));
+
+    return familyMatches && leagueMatches && statusMatches && confidenceMatches && riskMatches && marketMatches;
+  });
+}
+
+async function generateCoupon() {
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = "Generation...";
+
+  const size = parseInt(sizeSelect.value, 10) || 3;
+  const selectedRiskPreset = document.querySelector('input[name="riskPreset"]:checked')?.value || "55";
+  const risk = Number(selectedRiskPreset) >= 70 ? "conservative" : Number(selectedRiskPreset) >= 55 ? "balanced" : "aggressive";
+
+  couponSection.innerHTML = '<div class="loading-card">Generation du coupon en cours...</div>';
+
+  try {
+    const matchesResponse = await window.SiteAPI.matches();
+    const matches = matchesResponse.matches || [];
+    availableMatches = matches.filter((match) => ["live", "upcoming", "unknown"].includes(normalizeStatus(match)));
+
+    const coupon = applyPreGenerationFilters(
+      availableMatches
+      .map((match) => mapCouponItem(match, risk))
+      .sort((left, right) => {
+        const leftScore = Number(left.confidence || 0) - Number(left.riskScore || 0);
+        const rightScore = Number(right.confidence || 0) - Number(right.riskScore || 0);
+        return rightScore - leftScore;
+      })
+    )
+      .slice(0, size);
+
+    filteredMatches = coupon;
+    const combinedOdd = coupon.reduce((acc, item) => acc * (Number(item.cote) || 1), 1);
+
+    currentCoupon = {
+      success: true,
+      coupon,
+      summary: {
+        combinedOdd,
+        expectedReturn: combinedOdd * 1000,
+        totalSelections: coupon.length,
+      },
+      meta: {
+        risk,
+        size,
+        family: familySelect?.value || "all",
+        riskThreshold: Number(preRiskThresholdSelect?.value || 45),
+        confidenceFloor: Number(selectedRiskPreset),
+      },
+    };
+
+    renderCoupon(currentCoupon);
+    updateStats(currentCoupon);
+    updatedAt.textContent = `Mis a jour: ${new Date().toLocaleTimeString("fr-FR")}`;
+  } catch (error) {
+    console.error("Erreur de generation:", error);
+    couponSection.innerHTML = `
+      <div class="error-message">
+        <p>Impossible de generer le coupon: ${error.message}</p>
+      </div>
+    `;
+  } finally {
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "Generer Coupon";
+  }
 }
 
 async function generateLadder() {
   if (!currentCoupon) {
-    alert("Générez d'abord un coupon simple");
+    alert("Generez d'abord un coupon simple");
     return;
   }
 
   ladderBtn.disabled = true;
-  ladderBtn.textContent = "Génération...";
-
-  const size = parseInt(sizeSelect.value) || 3;
-  const risk = riskSelect.value || "balanced";
+  ladderBtn.textContent = "Generation...";
 
   try {
+    const selectedRiskPreset = document.querySelector('input[name="riskPreset"]:checked')?.value || "55";
+    const risk = Number(selectedRiskPreset) >= 70 ? "conservative" : Number(selectedRiskPreset) >= 55 ? "balanced" : "aggressive";
+    
     const response = await fetch("/api/coupon/ladder", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ size, risk, stake: 1000 })
+      body: JSON.stringify({ size: parseInt(sizeSelect.value, 10) || 3, risk: risk, stake: 1000 }),
     });
 
     const data = await response.json();
-
     if (!response.ok || !data.success) {
       throw new Error(data.error || "Erreur inconnue");
     }
 
-    renderLadder(data.ladder);
+    const coupons = data.ladder?.coupons || [];
+    couponSection.innerHTML = `
+      <div class="multi-container">
+        <div class="multi-header">
+          <h2>Ladder intelligent</h2>
+          <p class="multi-meta">${coupons.length} ticket(s)</p>
+        </div>
+        <div class="multi-items">
+          ${coupons.map((item) => `
+            <div class="multi-item">
+              <div class="multi-item-header">
+                <span class="multi-item-name">${escapeHtml(item.name || "Ticket")}</span>
+                <span class="multi-item-risk">${Number(item.stake || 0)} FCFA</span>
+              </div>
+              <div class="multi-item-matches">
+                ${(item.matches || []).map((match) => `
+                  <div class="multi-match">
+                    <span>${escapeHtml(match.homeTeam)} vs ${escapeHtml(match.awayTeam)}</span>
+                    <span>${Number(match.odds || 0).toFixed(2)}</span>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
   } catch (error) {
-    console.error("Erreur de génération ladder:", error);
-    alert(`Impossible de générer le ladder: ${error.message}`);
+    console.error("Erreur ladder:", error);
+    alert(`Impossible de generer le ladder: ${error.message}`);
   } finally {
     ladderBtn.disabled = false;
-    ladderBtn.textContent = "Générer Ladder";
+    ladderBtn.textContent = "Generer Ladder";
   }
-}
-
-function renderLadder(ladder) {
-  const coupons = ladder?.coupons || [];
-
-  const html = `
-    <div class="ladder-container">
-      <div class="ladder-header">
-        <h2>📊 Ladder de Tickets</h2>
-        <p class="ladder-meta">Mise totale: ${ladder?.totalStake || 1000} FCFA</p>
-      </div>
-      
-      <div class="ladder-items">
-        ${coupons.map((item, index) => `
-          <div class="ladder-item">
-            <div class="ladder-item-header">
-              <span class="ladder-item-name">${item.name || `TICKET ${index + 1}`}</span>
-              <span class="ladder-item-stake">Mise: ${item.stake || 0} FCFA</span>
-            </div>
-            <div class="ladder-item-matches">
-              ${(item.matches || []).map(m => `
-                <div class="ladder-match">
-                  <span>${m.homeTeam} vs ${m.awayTeam}</span>
-                  <span>1</span>
-                  <span>${Number(m.odds || 1.5).toFixed(2)}</span>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-        `).join("")}
-      </div>
-    </div>
-  `;
-
-  couponSection.innerHTML = html;
 }
 
 async function generateMulti() {
   if (!currentCoupon) {
-    alert("Générez d'abord un coupon simple");
+    alert("Generez d'abord un coupon simple");
     return;
   }
 
   multiBtn.disabled = true;
-  multiBtn.textContent = "Génération...";
-
-  const size = parseInt(sizeSelect.value) || 3;
-  const risk = riskSelect.value || "balanced";
+  multiBtn.textContent = "Generation...";
 
   try {
+    const selectedRiskPreset = document.querySelector('input[name="riskPreset"]:checked')?.value || "55";
+    const risk = Number(selectedRiskPreset) >= 70 ? "conservative" : Number(selectedRiskPreset) >= 55 ? "balanced" : "aggressive";
+    
     const response = await fetch("/api/coupon/multi", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ size, risk })
+      body: JSON.stringify({ size: parseInt(sizeSelect.value, 10) || 3, risk: risk }),
     });
 
     const data = await response.json();
-
     if (!response.ok || !data.success) {
       throw new Error(data.error || "Erreur inconnue");
     }
 
-    renderMulti(data.strategies);
+    const strategies = data.strategies || [];
+    couponSection.innerHTML = `
+      <div class="multi-container">
+        <div class="multi-header">
+          <h2>Coupon multi</h2>
+          <p class="multi-meta">${strategies.length} strategie(s)</p>
+        </div>
+        <div class="multi-items">
+          ${strategies.map((strategy, index) => `
+            <div class="multi-item">
+              <div class="multi-item-header">
+                <span class="multi-item-name">${escapeHtml(strategy.name || `Strategie ${index + 1}`)}</span>
+                <span class="multi-item-risk">${escapeHtml(strategy.risk || "balanced")}</span>
+              </div>
+              <div class="multi-item-matches">
+                ${(strategy.matches || []).map((match) => `
+                  <div class="multi-match">
+                    <span>${escapeHtml(match.homeTeam)} vs ${escapeHtml(match.awayTeam)}</span>
+                    <span>1</span>
+                    <span>0%</span>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
   } catch (error) {
-    console.error("Erreur de génération multi:", error);
-    alert(`Impossible de générer le multi: ${error.message}`);
+    console.error("Erreur multi:", error);
+    alert(`Impossible de generer le multi: ${error.message}`);
   } finally {
     multiBtn.disabled = false;
-    multiBtn.textContent = "Générer Multi";
+    multiBtn.textContent = "Generer Multi";
   }
-}
-
-function renderMulti(strategies) {
-  const html = `
-    <div class="multi-container">
-      <div class="multi-header">
-        <h2>🎯 Coupon Multi</h2>
-        <p class="multi-meta">${strategies.length} stratégies disponibles</p>
-      </div>
-      
-      <div class="multi-items">
-        ${strategies.map((strategy, index) => `
-          <div class="multi-item">
-            <div class="multi-item-header">
-              <span class="multi-item-name">${strategy.name || `Stratégie ${index + 1}`}</span>
-              <span class="multi-item-risk">${strategy.risk || "balanced"}</span>
-            </div>
-            <div class="multi-item-matches">
-              ${(strategy.matches || []).map(m => `
-                <div class="multi-match">
-                  <span>${m.homeTeam} vs ${m.awayTeam}</span>
-                  <span>1</span>
-                  <span>0%</span>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-        `).join("")}
-      </div>
-    </div>
-  `;
-
-  couponSection.innerHTML = html;
 }
 
 async function validateCoupon() {
   if (!currentCoupon || !currentCoupon.coupon) {
-    alert("Générez d'abord un coupon");
+    alert("Generez d'abord un coupon");
     return;
   }
 
   validateBtn.disabled = true;
   validateBtn.textContent = "Validation...";
 
-  const selections = currentCoupon.coupon.map(item => ({
-    matchId: item.matchId,
-    cote: item.cote
-  }));
-
   try {
+    const selections = currentCoupon.coupon.map((item) => ({
+      matchId: item.matchId,
+      cote: item.cote,
+    }));
+
     const response = await fetch("/api/coupon/validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ selections, driftThresholdPercent: 6 })
+      body: JSON.stringify({ selections, driftThresholdPercent: 6 }),
     });
 
     const data = await response.json();
-
     if (!response.ok || !data.success) {
       throw new Error(data.error || "Erreur inconnue");
     }
 
     renderValidation(data);
   } catch (error) {
-    console.error("Erreur de validation:", error);
+    console.error("Erreur validation:", error);
     alert(`Impossible de valider le coupon: ${error.message}`);
   } finally {
     validateBtn.disabled = false;
@@ -353,20 +613,20 @@ function renderValidation(data) {
   const summary = data.summary || {};
   const issues = data.issues || [];
 
-  const html = `
+  couponSection.innerHTML = `
     <div class="validation-container">
       <div class="validation-header">
-        <h2>✅ Validation Coupon</h2>
-        <p class="validation-status">Statut: ${data.status || "UNKNOWN"}</p>
+        <h2>Validation Coupon</h2>
+        <p class="validation-status">Statut: ${escapeHtml(data.status || "UNKNOWN")}</p>
       </div>
-      
+
       <div class="validation-summary">
         <div class="summary-item">
           <span>OK</span>
           <strong>${summary.ok || 0}</strong>
         </div>
         <div class="summary-item">
-          <span>À corriger</span>
+          <span>A corriger</span>
           <strong>${summary.toFix || 0}</strong>
         </div>
         <div class="summary-item">
@@ -374,21 +634,18 @@ function renderValidation(data) {
           <strong>${summary.total || 0}</strong>
         </div>
       </div>
-      
+
       ${issues.length ? `
         <div class="validation-issues">
-          <h3>Alertes détectées:</h3>
-          ${issues.map(issue => `
+          <h3>Alertes detectees</h3>
+          ${issues.map((issue) => `
             <div class="issue-item">
-              <span class="issue-code">${issue.code || "ALERT"}</span>
-              <span class="issue-message">${issue.message || "Message non disponible"}</span>
+              <span class="issue-code">${escapeHtml(issue.code || "ALERT")}</span>
+              <span class="issue-message">${escapeHtml(issue.message || "Message non disponible")}</span>
             </div>
           `).join("")}
         </div>
-      ` : '<p class="validation-ok">Aucune alerte détectée. Coupon valide.</p>'}
+      ` : '<p class="validation-ok">Aucune alerte detectee. Coupon valide.</p>'}
     </div>
   `;
-
-  couponSection.innerHTML = html;
-}
 }

@@ -38,29 +38,100 @@
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
   
-  <header class="hero">
-    <p class="tag">Coupon Generator</p>
-    <h1>FURY X ONE 👿</h1>
-    <p id="subTitle">Générateur de coupons intelligents avec IA</p>
-    
-    <div class="controls">
-      <button id="refreshBtn" type="button">Générer Coupon</button>
+  <header class="hero coupon-hero">
+    <p class="tag">FIFA Virtuel</p>
+    <h1>Générateur de coupon</h1>
+
+    <div class="coupon-builder">
+      <label class="league-filter" for="sourceSelect">
+        <span>Source</span>
+        <select id="sourceSelect" disabled>
+          <option value="888starz" selected>888Starz</option>
+        </select>
+      </label>
+      <label class="league-filter" for="familySelect">
+        <span>Famille de ligue</span>
+        <select id="familySelect">
+          <option value="all">Toutes</option>
+          <option value="Penalty">Penalty</option>
+          <option value="Highscore">Highscore</option>
+          <option value="Rush">Rush</option>
+          <option value="Classic">Classic</option>
+        </select>
+      </label>
+      <label class="league-filter" for="preLeagueSelect">
+        <span>Ligue</span>
+        <select id="preLeagueSelect">
+          <option value="all">Toutes</option>
+        </select>
+      </label>
+      <label class="league-filter" for="preMarketSelect">
+        <span>Marché</span>
+        <select id="preMarketSelect">
+          <option value="all">Auto</option>
+          <option value="1x2">1X2</option>
+          <option value="over">Over / Under</option>
+          <option value="parity">Pair / Impair</option>
+          <option value="exact">Score exact</option>
+          <option value="handicap">Handicap</option>
+        </select>
+      </label>
       <label class="league-filter" for="sizeSelect">
-        <span>Taille</span>
+        <span>Nombre de matchs</span>
         <select id="sizeSelect">
-          <option value="3">3 matchs</option>
-          <option value="5">5 matchs</option>
-          <option value="7">7 matchs</option>
+          <option value="3" selected>3</option>
+          <option value="5">5</option>
+          <option value="7">7</option>
         </select>
       </label>
-      <label class="league-filter" for="riskSelect">
-        <span>Risque</span>
-        <select id="riskSelect">
-          <option value="conservative">Conservateur</option>
-          <option value="balanced" selected>Équilibré</option>
-          <option value="aggressive">Agressif</option>
+      <label class="league-filter" for="preStatusSelect">
+        <span>Statut</span>
+        <select id="preStatusSelect">
+          <option value="all">Tous</option>
+          <option value="live">En cours</option>
+          <option value="upcoming">À venir</option>
         </select>
       </label>
+      <label class="league-filter" for="preConfidenceSelect">
+        <span>Confiance min</span>
+        <select id="preConfidenceSelect">
+          <option value="0">0%</option>
+          <option value="50">50%</option>
+          <option value="60">60%</option>
+          <option value="70">70%</option>
+          <option value="80">80%</option>
+        </select>
+      </label>
+      <label class="league-filter" for="preRiskThresholdSelect">
+        <span>Risque max</span>
+        <select id="preRiskThresholdSelect">
+          <option value="100">Tous</option>
+          <option value="65">Moyen</option>
+          <option value="45">Faible</option>
+          <option value="25">Très faible</option>
+        </select>
+      </label>
+      <div class="coupon-risk-builder">
+        <span>Niveau de risque</span>
+        <div class="risk-presets">
+          <label class="risk-preset">
+            <input type="radio" name="riskPreset" value="70">
+            <span><strong>Super Safe</strong><small>≥ 70%</small></span>
+          </label>
+          <label class="risk-preset">
+            <input type="radio" name="riskPreset" value="55" checked>
+            <span><strong>Safe</strong><small>≥ 55%</small></span>
+          </label>
+          <label class="risk-preset">
+            <input type="radio" name="riskPreset" value="40">
+            <span><strong>Agressif</strong><small>≥ 40%</small></span>
+          </label>
+        </div>
+      </div>
+      <button id="refreshBtn" type="button" class="action-btn coupon-generate-btn">Générer le coupon</button>
+    </div>
+
+    <div class="controls coupon-links">
       <a class="coupon-page-link" href="/">← Retour accueil</a>
       <a class="coupon-page-link" href="/creator.html">👤 Créateur</a>
       <button id="generateVisualBtn" type="button" class="visual-btn">📸 Générer l'image</button>

@@ -127,106 +127,6 @@ function formatPercent(value) {
   return Number.isFinite(numeric) ? `${(numeric * 100).toFixed(1)}%` : "N/A";
 }
 
-function renderStatsSummary(stats) {
-  if (!stats) return '<p class="history-empty">Aucune statistique disponible.</p>';
-
-  const items = [
-    ["Forme", stats.form],
-    ["Matchs", stats.total_matches ?? stats.matches_played],
-    ["V", stats.wins],
-    ["N", stats.draws],
-    ["D", stats.losses],
-    ["BP", stats.goals_for ?? stats.avg_goals_for],
-    ["BC", stats.goals_against ?? stats.avg_goals_against],
-    ["Winrate", stats.win_rate != null ? formatPercent(stats.win_rate) : null],
-  ].filter(([, value]) => value !== undefined && value !== null && value !== "");
-
-  return `
-    <div class="stats-grid-mini">
-      ${items
-        .map(
-          ([label, value]) => `
-            <div class="stats-mini-item">
-              <span>${label}</span>
-              <strong>${value}</strong>
-            </div>
-          `
-        )
-        .join("")}
-    </div>
-  `;
-}
-
-function renderHistoryList(title, matches, emptyText) {
-  if (!Array.isArray(matches) || !matches.length) {
-    return `
-      <div class="history-block">
-        <h4>${title}</h4>
-        <p class="history-empty">${emptyText}</p>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="history-block">
-      <h4>${title}</h4>
-      <div class="history-list">
-        ${matches
-          .map((item) => {
-            const opponent = item.opponent || `${item.home_team || "?"} vs ${item.away_team || "?"}`;
-            const score =
-              item.score_home !== undefined && item.score_away !== undefined
-                ? `${item.score_home} - ${item.score_away}`
-                : item.team_score !== undefined && item.opponent_score !== undefined
-                  ? `${item.team_score} - ${item.opponent_score}`
-                  : "Score indisponible";
-
-            return `
-              <article class="history-item">
-                <div class="history-item-top">
-                  <strong>${opponent}</strong>
-                  <span>${item.result || item.winner || "N/A"}</span>
-                </div>
-                <div class="history-item-bottom">
-                  <span>${formatTimestamp(item.finished_at || item.date || "")}</span>
-                  <span>${score}</span>
-                </div>
-              </article>
-            `;
-          })
-          .join("")}
-      </div>
-    </div>
-  `;
-}
-
-async function saveCurrentMatchHistory() {
-  if (!currentMatchData || !currentPredictionData) return;
-
-  const score = currentMatchData.score || {};
-  if (!Number.isFinite(Number(score.home)) || !Number.isFinite(Number(score.away))) {
-    alert("Score non disponible pour enregistrer l'historique.");
-    return;
-  }
-
-  try {
-    await window.SiteAPI.predictionUpdateHistory({
-      team_home: currentMatchData.team1,
-      team_away: currentMatchData.team2,
-      league: currentMatchData.league,
-      score_home: Number(score.home),
-      score_away: Number(score.away),
-      finished_at: new Date().toISOString(),
-      family: currentPredictionData.family || undefined,
-    });
-    await window.SiteAPI.predictionSaveHistory(currentPredictionData.family || "");
-    alert("Historique mis à jour.");
-  } catch (error) {
-    console.error("Erreur de sauvegarde historique:", error);
-    alert(error.data?.error || error.message || "Impossible de sauvegarder l'historique.");
-  }
-}
-
 async function clearPredictionCache() {
   try {
     await window.SiteAPI.predictionClearCache();
@@ -238,12 +138,7 @@ async function clearPredictionCache() {
 }
 
 function attachPredictionToolEvents() {
-  const saveHistoryBtn = document.getElementById("saveHistoryBtn");
   const clearCacheBtn = document.getElementById("clearCacheBtn");
-
-  if (saveHistoryBtn) {
-    saveHistoryBtn.addEventListener("click", saveCurrentMatchHistory);
-  }
 
   if (clearCacheBtn) {
     clearCacheBtn.addEventListener("click", clearPredictionCache);
@@ -385,7 +280,8 @@ async function loadMatchPrediction() {
       const handicap = prediction.predictions['handicap'] || {};
       const parity = prediction.predictions.parity || {};
       const exactScore = prediction.predictions.exact_score || {};
-      const history = prediction.history || {};
+      const btts = prediction.predictions.btts || {};
+      const meta = prediction.meta || {};
       const family = prediction.family || "N/A";
       
       // Déterminer la prédiction principale
@@ -459,22 +355,20 @@ async function loadMatchPrediction() {
               </div>
               ${totalGoals.over_under ? `
                 <div class="prediction-over-under-grid">
-                  ${Object.keys(totalGoals.over_under).sort((a, b) => parseFloat(a) - parseFloat(b)).map(threshold => `
-                    <div class="over-under-item">
-                      <span class="threshold-label">Over ${threshold}</span>
-                      <div class="threshold-bar">
-                        <div class="bar-fill over" style="width: ${(totalGoals.over_under[threshold].over * 100).toFixed(0)}%;"></div>
-                      </div>
-                      <span class="threshold-percent">${(totalGoals.over_under[threshold].over * 100).toFixed(1)}%</span>
+                  <div class="over-under-item">
+                    <span class="threshold-label">Over</span>
+                    <div class="threshold-bar">
+                      <div class="bar-fill over" style="width: ${(totalGoals.over_under.over * 100).toFixed(0)}%;"></div>
                     </div>
-                    <div class="over-under-item">
-                      <span class="threshold-label">Under ${threshold}</span>
-                      <div class="threshold-bar">
-                        <div class="bar-fill under" style="width: ${(totalGoals.over_under[threshold].under * 100).toFixed(0)}%;"></div>
-                      </div>
-                      <span class="threshold-percent">${(totalGoals.over_under[threshold].under * 100).toFixed(1)}%</span>
+                    <span class="threshold-percent">${(totalGoals.over_under.over * 100).toFixed(1)}%</span>
+                  </div>
+                  <div class="over-under-item">
+                    <span class="threshold-label">Under</span>
+                    <div class="threshold-bar">
+                      <div class="bar-fill under" style="width: ${(totalGoals.over_under.under * 100).toFixed(0)}%;"></div>
                     </div>
-                  `).join('')}
+                    <span class="threshold-percent">${(totalGoals.over_under.under * 100).toFixed(1)}%</span>
+                  </div>
                 </div>
               ` : ''}
             </div>
@@ -502,66 +396,79 @@ async function loadMatchPrediction() {
             </div>
           ` : ''}
           
-          ${handicap && Object.keys(handicap).length > 0 ? `
+          ${handicap && handicap.predicted !== undefined ? `
             <div class="prediction-handicap">
-              <h4>⚖️ Handicap</h4>
-              <div class="prediction-handicap-grid">
-                ${Object.keys(handicap).sort((a, b) => parseFloat(a) - parseFloat(b)).map(h => {
-                  const hData = handicap[h];
-                  const hNum = parseFloat(h);
-                  const hLabel = hNum > 0 ? `+${hNum}` : hNum;
-                  return `
-                    <div class="handicap-item">
-                      <span class="handicap-label">${hLabel}</span>
-                      <div class="handicap-probs">
-                        <div class="handicap-prob">
-                          <span class="prob-label">Home</span>
-                          <div class="prob-bar">
-                            <div class="bar-fill" style="width: ${(hData.home * 100).toFixed(0)}%; background: #00ff88;"></div>
-                          </div>
-                          <span class="prob-value">${(hData.home * 100).toFixed(1)}%</span>
-                        </div>
-                        <div class="handicap-prob">
-                          <span class="prob-label">Nul</span>
-                          <div class="prob-bar">
-                            <div class="bar-fill" style="width: ${(hData.draw * 100).toFixed(0)}%; background: #ffaa00;"></div>
-                          </div>
-                          <span class="prob-value">${(hData.draw * 100).toFixed(1)}%</span>
-                        </div>
-                        <div class="handicap-prob">
-                          <span class="prob-label">Away</span>
-                          <div class="prob-bar">
-                            <div class="bar-fill" style="width: ${(hData.away * 100).toFixed(0)}%; background: #ff4444;"></div>
-                          </div>
-                          <span class="prob-value">${(hData.away * 100).toFixed(1)}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
+              <h4>⚖️ Handicap Prédit</h4>
+              <div class="prediction-value-box">
+                <span class="prediction-value">${handicap.predicted.toFixed(1)}</span>
+                <span class="prediction-value-label">handicap</span>
+              </div>
+              ${handicap.platform_value ? `
+                <div class="prediction-platform-value">
+                  <span class="platform-label">Option Plateforme: ${handicap.platform_name || "Handicap"}</span>
+                  <span class="platform-value">${handicap.platform_value}</span>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+
+          ${btts.yes ? `
+            <div class="prediction-btts">
+              <h4>⚽ BTTS (Les deux marquent)</h4>
+              <div class="prediction-btts-box">
+                <div class="btts-item">
+                  <span class="btts-label">OUI</span>
+                  <div class="btts-bar">
+                    <div class="bar-fill" style="width: ${(btts.yes * 100).toFixed(0)}%; background: #00ff88;"></div>
+                  </div>
+                  <span class="btts-value" style="color: #00ff88">${(btts.yes * 100).toFixed(1)}%</span>
+                </div>
+                <div class="btts-item">
+                  <span class="btts-label">NON</span>
+                  <div class="btts-bar">
+                    <div class="bar-fill" style="width: ${(btts.no * 100).toFixed(0)}%; background: #ff4444;"></div>
+                  </div>
+                  <span class="btts-value" style="color: #ff4444">${(btts.no * 100).toFixed(1)}%</span>
+                </div>
               </div>
             </div>
           ` : ''}
 
-          <div class="prediction-history">
-            <h4>Historique & Statistiques</h4>
-            <div class="history-grid">
-              <div class="history-block">
-                <h4>${currentMatchData.team1}</h4>
-                ${renderStatsSummary(history.home_stats)}
+          ${meta.lambda_home ? `
+            <div class="prediction-meta">
+              <h4>📊 Métriques Poisson</h4>
+              <div class="prediction-meta-box">
+                <div class="meta-item">
+                  <span class="meta-label">λ Home</span>
+                  <span class="meta-value">${meta.lambda_home.toFixed(3)}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">λ Away</span>
+                  <span class="meta-value">${meta.lambda_away.toFixed(3)}</span>
+                </div>
               </div>
-              <div class="history-block">
-                <h4>${currentMatchData.team2}</h4>
-                ${renderStatsSummary(history.away_stats)}
-              </div>
-              ${renderHistoryList("Derniers matchs domicile", history.home_last_matches, "Aucun historique domicile disponible.")}
-              ${renderHistoryList("Derniers matchs exterieur", history.away_last_matches, "Aucun historique exterieur disponible.")}
-              ${renderHistoryList("Face a face", history.head_to_head, "Aucun face-a-face disponible.")}
             </div>
-          </div>
+          ` : ''}
+
+          ${totalGoals.platform_value ? `
+            <div class="prediction-platform">
+              <h4>🎯 Option Plateforme</h4>
+              <div class="prediction-platform-box">
+                <div class="platform-item">
+                  <span class="platform-label">${totalGoals.platform_name || "Total Goals"}</span>
+                  <span class="platform-value">${totalGoals.platform_value}</span>
+                </div>
+                ${handicap.platform_value ? `
+                  <div class="platform-item">
+                    <span class="platform-label">${handicap.platform_name || "Handicap"}</span>
+                    <span class="platform-value">${handicap.platform_value}</span>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          ` : ''}
 
           <div class="prediction-tools">
-            <button type="button" id="saveHistoryBtn" class="api-action-btn">Sauvegarder l'historique</button>
             <button type="button" id="clearCacheBtn" class="api-action-btn secondary">Vider le cache IA</button>
           </div>
         </div>

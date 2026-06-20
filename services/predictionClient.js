@@ -1,7 +1,7 @@
-/**
- * FURY X ONE 👿 - Prediction Client
+﻿/**
+ * FURY X ONE ðŸ‘¿ - Prediction Client
  * Client pour l'API FIFA Prediction: https://top-modele-train-api-vmp.onrender.com
- * Signé: SOLITAIRE HACK
+ * SignÃ©: SOLITAIRE HACK
  */
 
 const https = require("https");
@@ -71,7 +71,7 @@ class PredictionClient {
             if (res.statusCode >= 200 && res.statusCode < 300) {
               resolve(json);
             } else {
-              reject(new Error(json.error || `HTTP ${res.statusCode}`));
+              reject(new Error(json.detail || json.error || json.message || `HTTP ${res.statusCode}`));
             }
           } catch (error) {
             reject(new Error(`Erreur de parsing JSON: ${error.message}`));
@@ -167,7 +167,7 @@ class PredictionClient {
             if (res.statusCode >= 200 && res.statusCode < 300) {
               resolve(json);
             } else {
-              reject(new Error(json.error || `HTTP ${res.statusCode}`));
+              reject(new Error(json.detail || json.error || json.message || `HTTP ${res.statusCode}`));
             }
           } catch (error) {
             reject(new Error(`Erreur de parsing JSON: ${error.message}`));
@@ -185,3 +185,4 @@ class PredictionClient {
 }
 
 module.exports = PredictionClient;
+

@@ -1,7 +1,6 @@
-/**
- * FURY X ONE 👿 - Match Detail Script
- * Adapted from ONE-DELUX
- * Signed: SOLITAIRE HACK
+﻿/**
+ * FURY X ONE - Match Detail Script
+ * Mobile-premium match analysis rendering
  */
 
 const params = new URLSearchParams(window.location.search);
@@ -14,7 +13,6 @@ const apiStatus = document.getElementById("apiStatus");
 const predictionStatus = document.getElementById("predictionStatus");
 const refreshPredictionBtn = document.getElementById("refreshPredictionBtn");
 
-// Mobile elements
 const mobileRefreshPredictionBtn = document.getElementById("mobileRefreshPredictionBtn");
 const mobileGenerateVisualBtn = document.getElementById("mobileGenerateVisualBtn");
 const mobileVisualFormatSelect = document.getElementById("mobileVisualFormatSelect");
@@ -25,84 +23,61 @@ const mobileUpdatedAt = document.getElementById("mobileUpdatedAt");
 const mobileAppVersionTag = document.getElementById("mobileAppVersionTag");
 const mobileApiStatus = document.getElementById("mobileApiStatus");
 
-const APP_VERSION = "2026.06.15-r2";
+const APP_VERSION = "2026.06.19-r2";
+const DEFAULT_TEAM_LOGO = "/icons/icon-192x192.svg";
+
+let currentMatchData = null;
+let currentPredictionData = null;
+
+window.currentMatchData = currentMatchData;
+window.currentPredictionData = currentPredictionData;
 
 document.addEventListener("DOMContentLoaded", () => {
-  appVersionTag.textContent = `v${APP_VERSION}`;
+  if (appVersionTag) appVersionTag.textContent = `v${APP_VERSION}`;
+  if (mobileAppVersionTag) mobileAppVersionTag.textContent = `v${APP_VERSION}`;
   setupEventListeners();
   checkApiHealth();
   loadMatch();
 });
 
-let currentMatchData = null;
-let currentPredictionData = null;
-
-// Rendre les données accessibles globalement pour visualGenerator.js
-window.currentMatchData = currentMatchData;
-window.currentPredictionData = currentPredictionData;
-
 function setupEventListeners() {
   if (refreshPredictionBtn) {
     refreshPredictionBtn.addEventListener("click", refreshPrediction);
   }
-  
-  // Mobile menu toggle
-  if (mobileMenuBtn) {
+
+  if (mobileMenuBtn && mobileNav) {
     mobileMenuBtn.addEventListener("click", () => {
       mobileNav.classList.toggle("active");
     });
   }
-  
-  // Sync mobile and desktop refresh buttons
+
   if (mobileRefreshPredictionBtn && refreshPredictionBtn) {
-    mobileRefreshPredictionBtn.addEventListener("click", () => {
-      refreshPredictionBtn.click();
-    });
+    mobileRefreshPredictionBtn.addEventListener("click", () => refreshPredictionBtn.click());
   }
-  
-  // Sync mobile and desktop visual format selects
+
   const visualFormatSelect = document.getElementById("visualFormatSelect");
   if (mobileVisualFormatSelect && visualFormatSelect) {
     mobileVisualFormatSelect.addEventListener("change", () => {
       visualFormatSelect.value = mobileVisualFormatSelect.value;
     });
-    
     visualFormatSelect.addEventListener("change", () => {
       mobileVisualFormatSelect.value = visualFormatSelect.value;
     });
   }
-  
-  // Sync mobile and desktop visual quality selects
+
   const visualQualitySelect = document.getElementById("visualQualitySelect");
   if (mobileVisualQualitySelect && visualQualitySelect) {
     mobileVisualQualitySelect.addEventListener("change", () => {
       visualQualitySelect.value = mobileVisualQualitySelect.value;
     });
-    
     visualQualitySelect.addEventListener("change", () => {
       mobileVisualQualitySelect.value = visualQualitySelect.value;
     });
   }
-  
-  // Sync mobile generate visual button with desktop
+
   const generateVisualBtn = document.getElementById("generateVisualBtn");
   if (mobileGenerateVisualBtn && generateVisualBtn) {
-    mobileGenerateVisualBtn.addEventListener("click", () => {
-      generateVisualBtn.click();
-    });
-  }
-  
-  // Sync updated time and version for mobile
-  if (mobileUpdatedAt && updatedAt) {
-    mobileUpdatedAt.textContent = updatedAt.textContent;
-  }
-  
-  if (mobileAppVersionTag && appVersionTag) {
-    mobileAppVersionTag.textContent = appVersionTag.textContent;
-  }
-  
-  if (mobileApiStatus && apiStatus) {
-    mobileApiStatus.textContent = apiStatus.textContent;
+    mobileGenerateVisualBtn.addEventListener("click", () => generateVisualBtn.click());
   }
 }
 
@@ -124,38 +99,46 @@ async function checkApiHealth() {
 }
 
 function updateApiStatus(isOnline, message) {
-  if (apiStatus) {
-    apiStatus.textContent = `API: ${isOnline ? "🟢" : "🔴"} ${message}`;
-    apiStatus.style.color = isOnline ? "#00ff88" : "#ff4444";
+  if (!apiStatus) return;
+  apiStatus.textContent = `API: ${isOnline ? "🟢" : "🔴"} ${message}`;
+  apiStatus.style.color = isOnline ? "#00ff88" : "#ff4444";
+  if (mobileApiStatus) {
+    mobileApiStatus.textContent = apiStatus.textContent;
+    mobileApiStatus.style.color = apiStatus.style.color;
   }
 }
 
 function updatePredictionStatus(isOnline, message) {
-  if (predictionStatus) {
-    const indicator = predictionStatus.querySelector(".status-indicator");
-    const text = predictionStatus.querySelector(".status-text");
-    
-    if (indicator) {
-      indicator.style.backgroundColor = isOnline ? "#00ff88" : "#ff4444";
-      indicator.style.boxShadow = isOnline ? "0 0 10px rgba(0, 255, 136, 0.5)" : "0 0 10px rgba(255, 68, 68, 0.5)";
-    }
-    
-    if (text) {
-      text.textContent = message;
-    }
+  if (!predictionStatus) return;
+  const indicator = predictionStatus.querySelector(".status-indicator");
+  const text = predictionStatus.querySelector(".status-text");
+
+  if (indicator) {
+    indicator.style.backgroundColor = isOnline ? "#00ff88" : "#ff4444";
+    indicator.style.boxShadow = isOnline
+      ? "0 0 10px rgba(0, 255, 136, 0.5)"
+      : "0 0 10px rgba(255, 68, 68, 0.5)";
+  }
+
+  if (text) {
+    text.textContent = message;
   }
 }
 
 async function refreshPrediction() {
   if (!currentMatchData) return;
-  
+
   if (refreshPredictionBtn) {
     refreshPredictionBtn.disabled = true;
     refreshPredictionBtn.textContent = "⏳ Rafraîchissement...";
   }
-  
+
+  if (mobileRefreshPredictionBtn) {
+    mobileRefreshPredictionBtn.disabled = true;
+  }
+
   updatePredictionStatus(true, "Rafraîchissement en cours...");
-  
+
   try {
     await loadMatchPrediction();
     updatePredictionStatus(true, "Analyse mise à jour");
@@ -167,19 +150,29 @@ async function refreshPrediction() {
       refreshPredictionBtn.disabled = false;
       refreshPredictionBtn.textContent = "🔄 Rafraîchir";
     }
+    if (mobileRefreshPredictionBtn) {
+      mobileRefreshPredictionBtn.disabled = false;
+    }
   }
 }
 
 function formatTimestamp(timestamp) {
   if (!timestamp) return "Non définie";
-
   const numeric = Number(timestamp);
   const date = Number.isFinite(numeric) ? new Date(numeric * 1000) : new Date(timestamp);
   if (Number.isNaN(date.getTime())) return "Non définie";
+  return date.toLocaleString("fr-FR", { dateStyle: "full", timeStyle: "short" });
+}
 
+function formatCompactDate(timestamp) {
+  if (!timestamp) return "Heure inconnue";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "Heure inconnue";
   return date.toLocaleString("fr-FR", {
-    dateStyle: "full",
-    timeStyle: "short",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -187,7 +180,6 @@ function formatScore(match) {
   const score = match?.score || {};
   const home = Number.isFinite(Number(score.home)) ? Number(score.home) : null;
   const away = Number.isFinite(Number(score.away)) ? Number(score.away) : null;
-
   if (home === null && away === null) return null;
   return `${home ?? 0} - ${away ?? 0}`;
 }
@@ -197,131 +189,373 @@ function formatPercent(value) {
   return Number.isFinite(numeric) ? `${(numeric * 100).toFixed(1)}%` : "N/A";
 }
 
-async function clearPredictionCache() {
-  try {
-    await window.SiteAPI.predictionClearCache();
-    alert("Cache nettoyé.");
-  } catch (error) {
-    console.error("Erreur de nettoyage du cache:", error);
-    alert(error.data?.error || error.message || "Impossible de nettoyer le cache.");
-  }
+function formatOdds(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(2) : "-";
 }
 
-function attachPredictionToolEvents() {
-  const clearCacheBtn = document.getElementById("clearCacheBtn");
-
-  if (clearCacheBtn) {
-    clearCacheBtn.addEventListener("click", clearPredictionCache);
-  }
+function safeNumber(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
 }
 
-async function loadMatch() {
-  console.log("loadMatch appelé, matchId:", matchId);
-  
-  if (!matchId) {
-    console.error("Aucun matchId fourni");
-    matchDetail.innerHTML = `
-      <div class="error-message">
-        <p>Aucun identifiant de match fourni. Retournez à l'accueil pour sélectionner un match.</p>
-        <a href="/">← Retour à l'accueil</a>
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function normalizeText(value, fallback = "N/A") {
+  if (value === undefined || value === null || value === "") return fallback;
+  return escapeHtml(value);
+}
+
+function getTeamLogo(logo) {
+  return logo ? escapeHtml(logo) : DEFAULT_TEAM_LOGO;
+}
+
+function getStatusVariant(status) {
+  const raw = String(status || "").toLowerCase();
+  if (raw.includes("term")) return "ended";
+  if (raw.includes("cours") || raw.includes("live")) return "live";
+  return "upcoming";
+}
+
+function getStatusLabel(match) {
+  const status = String(match?.status || match?.statusText || "").toLowerCase();
+  if (status.includes("term")) return "Terminé";
+  if (status.includes("cours") || status.includes("live")) return "En cours";
+  return "À venir";
+}
+
+function getKickoffMeta(match) {
+  const start = match?.startTime ? new Date(match.startTime) : null;
+  const hasValidStart = start && !Number.isNaN(start.getTime());
+  const now = new Date();
+  const period = match?.period ? String(match.period) : "";
+  const liveTime = match?.liveTime ? String(match.liveTime) : "";
+
+  if (getStatusVariant(match?.status) === "ended") {
+    return `Terminé${period ? ` • ${period}` : ""}`;
+  }
+
+  if (getStatusVariant(match?.status) === "live") {
+    if (liveTime) return `${liveTime}${period ? ` • ${period}` : ""}`;
+    return `En direct${period ? ` • ${period}` : ""}`;
+  }
+
+  if (hasValidStart) {
+    const diffMinutes = Math.max(0, Math.round((start.getTime() - now.getTime()) / 60000));
+    if (diffMinutes < 60) return `Début dans ${diffMinutes} min${period ? ` • ${period}` : ""}`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    const remainingMinutes = diffMinutes % 60;
+    if (diffHours < 12) {
+      return `Début dans ${diffHours}h${remainingMinutes ? ` ${remainingMinutes} min` : ""}${period ? ` • ${period}` : ""}`;
+    }
+    return `${formatCompactDate(match.startTime)}${period ? ` • ${period}` : ""}`;
+  }
+
+  return period || "Horaire indisponible";
+}
+
+function getMainPrediction(x2, match) {
+  const home = safeNumber(x2?.home) ?? 0;
+  const draw = safeNumber(x2?.draw) ?? 0;
+  const away = safeNumber(x2?.away) ?? 0;
+  const maxProb = Math.max(home, draw, away);
+
+  if (maxProb === away) {
+    return {
+      label: `Victoire ${match.team2}`,
+      color: "#ff4444",
+      accentClass: "accent-away",
+      confidence: away,
+    };
+  }
+
+  if (maxProb === draw) {
+    return {
+      label: "Match nul",
+      color: "#ffaa00",
+      accentClass: "accent-draw",
+      confidence: draw,
+    };
+  }
+
+  return {
+    label: `Victoire ${match.team1}`,
+    color: "#00ff88",
+    accentClass: "accent-home",
+    confidence: home,
+  };
+}
+
+function renderBarRow(label, value, colorClass, emoji) {
+  const ratio = Math.max(0, Math.min(100, (safeNumber(value) ?? 0) * 100));
+  return `
+    <div class="premium-bar-row fade-in-up">
+      <div class="premium-bar-head">
+        <span class="premium-bar-label">${emoji} ${label}</span>
+        <span class="premium-bar-value ${colorClass}">${ratio.toFixed(1)}%</span>
       </div>
-    `;
-    return;
-  }
-
-  matchDetail.innerHTML = `
-    <div class="loading-card">
-      <div class="loading-spinner"></div>
-      <p>Chargement de l'analyse IA...</p>
+      <div class="premium-bar-track">
+        <div class="premium-bar-fill ${colorClass}" style="width:${ratio.toFixed(0)}%"></div>
+      </div>
     </div>
   `;
+}
 
-  try {
-    console.log("Appel API pour matchId:", matchId);
-    const data = await window.SiteAPI.matchById(matchId);
-    console.log("Réponse API reçue:", data);
-    
-    if (!data.success) {
-      throw new Error(data.error || "Erreur inconnue");
-    }
+function renderEmptyState(title, message) {
+  return `
+    <div class="prediction-empty-state fade-in-up">
+      <strong>${title}</strong>
+      <span>${message}</span>
+    </div>
+  `;
+}
 
-    currentMatchData = data.match;
-    window.currentMatchData = currentMatchData;
-    console.log("Données du match chargées:", currentMatchData);
-    renderMatchDetail(currentMatchData);
-    updatedAt.textContent = `Mis à jour: ${new Date().toLocaleTimeString("fr-FR")}`;
-  } catch (error) {
-    console.error("Erreur de chargement du match:", error);
-    matchDetail.innerHTML = `
-      <div class="error-message">
-        <p>Impossible de charger le match: ${error.message}</p>
-        <a href="/">← Retour à l'accueil</a>
-      </div>
-    `;
-  }
+function renderStatCard(label, value, tone = "cyan") {
+  return `
+    <div class="premium-stat-card tone-${tone} fade-in-up">
+      <span class="premium-stat-label">${label}</span>
+      <strong class="premium-stat-value">${value}</strong>
+    </div>
+  `;
+}
+
+function renderInfoPill(label, value) {
+  return `
+    <div class="premium-info-pill fade-in-up">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `;
 }
 
 function renderMatchDetail(match) {
-  const odds = match.odds || {};
-  const score = match.score || {};
-  const statusText = match.statusText || match.status || "Disponible";
+  const odds = match?.odds || {};
+  const homeTeam = normalizeText(match?.team1, "Équipe 1");
+  const awayTeam = normalizeText(match?.team2, "Équipe 2");
+  const league = normalizeText(match?.league, "Compétition virtuelle");
+  const score = formatScore(match) || "0 - 0";
+  const statusLabel = getStatusLabel(match);
+  const kickoffMeta = getKickoffMeta(match);
+  const statusVariant = getStatusVariant(match?.status || match?.statusText);
 
   matchDetail.innerHTML = `
-    <div class="match-detail-container">
-      <div class="match-header">
-        <p class="match-league">${match.league || "Compétition virtuelle"}</p>
-        <div class="match-teams-detail">
-          ${match.homeLogo ? `<img src="${match.homeLogo}" alt="${match.team1}" class="team-logo-large" onerror="this.style.display='none'">` : ''}
-          <h1 class="match-title">${match.team1} vs ${match.team2}</h1>
-          ${match.awayLogo ? `<img src="${match.awayLogo}" alt="${match.team2}" class="team-logo-large" onerror="this.style.display='none'">` : ''}
+    <div class="match-detail-container premium-match-layout">
+      <section class="premium-surface match-hero-card fade-in-up">
+        <div class="premium-surface-head">
+          <span class="premium-chip cyan">${league}</span>
+          <span class="premium-chip ${statusVariant}">${statusLabel}</span>
         </div>
-        <p class="match-meta">
-          <span class="match-status">${statusText}</span>
-          ${match.period ? `<span class="match-period">· ${match.period}</span>` : ""}
-        </p>
-      </div>
 
-      ${score ? `
-        <div class="match-score">
-          <span class="score-home">${score.home || 0}</span>
-          <span class="score-separator">-</span>
-          <span class="score-away">${score.away || 0}</span>
-        </div>
-      ` : ''}
+        <div class="match-teams-premium">
+          <div class="team-side-premium">
+            <div class="team-logo-shell">
+              <img src="${getTeamLogo(match?.homeLogo)}" alt="${homeTeam}" class="team-logo-hero" onerror="this.src='${DEFAULT_TEAM_LOGO}'" />
+            </div>
+            <span class="team-name-premium">${homeTeam}</span>
+          </div>
 
-      <div class="match-odds-section">
-        <h3>Cotes</h3>
-        <div class="odds-grid">
-          <div class="odd-box">
-            <span class="odd-label">1</span>
-            <strong class="odd-value">${typeof odds.home === 'number' ? odds.home.toFixed(2) : odds.home || "-"}</strong>
+          <div class="match-core-premium">
+            <div class="match-title-premium">${homeTeam} <span>vs</span> ${awayTeam}</div>
+            <div class="match-score-premium">${score}</div>
+            <div class="match-subline-premium">${kickoffMeta}</div>
           </div>
-          <div class="odd-box">
-            <span class="odd-label">X</span>
-            <strong class="odd-value">${typeof odds.draw === 'number' ? odds.draw.toFixed(2) : odds.draw || "-"}</strong>
-          </div>
-          <div class="odd-box">
-            <span class="odd-label">2</span>
-            <strong class="odd-value">${typeof odds.away === 'number' ? odds.away.toFixed(2) : odds.away || "-"}</strong>
+
+          <div class="team-side-premium">
+            <div class="team-logo-shell">
+              <img src="${getTeamLogo(match?.awayLogo)}" alt="${awayTeam}" class="team-logo-hero" onerror="this.src='${DEFAULT_TEAM_LOGO}'" />
+            </div>
+            <span class="team-name-premium">${awayTeam}</span>
           </div>
         </div>
-      </div>
 
-      <div class="match-prediction-section">
-        <h3>🔮 Prédiction IA</h3>
-        <div id="predictionResult"><div class="loading-card">Chargement de la prédiction...</div></div>
-      </div>
+        <div class="premium-chip-row">
+          ${renderInfoPill("Statut", statusLabel)}
+          ${renderInfoPill("Horaire", formatCompactDate(match?.startTime))}
+          ${match?.period ? renderInfoPill("Période", normalizeText(match.period)) : ""}
+        </div>
 
-      <div class="match-details-section">
-        <h3>Détails</h3>
-        <p><strong>Date:</strong> ${match.startTime ? new Date(match.startTime).toLocaleString("fr-FR") : "Non disponible"}</p>
-        <p><strong>Statut:</strong> ${statusText}</p>
-      </div>
+        <div class="odds-grid-premium">
+          <div class="premium-odd-card fade-in-up">
+            <span class="premium-odd-label">1</span>
+            <strong class="premium-odd-value">${formatOdds(odds.home)}</strong>
+          </div>
+          <div class="premium-odd-card fade-in-up">
+            <span class="premium-odd-label">X</span>
+            <strong class="premium-odd-value">${formatOdds(odds.draw)}</strong>
+          </div>
+          <div class="premium-odd-card fade-in-up">
+            <span class="premium-odd-label">2</span>
+            <strong class="premium-odd-value">${formatOdds(odds.away)}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="premium-surface premium-analysis-card fade-in-up">
+        <div class="section-title-wrap">
+          <h3>🔮 Prédiction IA</h3>
+          <p>Lecture premium du match, des probabilités et des signaux.</p>
+        </div>
+        <div id="predictionResult"><div class="loading-card premium-loading-card"><div class="loading-spinner"></div><p>Analyse IA en cours...</p></div></div>
+      </section>
     </div>
   `;
 
-  // Charger automatiquement la prédiction après le rendu
   loadMatchPrediction();
+}
+
+function renderPredictionContent(match, prediction) {
+  const x2 = prediction?.predictions?.["1x2"] || {};
+  const totalGoals = prediction?.predictions?.total_goals || {};
+  const handicap = prediction?.predictions?.handicap || {};
+  const parity = prediction?.predictions?.parity || {};
+  const btts = prediction?.predictions?.btts || {};
+  const family = normalizeText(prediction?.family, "HIGHSCORE");
+  const mainPrediction = getMainPrediction(x2, match);
+  const predictedGoals = safeNumber(totalGoals.predicted);
+  const handicapPredicted = safeNumber(handicap.predicted);
+  const parityPair = safeNumber(parity.pair);
+  const parityImpair = safeNumber(parity.impair);
+  const overValue = safeNumber(totalGoals?.over_under?.over);
+  const underValue = safeNumber(totalGoals?.over_under?.under);
+  const bttsYes = safeNumber(btts.yes);
+  const bttsNo = safeNumber(btts.no);
+
+  const totalGoalsCard = predictedGoals !== null
+    ? `
+      <div class="premium-mini-card fade-in-up">
+        <div class="mini-card-header">
+          <h4>⚽ Total buts</h4>
+          <span class="premium-mini-highlight">${predictedGoals.toFixed(1)}</span>
+        </div>
+        <p class="mini-card-copy">Projection IA du volume offensif global.</p>
+        ${overValue !== null || underValue !== null ? `
+          <div class="mini-split-values">
+            <div>
+              <span>Over</span>
+              <strong>${overValue !== null ? `${(overValue * 100).toFixed(0)}%` : "-"}</strong>
+            </div>
+            <div>
+              <span>Under</span>
+              <strong>${underValue !== null ? `${(underValue * 100).toFixed(0)}%` : "-"}</strong>
+            </div>
+          </div>
+        ` : ""}
+      </div>
+    `
+    : renderEmptyState("Total buts indisponible", "Le moteur n'a pas renvoyé de projection fiable.");
+
+  const parityCard = parityPair !== null || parityImpair !== null
+    ? `
+      <div class="premium-mini-card fade-in-up">
+        <div class="mini-card-header">
+          <h4>🔢 Pair / Impair</h4>
+          <span class="premium-mini-highlight">${formatPercent(Math.max(parityPair ?? 0, parityImpair ?? 0))}</span>
+        </div>
+        <div class="mini-split-values">
+          <div>
+            <span>Pair</span>
+            <strong>${parityPair !== null ? `${(parityPair * 100).toFixed(0)}%` : "-"}</strong>
+          </div>
+          <div>
+            <span>Impair</span>
+            <strong>${parityImpair !== null ? `${(parityImpair * 100).toFixed(0)}%` : "-"}</strong>
+          </div>
+        </div>
+      </div>
+    `
+    : renderEmptyState("Parité indisponible", "Aucune parité exploitable n'est disponible.");
+
+  const handicapCard = handicapPredicted !== null || handicap?.platform_value
+    ? `
+      <div class="premium-handicap-card fade-in-up">
+        <div class="mini-card-header">
+          <h4>⚖️ Handicap</h4>
+          <span class="premium-mini-highlight">${handicapPredicted !== null ? handicapPredicted.toFixed(1) : normalizeText(handicap.platform_value, "-")}</span>
+        </div>
+        <p class="mini-card-copy">${handicap?.platform_name ? normalizeText(handicap.platform_name) : "Projection handicap disponible"}</p>
+        ${handicap?.platform_value ? `<div class="premium-platform-line"><span>Option</span><strong>${normalizeText(handicap.platform_value)}</strong></div>` : ""}
+      </div>
+    `
+    : `
+      <div class="premium-handicap-card premium-handicap-empty fade-in-up">
+        <div class="mini-card-header">
+          <h4>⚖️ Handicap</h4>
+        </div>
+        <p class="mini-card-copy">⚠️ Handicap indisponible</p>
+      </div>
+    `;
+
+  const statsCards = [
+    renderStatCard("Confiance IA", formatPercent(mainPrediction.confidence), "red"),
+    renderStatCard("Famille", family, "cyan"),
+    renderStatCard("Total buts", predictedGoals !== null ? predictedGoals.toFixed(1) : "N/A", "amber"),
+    renderStatCard("BTTS", bttsYes !== null && bttsNo !== null ? `${(Math.max(bttsYes, bttsNo) * 100).toFixed(0)}%` : "N/A", "green"),
+    renderStatCard("Parité pair", parityPair !== null ? `${(parityPair * 100).toFixed(0)}%` : "N/A", "cyan"),
+    renderStatCard("Handicap", handicapPredicted !== null ? handicapPredicted.toFixed(1) : normalizeText(handicap?.platform_value, "N/A"), "red"),
+  ].join("");
+
+  return `
+    <div class="prediction-detail premium-prediction-layout">
+      <div class="prediction-main-result premium-main-result ${mainPrediction.accentClass} fade-in-up">
+        <div class="prediction-main-label">🎯 PRÉDICTION PRINCIPALE</div>
+        <div class="prediction-main-value" style="color:${mainPrediction.color}">${normalizeText(mainPrediction.label)}</div>
+        <div class="prediction-main-confidence">Confiance ${formatPercent(mainPrediction.confidence)}</div>
+        <div class="prediction-family-badge">Famille ${family}</div>
+      </div>
+
+      <div class="premium-section-card fade-in-up">
+        <div class="section-title-wrap compact">
+          <h4>📊 Analyse 1X2</h4>
+        </div>
+        <div class="premium-1x2-bars">
+          ${renderBarRow("Domicile", x2.home, "home", "🏠")}
+          ${renderBarRow("Nul", x2.draw, "draw", "⚖️")}
+          ${renderBarRow("Extérieur", x2.away, "away", "✈️")}
+        </div>
+      </div>
+
+      <div class="prediction-grid-duo">
+        ${totalGoalsCard}
+        ${parityCard}
+      </div>
+
+      ${handicapCard}
+
+      ${(bttsYes !== null || bttsNo !== null) ? `
+        <div class="premium-section-card fade-in-up">
+          <div class="section-title-wrap compact">
+            <h4>⚽ BTTS</h4>
+            <p>Signal des deux équipes qui marquent.</p>
+          </div>
+          <div class="premium-1x2-bars">
+            ${renderBarRow("Oui", bttsYes ?? 0, "home", "✅")}
+            ${renderBarRow("Non", bttsNo ?? 0, "away", "⛔")}
+          </div>
+        </div>
+      ` : ""}
+
+      <div class="premium-section-card fade-in-up">
+        <div class="section-title-wrap compact">
+          <h4>📈 Historique & statistiques</h4>
+          <p>Résumé rapide pour lecture mobile premium.</p>
+        </div>
+        <div class="stats-grid-premium">
+          ${statsCards}
+        </div>
+      </div>
+
+      <div class="prediction-tools fade-in-up">
+        <button type="button" id="clearCacheBtn" class="api-action-btn secondary">Vider le cache IA</button>
+      </div>
+    </div>
+  `;
 }
 
 async function loadMatchPrediction() {
@@ -331,229 +565,41 @@ async function loadMatchPrediction() {
   if (!resultDiv) return;
 
   updatePredictionStatus(true, "Analyse en cours...");
-  resultDiv.innerHTML = '<div class="loading-card"><div class="loading-spinner"></div><p>Analyse IA en cours...</p></div>';
+  resultDiv.innerHTML = '<div class="loading-card premium-loading-card"><div class="loading-spinner"></div><p>Analyse IA en cours...</p></div>';
 
   try {
-    const data = await window.SiteAPI.prediction(currentMatchData.team1, currentMatchData.team2, currentMatchData.league);
-    
+    const data = await window.SiteAPI.prediction(
+      currentMatchData.team1,
+      currentMatchData.team2,
+      currentMatchData.league,
+    );
+
     if (!data.success) {
       throw new Error(data.error || "Erreur inconnue");
     }
 
     currentPredictionData = data.prediction;
     window.currentPredictionData = currentPredictionData;
-    
-    if (data.prediction.predictions) {
-      const prediction = data.prediction;
-      const x2 = prediction.predictions['1x2'] || {};
-      const totalGoals = prediction.predictions['total_goals'] || {};
-      const handicap = prediction.predictions['handicap'] || {};
-      const parity = prediction.predictions.parity || {};
-      const exactScore = prediction.predictions.exact_score || {};
-      const btts = prediction.predictions.btts || {};
-      const meta = prediction.meta || {};
-      const family = prediction.family || "N/A";
-      
-      // Déterminer la prédiction principale
-      const maxProb = Math.max(x2.home || 0, x2.draw || 0, x2.away || 0);
-      let mainPrediction = "N/A";
-      let mainPredictionColor = "#666";
-      
-      if (maxProb === x2.home) {
-        mainPrediction = `Victoire ${currentMatchData.team1}`;
-        mainPredictionColor = "#00ff88";
-      } else if (maxProb === x2.draw) {
-        mainPrediction = "Match Nul";
-        mainPredictionColor = "#ffaa00";
-      } else if (maxProb === x2.away) {
-        mainPrediction = `Victoire ${currentMatchData.team2}`;
-        mainPredictionColor = "#ff4444";
-      }
-      
-      resultDiv.innerHTML = `
-        <div class="prediction-detail">
-          <div class="prediction-main-result" style="border-left: 4px solid ${mainPredictionColor}">
-            <div class="prediction-main-label">🎯 PRÉDICTION PRINCIPALE</div>
-            <div class="prediction-main-value" style="color: ${mainPredictionColor}">${mainPrediction}</div>
-            <div class="prediction-main-confidence">Confiance: ${formatPercent(maxProb)}</div>
-            <div class="prediction-family-badge">Famille: ${family}</div>
-          </div>
-          
-          <div class="prediction-1x2">
-            <h4>📊 Analyse 1X2</h4>
-            <div class="prediction-bars">
-              <div class="prediction-bar">
-                <span class="prediction-team">🏠 Domicile</span>
-                <div class="bar-container">
-                  <div class="bar-fill" style="width: ${(x2.home * 100).toFixed(0)}%; background: linear-gradient(90deg, #00ff88, #00cc6a);"></div>
-                </div>
-                <span class="prediction-percent" style="color: #00ff88">${(x2.home * 100).toFixed(1)}%</span>
-              </div>
-              <div class="prediction-bar">
-                <span class="prediction-team">⚖️ Nul</span>
-                <div class="bar-container">
-                  <div class="bar-fill" style="width: ${(x2.draw * 100).toFixed(0)}%; background: linear-gradient(90deg, #ffaa00, #ff8800);"></div>
-                </div>
-                <span class="prediction-percent" style="color: #ffaa00">${(x2.draw * 100).toFixed(1)}%</span>
-              </div>
-              <div class="prediction-bar">
-                <span class="prediction-team">✈️ Extérieur</span>
-                <div class="bar-container">
-                  <div class="bar-fill" style="width: ${(x2.away * 100).toFixed(0)}%; background: linear-gradient(90deg, #ff4444, #cc2222);"></div>
-                </div>
-                <span class="prediction-percent" style="color: #ff4444">${(x2.away * 100).toFixed(1)}%</span>
-              </div>
-            </div>
-          </div>
-          
-          ${prediction.predictions.exact_score ? `
-            <div class="prediction-exact">
-              <h4>🎯 Score Exact Prédit</h4>
-              <div class="prediction-score-box">
-                <span class="prediction-score">${exactScore.prediction || "N/A"}</span>
-                <span class="prediction-score-confidence">Confiance: ${formatPercent(exactScore.confidence)}</span>
-              </div>
-            </div>
-          ` : ''}
-          
-          ${totalGoals.predicted ? `
-            <div class="prediction-goals">
-              <h4>⚽ Total Buts Prédit</h4>
-              <div class="prediction-value-box">
-                <span class="prediction-value">${totalGoals.predicted.toFixed(1)}</span>
-                <span class="prediction-value-label">buts</span>
-              </div>
-              ${totalGoals.over_under ? `
-                <div class="prediction-over-under-grid">
-                  <div class="over-under-item">
-                    <span class="threshold-label">Over</span>
-                    <div class="threshold-bar">
-                      <div class="bar-fill over" style="width: ${(totalGoals.over_under.over * 100).toFixed(0)}%;"></div>
-                    </div>
-                    <span class="threshold-percent">${(totalGoals.over_under.over * 100).toFixed(1)}%</span>
-                  </div>
-                  <div class="over-under-item">
-                    <span class="threshold-label">Under</span>
-                    <div class="threshold-bar">
-                      <div class="bar-fill under" style="width: ${(totalGoals.over_under.under * 100).toFixed(0)}%;"></div>
-                    </div>
-                    <span class="threshold-percent">${(totalGoals.over_under.under * 100).toFixed(1)}%</span>
-                  </div>
-                </div>
-              ` : ''}
-            </div>
-          ` : ''}
-          
-          ${prediction.predictions.parity ? `
-            <div class="prediction-parity">
-              <h4>🔢 Parité</h4>
-              <div class="prediction-parity-box">
-                <div class="parity-item">
-                  <span class="parity-label">Pair</span>
-                  <div class="parity-bar">
-                    <div class="bar-fill" style="width: ${((parity.pair || 0) * 100).toFixed(0)}%; background: #00ff88;"></div>
-                  </div>
-                  <span class="parity-value" style="color: #00ff88">${formatPercent(parity.pair)}</span>
-                </div>
-                <div class="parity-item">
-                  <span class="parity-label">Impair</span>
-                  <div class="parity-bar">
-                    <div class="bar-fill" style="width: ${((parity.impair || 0) * 100).toFixed(0)}%; background: #ff4444;"></div>
-                  </div>
-                  <span class="parity-value" style="color: #ff4444">${formatPercent(parity.impair)}</span>
-                </div>
-              </div>
-            </div>
-          ` : ''}
-          
-          ${handicap && handicap.predicted !== undefined ? `
-            <div class="prediction-handicap">
-              <h4>⚖️ Handicap Prédit</h4>
-              <div class="prediction-value-box">
-                <span class="prediction-value">${handicap.predicted.toFixed(1)}</span>
-                <span class="prediction-value-label">handicap</span>
-              </div>
-              ${handicap.platform_value ? `
-                <div class="prediction-platform-value">
-                  <span class="platform-label">Option Plateforme: ${handicap.platform_name || "Handicap"}</span>
-                  <span class="platform-value">${handicap.platform_value}</span>
-                </div>
-              ` : ''}
-            </div>
-          ` : ''}
 
-          ${btts.yes ? `
-            <div class="prediction-btts">
-              <h4>⚽ BTTS (Les deux marquent)</h4>
-              <div class="prediction-btts-box">
-                <div class="btts-item">
-                  <span class="btts-label">OUI</span>
-                  <div class="btts-bar">
-                    <div class="bar-fill" style="width: ${(btts.yes * 100).toFixed(0)}%; background: #00ff88;"></div>
-                  </div>
-                  <span class="btts-value" style="color: #00ff88">${(btts.yes * 100).toFixed(1)}%</span>
-                </div>
-                <div class="btts-item">
-                  <span class="btts-label">NON</span>
-                  <div class="btts-bar">
-                    <div class="bar-fill" style="width: ${(btts.no * 100).toFixed(0)}%; background: #ff4444;"></div>
-                  </div>
-                  <span class="btts-value" style="color: #ff4444">${(btts.no * 100).toFixed(1)}%</span>
-                </div>
-              </div>
-            </div>
-          ` : ''}
-
-          ${meta.lambda_home ? `
-            <div class="prediction-meta">
-              <h4>📊 Métriques Poisson</h4>
-              <div class="prediction-meta-box">
-                <div class="meta-item">
-                  <span class="meta-label">λ Home</span>
-                  <span class="meta-value">${meta.lambda_home.toFixed(3)}</span>
-                </div>
-                <div class="meta-item">
-                  <span class="meta-label">λ Away</span>
-                  <span class="meta-value">${meta.lambda_away.toFixed(3)}</span>
-                </div>
-              </div>
-            </div>
-          ` : ''}
-
-          ${totalGoals.platform_value ? `
-            <div class="prediction-platform">
-              <h4>🎯 Option Plateforme</h4>
-              <div class="prediction-platform-box">
-                <div class="platform-item">
-                  <span class="platform-label">${totalGoals.platform_name || "Total Goals"}</span>
-                  <span class="platform-value">${totalGoals.platform_value}</span>
-                </div>
-                ${handicap.platform_value ? `
-                  <div class="platform-item">
-                    <span class="platform-label">${handicap.platform_name || "Handicap"}</span>
-                    <span class="platform-value">${handicap.platform_value}</span>
-                  </div>
-                ` : ''}
-              </div>
-            </div>
-          ` : ''}
-
-          <div class="prediction-tools">
-            <button type="button" id="clearCacheBtn" class="api-action-btn secondary">Vider le cache IA</button>
-          </div>
-        </div>
-      `;
-      
+    if (data.prediction?.predictions) {
+      resultDiv.innerHTML = renderPredictionContent(currentMatchData, data.prediction);
       attachPredictionToolEvents();
-      updatePredictionStatus(true, "Analyse terminee");
+      updatePredictionStatus(true, "Analyse terminée");
+      const nowText = `Mis à jour: ${new Date().toLocaleTimeString("fr-FR")}`;
+      if (updatedAt) updatedAt.textContent = nowText;
+      if (mobileUpdatedAt) mobileUpdatedAt.textContent = nowText;
+      return;
     }
+
+    throw new Error("Aucune prédiction exploitable reçue");
   } catch (error) {
     console.error("Erreur de prédiction:", error);
     resultDiv.innerHTML = `
       <div class="error-message">
-        <p>Impossible de charger la prédiction: ${error.message}</p>
+        <p>Impossible de charger la prédiction: ${escapeHtml(error.message)}</p>
       </div>
     `;
     updatePredictionStatus(false, "Erreur d'analyse");
   }
 }
+

@@ -1,171 +1,242 @@
-# 🚀 DEPLOYMENT CONFIGURATION - SOLITAIRE HACK
+# Intégration complète API matchs 888Starz
 
-**Configuration pour serveur web avec API Live Feed**
-**URL Base:** https://one-delux-fast.onrender.com
+Ce document sert à intégrer notre flux de matchs dans un système de sauvegarde ou de synchronisation de matchs.
 
----
+Le but principal ici n’est pas de parler des options de jeu, mais du cycle de vie du match :
 
-## 📋 CONFIGURATION ACTUELLE
+- match à venir
+- match en cours
+- match terminé
 
-### ✅ Ce qui fonctionne
-- Serveur web statique (fichiers HTML/CSS/JS)
-- **API Live Feed livefeedsht-vmp** (matchs en direct)
-- Génération visuelle locale (VisualGenerator)
-- Modèles de prédiction IA entraînés (TrainedModelPredictor)
+## Endpoint principal
 
-### ❌ Ce qui reste désactivé
-- **Système CRON** (plus de collecte automatique)
-- **Base de données Supabase** (plus de connexion externe)
-- **Anciens endpoints API** (seuls les endpoints matchs sont actifs)
+- `https://888starz.bet/service-api/LiveFeed/Get1x2_VZip`
 
----
+Le projet actuel l’utilise déjà comme source principale des matchs.
 
-## 🌐 DÉPLOIEMENT SUR RENDER
+## Paramètres obligatoires déjà validés
 
-### Variables d'environnement
-**Sur Render Dashboard:**
-1. Service → Settings → Environment Variables
-2. Ajouter:
-   - `PORT` = `3029` (optionnel, utilise 3000 par défaut)
-   - `LIVE_FEED_URL` = `https://livefeedsht-vmp.onrender.com/live-feed`
+Ces valeurs doivent rester les mêmes pour reproduire le comportement validé du projet :
 
-### Commande de démarrage
+- `sports=85`
+- `count=40`
+- `lng=fr`
+- `gr=789`
+- `mode=4`
+- `country=96`
+- `partner=233`
+- `getEmpty=true`
+- `virtualSports=true`
+- `noFilterBlockEvent=true`
+
+## Headers obligatoires déjà validés
+
+Le projet envoie déjà ces headers pour éviter les erreurs `406` :
+
+- `authority: 888starz.bet`
+- `user-agent: Mozilla/5.0 ... Chrome/139 ...`
+- `accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7`
+- `accept-language: fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7`
+- `sec-ch-ua: "Chromium";v="139", "Not;A=Brand";v="99"`
+- `sec-ch-ua-mobile: ?0`
+- `sec-ch-ua-platform: "Windows"`
+- `sec-fetch-dest: document`
+- `sec-fetch-mode: navigate`
+- `sec-fetch-site: cross-site`
+- `sec-fetch-user: ?1`
+- `upgrade-insecure-requests: 1`
+- `referer: https://888starz.bet/fr/live/`
+- `origin: https://888starz.bet`
+- `cache-control: max-age=0`
+- `accept-encoding: gzip, deflate, br`
+
+## Variables d’environnement prêtes
+
+Créer un fichier `.env` :
+
+```env
+PORT=3000
+LIVE_FEED_URL=https://888starz.bet/service-api/LiveFeed/Get1x2_VZip
+PENALTY_API_URL=https://888starz.bet/service-api/LiveFeed/Get1x2_VZip
+PREDICTION_API_URL=https://top-modele-train-api-vmp.onrender.com
+LIVE_FEED_TIMEOUT_MS=45000
+NODE_ENV=production
 ```
+
+## Installation rapide
+
+```bash
+npm install
 node server.js
 ```
 
----
+Application locale :
 
-## � API ENDPOINTS DISPONIBLES
+- `http://127.0.0.1:3000`
 
-### Matchs en direct
-**GET** `/api/matches`
-- Retourne tous les matchs disponibles
-- Format JSON avec données complètes
-- Cache: 30 secondes par défaut
+## Endpoints utiles pour la sauvegarde de matchs
 
-**GET** `/api/matches/{id}`
-- Retourne un match spécifique par ID
-- Format JSON avec données détaillées
-- Cache: 30 secondes par défaut
+### Liste des matchs
 
-### Exemple d'utilisation
-```bash
-# Obtenir tous les matchs
-curl https://one-delux-fast.onrender.com/api/matches
+- `GET /api/matches`
 
-# Obtenir un match spécifique
-curl https://one-delux-fast.onrender.com/api/matches/123456
-```
+Retourne tous les matchs normalisés par notre système.
 
-### Format de réponse
+### Match unique
+
+- `GET /api/matches/:id`
+
+Retourne un match précis déjà normalisé.
+
+## Statuts normalisés du projet
+
+Le projet convertit les données brutes `888Starz` en 3 statuts stables :
+
+- `a_venir`
+- `en_cours`
+- `termine`
+
+Ces 3 statuts sont ceux qu’il faut utiliser dans le système de sauvegarde.
+
+## Règles de normalisation déjà corrigées
+
+### `a_venir`
+
+Le match est considéré `a_venir` si :
+
+- `GNS=true`
+- le texte contient `Début dans`
+- le texte contient `avant`
+- l’heure réelle du match est encore dans le futur
+- aucun score réel n’a encore démarré
+
+### `en_cours`
+
+Le match est considéré `en_cours` si :
+
+- l’heure du match est déjà passée
+- le score a commencé ou le match est réellement actif
+- la période indique une phase live réelle
+
+### `termine`
+
+Le match est considéré `termine` si :
+
+- le texte de période indique la fin
+- le contexte du match indique que la rencontre est terminée
+
+## Champs utiles pour la sauvegarde
+
+Chaque match retourné par `/api/matches` contient au minimum les champs utiles suivants :
+
+- `id`
+- `team1`
+- `team2`
+- `league`
+- `leagueId`
+- `sport`
+- `sportId`
+- `country`
+- `startTime`
+- `startTimeTimestamp`
+- `status`
+- `statusText`
+- `period`
+- `score`
+- `isUpcoming`
+- `isLive`
+- `isFinished`
+- `homeLogo`
+- `awayLogo`
+- `leagueLogo`
+- `liveTime`
+
+## Exemple de structure utile
+
 ```json
 {
-  "success": true,
-  "updatedAt": "2026-06-09T10:30:00.000Z",
-  "count": 40,
-  "matches": [
-    {
-      "id": "123456",
-      "league": "FC 26. Superligue",
-      "team1": "Real Madrid",
-      "team2": "Barcelona",
-      "startTime": "2026-06-09T12:00:00.000Z",
-      "status": "Live",
-      "currentScore": {
-        "home": 2,
-        "away": 1
-      },
-      "odds": {
-        "home": 1.85,
-        "draw": 3.50,
-        "away": 4.20
-      }
-    }
-  ]
+  "id": "730432462",
+  "team1": "Club Atlético de Madrid",
+  "team2": "Porto",
+  "league": "FC 26. 5x5 Rush. Superligue",
+  "startTime": "2026-06-19T20:00:00.000Z",
+  "status": "en_cours",
+  "statusText": "Début dans 3 minutes",
+  "period": "Mi-temps",
+  "score": {
+    "home": 2,
+    "away": 1,
+    "total": 3
+  },
+  "isUpcoming": false,
+  "isLive": true,
+  "isFinished": false,
+  "liveTime": "2'18"
 }
 ```
 
----
+## Logique recommandée de sauvegarde
 
-## �🔧 CONFIGURATION LOCALE
+Pour un système ami, il faut sauvegarder surtout :
 
-### Installation des dépendances
-```bash
-npm install
-```
+- `id` comme identifiant unique du match
+- `status` comme statut métier principal
+- `startTime` pour la chronologie
+- `score.home`
+- `score.away`
+- `period`
+- `statusText`
 
-### Démarrage local
-```bash
-npm start
-```
+### Recommandation de synchronisation
 
-Le serveur sera disponible sur `http://localhost:3029`
+- si `status = a_venir` : créer ou mettre à jour le match
+- si `status = en_cours` : mettre à jour fréquemment
+- si `status = termine` : figer le match comme clôturé
 
----
+## Erreurs déjà corrigées dans ce projet
 
-## 📁 STRUCTURE DU PROJET
+### Erreur `406 NotAcceptable`
 
-### Fichiers principaux
-- `server.js` - Serveur HTTP statique minimaliste
-- `server/config.js` - Configuration simplifiée
-- `public/` - Fichiers statiques (HTML/CSS/JS)
-- `services/` - Services internes (prédiction IA, génération visuelle)
+Déjà corrigée grâce :
 
-### Services conservés
-- `services/trainedModelPredictor.js` - Modèles de prédiction IA
-- `services/visualGenerator.js` - Génération d'images visuelles
-- `services/couponManager.js` - Gestion de coupons (Telegram)
+- aux bons headers
+- au bon ordre des paramètres
+- aux bonnes valeurs `gr / partner / country`
 
-### Services supprimés
-- ~~`services/cronLearningService.js`~~ - Collecte automatique
-- `services/liveFeedClient.js` - API de matchs
-- ~~`services/finishedMatchStore.js`~~ - Stockage base de données
-- ~~`services/matchStatus.js`~~ - Statut de matchs
+### Faux live sur des matchs futurs
 
----
+Déjà corrigé :
 
-## 🚀 DÉPLOIEMENT
+- le projet ne fait pas confiance uniquement aux flags bruts
+- il vérifie aussi l’heure réelle et le texte `Début dans ...`
 
-### Depuis GitHub (automatic)
-1. Push vers le repository
-2. Render détecte automatiquement les changements
-3. Redéploiement automatique
+### Inversion de statuts ou mauvaise lecture du cycle du match
 
-### Manuel (si nécessaire)
-1. Dashboard Render → votre service
-2. Cliquez sur "Manual Deploy"
-3. Choisissez "Deploy latest commit"
+Déjà corrigé :
 
----
+- `a_venir`
+- `en_cours`
+- `termine`
 
-## 📊 MONITORING
+sont déjà normalisés côté backend.
 
-### Logs de déploiement
-- Dashboard Render → votre service → Logs
-- Vérifiez les messages: "FURY X ONE 👿 disponible sur http://localhost:3029"
-- Message de confirmation: "Tous les API et CRON ont été désactivés"
+## Fichiers importants à transmettre
 
-### Vérification du statut
-Visitez simplement: `https://one-delux-fast.onrender.com`
+- `server.js`
+- `server/config.js`
+- `services/liveFeedClient.js`
+- `public/site-api.js`
+- `.env.example`
+- `DEPLOYMENT_ENDPOINTS.md`
 
----
+## Résumé final
 
-## 🛡️ SÉCURITÉ
+Ton ami n’a pas besoin de chercher :
 
-### Pas d'API externes
-- Aucune connexion à des API tierces
-- Aucune collecte de données automatique
-- Aucune connexion base de données
-- Serveur entièrement statique
+- l’URL API est déjà la bonne
+- les paramètres sont déjà validés
+- les headers sont déjà les bons
+- la logique de statut est déjà corrigée
+- les erreurs classiques sont déjà corrigées
 
-### Variables d'environnement
-- Aucune variable sensible requise
-- Configuration minimale
-- Pas de secrets nécessaires
-
----
-
-**SIGNÉ:** SOLITAIRE HACK
-**Date:** 2026-06-09
-**Version:** 2.0 - Static Web Server Only
+Le système est donc prêt pour une intégration orientée sauvegarde des matchs et gestion de leur statut.

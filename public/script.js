@@ -1,7 +1,6 @@
-/**
- * FURY X ONE 👿 - Main Application Script
- * Adapté de ONE-DELUX
- * Signé: SOLITAIRE HACK
+﻿/**
+ * FURY X ONE - Main Application Script
+ * Live feed, filters and quick prediction rendering
  */
 
 const matchesContainer = document.getElementById("matches");
@@ -13,7 +12,6 @@ const updatedAt = document.getElementById("updatedAt");
 const appVersionTag = document.getElementById("appVersionTag");
 const matchModes = document.getElementById("matchModes");
 
-// Mobile elements
 const mobileRefreshBtn = document.getElementById("mobileRefreshBtn");
 const mobileLeagueSelect = document.getElementById("mobileLeagueSelect");
 const mobileMenuBtn = document.getElementById("mobileMenuBtn");
@@ -22,195 +20,206 @@ const mobileMatchModes = document.getElementById("mobileMatchModes");
 const mobileUpdatedAt = document.getElementById("mobileUpdatedAt");
 const mobileAppVersionTag = document.getElementById("mobileAppVersionTag");
 
+const APP_VERSION = "2026.06.20-r1";
+const DEFAULT_TEAM_LOGO = "/icons/icon-192x192.svg";
+
 let allMatches = [];
-let currentMode = "upcoming";
-const APP_VERSION = "2026.06.04-r1";
+let currentMode = "live";
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function safeText(value, fallback = "-") {
+  if (value === undefined || value === null || value === "") return fallback;
+  return escapeHtml(value);
+}
+
+function safeNumber(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function formatPercent(value) {
+  const numeric = safeNumber(value);
+  return numeric === null ? "-" : `${(numeric * 100).toFixed(0)}%`;
+}
+
+function formatOdd(value) {
+  const numeric = safeNumber(value);
+  return numeric === null ? "-" : numeric.toFixed(2);
+}
 
 function getMatchStatusKey(match) {
   return String(match?.normalizedStatus || match?.statusNormalized || match?.status || "")
     .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .trim();
 }
 
-function formatKickoffTime(value) {
-  if (value === undefined || value === null || value === "") {
-    return "Heure non définie";
-  }
+function isLiveStatus(status) {
+  return status === "en_cours" || status === "live" || status === "in_progress";
+}
 
+function isUpcomingStatus(status) {
+  return status === "a_venir" || status === "avenir" || status === "upcoming";
+}
+
+function isFinishedStatus(status) {
+  return status === "termine" || status === "finished" || status === "ended";
+}
+
+function getDisplayStatus(match) {
+  const status = getMatchStatusKey(match);
+  if (isLiveStatus(status)) return "En cours";
+  if (isFinishedStatus(status)) return "Terminé";
+  if (isUpcomingStatus(status)) return "À venir";
+  return safeText(match?.status, "Disponible");
+}
+
+function formatKickoffTime(value) {
+  if (value === undefined || value === null || value === "") return "Heure non définie";
   const numeric = Number(value);
   const date = Number.isFinite(numeric) ? new Date(numeric * 1000) : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "Heure non définie";
-  }
-
-  return date.toLocaleString("fr-FR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  if (Number.isNaN(date.getTime())) return "Heure non définie";
+  return date.toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 }
 
 function getMatchScore(match) {
   const score = match?.score || {};
-  const home = Number.isFinite(Number(score.home)) ? Number(score.home) : null;
-  const away = Number.isFinite(Number(score.away)) ? Number(score.away) : null;
-
+  const home = safeNumber(score.home);
+  const away = safeNumber(score.away);
   if (home === null && away === null) return null;
-  return {
-    home: home ?? 0,
-    away: away ?? 0,
-  };
+  return { home: home ?? 0, away: away ?? 0 };
 }
 
-// Initialize
-document.addEventListener("DOMContentLoaded", () => {
-  appVersionTag.textContent = `v${APP_VERSION}`;
-  setupEventListeners();
-  loadMatches();
-});
+function getTeamLogo(logo) {
+  return logo ? escapeHtml(logo) : DEFAULT_TEAM_LOGO;
+}
 
-function setupEventListeners() {
-  refreshBtn.addEventListener("click", loadMatches);
+function resolveBestMode(matches) {
+  const list = Array.isArray(matches) ? matches : [];
+  const liveCount = list.filter((match) => isLiveStatus(getMatchStatusKey(match))).length;
+  const upcomingCount = list.filter((match) => isUpcomingStatus(getMatchStatusKey(match))).length;
+  const finishedCount = list.filter((match) => isFinishedStatus(getMatchStatusKey(match))).length;
 
-  leagueSelect.addEventListener("change", () => {
-    filterAndRenderMatches();
-  });
+  if (currentMode === "live" && liveCount > 0) return "live";
+  if (currentMode === "upcoming" && upcomingCount > 0) return "upcoming";
+  if (currentMode === "finished" && finishedCount > 0) return "finished";
+  if (liveCount > 0) return "live";
+  if (upcomingCount > 0) return "upcoming";
+  if (finishedCount > 0) return "finished";
+  return "live";
+}
 
-  // Mode buttons
-  const modeButtons = matchModes.querySelectorAll(".match-mode");
-  modeButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      modeButtons.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentMode = btn.dataset.mode;
-      filterAndRenderMatches();
+function syncModeButtons() {
+  const groups = [matchModes, mobileMatchModes].filter(Boolean);
+  groups.forEach((group) => {
+    group.querySelectorAll(".match-mode").forEach((button) => {
+      button.classList.toggle("active", button.dataset.mode === currentMode);
     });
   });
 }
 
-async function loadMatches() {
-  refreshBtn.disabled = true;
-  refreshBtn.textContent = "Chargement...";
-
-  try {
-    const data = await window.SiteAPI.matches();
-    
-    if (!data.success) {
-      throw new Error(data.error || "Erreur inconnue");
-    }
-
-    allMatches = data.matches || [];
-    updateLeagueFilter(allMatches);
-    filterAndRenderMatches();
-    updateStatusStats(allMatches);
-
-    updatedAt.textContent = `Mis à jour: ${new Date().toLocaleTimeString("fr-FR")}`;
-  } catch (error) {
-    console.error("Erreur de chargement:", error);
-    matchesContainer.innerHTML = `
-      <div class="error-message">
-        <p>Impossible de charger les matchs: ${error.message}</p>
-      </div>
-    `;
-  } finally {
-    refreshBtn.disabled = false;
-    refreshBtn.textContent = "Actualiser";
-  }
+function syncUpdatedAt(text) {
+  if (updatedAt) updatedAt.textContent = text;
+  if (mobileUpdatedAt) mobileUpdatedAt.textContent = text;
 }
 
 function updateLeagueFilter(matches) {
-  const leagues = new Set(matches.map(m => m.league).filter(Boolean));
-  const currentValue = leagueSelect.value;
+  const leagues = [...new Set(matches.map((match) => match.league).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+  const currentDesktop = leagueSelect?.value || "all";
+  const currentMobile = mobileLeagueSelect?.value || currentDesktop;
 
-  leagueSelect.innerHTML = '<option value="all">Toutes les ligues</option>';
-
-  leagues.forEach(league => {
-    const option = document.createElement("option");
-    option.value = league;
-    option.textContent = league;
-    leagueSelect.appendChild(option);
-  });
-
-  if (leagues.has(currentValue)) {
-    leagueSelect.value = currentValue;
-  }
-}
-
-function filterAndRenderMatches() {
-  const selectedLeague = leagueSelect.value;
-
-  let filtered = allMatches;
-
-  // Filter by league
-  if (selectedLeague !== "all") {
-    filtered = filtered.filter(m => m.league === selectedLeague);
-  }
-
-  // Filter by mode (simulated for now)
-  if (currentMode === "live") {
-    filtered = filtered.filter((m) => {
-      const status = getMatchStatusKey(m);
-      return status === "en_cours" || status === "live";
+  const fillSelect = (select, value) => {
+    if (!select) return;
+    select.innerHTML = '<option value="all">Toutes les ligues</option>';
+    leagues.forEach((league) => {
+      const option = document.createElement("option");
+      option.value = league;
+      option.textContent = league;
+      select.appendChild(option);
     });
-  } else if (currentMode === "finished") {
-    filtered = filtered.filter((m) => {
-      const status = getMatchStatusKey(m);
-      return status === "terminé" || status === "finished";
-    });
-  } else if (currentMode === "upcoming") {
-    filtered = filtered.filter((m) => {
-      const status = getMatchStatusKey(m);
-      return status === "a_venir" || status === "upcoming";
-    });
-  }
-
-  renderMatches(filtered);
-}
-
-function renderMatches(matches) {
-  matchesContainer.innerHTML = "";
-
-  if (!matches.length) {
-    emptyState.classList.remove("hidden");
-    return;
-  }
-
-  emptyState.classList.add("hidden");
-
-  matches.forEach(match => {
-    const card = createMatchCard(match);
-    matchesContainer.appendChild(card);
-  });
-}
-
-async function updateStatusStats() {
-  if (!statsContainer) return;
-
-  const matches = allMatches || [];
-  const breakdown = {
-    a_venir: matches.filter(m => m.isUpcoming).length,
-    en_cours: matches.filter(m => m.isLive).length,
-    terminé: matches.filter(m => m.isFinished).length,
+    select.value = leagues.includes(value) ? value : "all";
   };
-  const total = matches.length;
+
+  fillSelect(leagueSelect, currentDesktop);
+  fillSelect(mobileLeagueSelect, currentMobile);
+
+  if (leagueSelect && mobileLeagueSelect) {
+    mobileLeagueSelect.value = leagueSelect.value;
+  }
+}
+
+function updateStatusStats(matches) {
+  if (!statsContainer) return;
+  const list = Array.isArray(matches) ? matches : [];
+  const breakdown = {
+    upcoming: list.filter((match) => match?.isUpcoming || isUpcomingStatus(getMatchStatusKey(match))).length,
+    live: list.filter((match) => match?.isLive || isLiveStatus(getMatchStatusKey(match))).length,
+    finished: list.filter((match) => match?.isFinished || isFinishedStatus(getMatchStatusKey(match))).length,
+  };
 
   statsContainer.innerHTML = `
     <article class="stat-item">
       <span>Total</span>
-      <strong>${total}</strong>
+      <strong>${list.length}</strong>
     </article>
     <article class="stat-item">
-      <span>A venir</span>
-      <strong>${breakdown.a_venir}</strong>
+      <span>À venir</span>
+      <strong>${breakdown.upcoming}</strong>
     </article>
     <article class="stat-item">
       <span>En cours</span>
-      <strong>${breakdown.en_cours}</strong>
+      <strong>${breakdown.live}</strong>
     </article>
     <article class="stat-item">
-      <span>Termines</span>
-      <strong>${breakdown.terminé}</strong>
+      <span>Terminés</span>
+      <strong>${breakdown.finished}</strong>
     </article>
   `;
+}
+
+function getFilteredMatches() {
+  const selectedLeague = leagueSelect?.value || "all";
+  let filtered = [...allMatches];
+
+  if (selectedLeague !== "all") {
+    filtered = filtered.filter((match) => match.league === selectedLeague);
+  }
+
+  if (currentMode === "live") {
+    filtered = filtered.filter((match) => isLiveStatus(getMatchStatusKey(match)));
+  } else if (currentMode === "finished") {
+    filtered = filtered.filter((match) => isFinishedStatus(getMatchStatusKey(match)));
+  } else if (currentMode === "upcoming") {
+    filtered = filtered.filter((match) => isUpcomingStatus(getMatchStatusKey(match)));
+  }
+
+  return filtered;
+}
+
+function renderMatches(matches) {
+  if (!matchesContainer) return;
+  matchesContainer.innerHTML = "";
+
+  if (!matches.length) {
+    emptyState?.classList.remove("hidden");
+    return;
+  }
+
+  emptyState?.classList.add("hidden");
+  matches.forEach((match) => matchesContainer.appendChild(createMatchCard(match)));
+}
+
+function filterAndRenderMatches() {
+  renderMatches(getFilteredMatches());
 }
 
 function createMatchCard(match) {
@@ -220,193 +229,195 @@ function createMatchCard(match) {
 
   const odds = match.odds || {};
   const score = getMatchScore(match);
-  const isLiveOrFinished = getMatchStatusKey(match) === "en_cours" || getMatchStatusKey(match) === "live" || getMatchStatusKey(match) === "terminé" || getMatchStatusKey(match) === "finished";
+  const statusKey = getMatchStatusKey(match);
+  const showScore = score && (isLiveStatus(statusKey) || isFinishedStatus(statusKey));
+  const homeTeam = safeText(match.team1, "Équipe 1");
+  const awayTeam = safeText(match.team2, "Équipe 2");
 
   article.innerHTML = `
     <div class="match-header">
       <div class="match-info">
-        <p class="match-league">${match.league || "Compétition virtuelle"}</p>
+        <p class="match-league">${safeText(match.league, "Compétition virtuelle")}</p>
         <div class="match-teams">
-          ${match.homeLogo ? `<img src="${match.homeLogo}" alt="${match.team1}" class="team-logo" onerror="this.style.display='none'">` : ''}
-          <h3 class="match-title">${match.team1} vs ${match.team2}</h3>
-          ${match.awayLogo ? `<img src="${match.awayLogo}" alt="${match.team2}" class="team-logo" onerror="this.style.display='none'">` : ''}
+          <img src="${getTeamLogo(match.homeLogo)}" alt="${homeTeam}" class="team-logo" onerror="this.src='${DEFAULT_TEAM_LOGO}'">
+          <h3 class="match-title">${homeTeam} vs ${awayTeam}</h3>
+          <img src="${getTeamLogo(match.awayLogo)}" alt="${awayTeam}" class="team-logo" onerror="this.src='${DEFAULT_TEAM_LOGO}'">
         </div>
         <p class="match-meta">
-          <span class="match-status">${match.status || "Disponible"}</span>
+          <span class="match-status">${getDisplayStatus(match)}</span>
           ${match.startTime ? `<span class="match-kickoff">Début: ${formatKickoffTime(match.startTime)}</span>` : ""}
-          ${match.period ? `<span class="match-period">· ${match.period}</span>` : ""}
+          ${match.period ? `<span class="match-period">· ${safeText(match.period)}</span>` : ""}
         </p>
       </div>
     </div>
-    
-    ${isLiveOrFinished && score ? `
+
+    ${showScore ? `
       <div class="match-score-strip">
         <span class="score-label">Score</span>
         <strong class="score-value">${score.home} - ${score.away}</strong>
       </div>
     ` : ""}
-    
+
     <div class="odds-section">
       <div class="odds-grid">
         <div class="odd-box">
           <span class="odd-label">1</span>
-          <strong class="odd-value">${typeof odds.home === 'number' ? odds.home.toFixed(2) : odds.home || "-"}</strong>
+          <strong class="odd-value">${formatOdd(odds.home)}</strong>
         </div>
         <div class="odd-box">
           <span class="odd-label">X</span>
-          <strong class="odd-value">${typeof odds.draw === 'number' ? odds.draw.toFixed(2) : odds.draw || "-"}</strong>
+          <strong class="odd-value">${formatOdd(odds.draw)}</strong>
         </div>
         <div class="odd-box">
           <span class="odd-label">2</span>
-          <strong class="odd-value">${typeof odds.away === 'number' ? odds.away.toFixed(2) : odds.away || "-"}</strong>
+          <strong class="odd-value">${formatOdd(odds.away)}</strong>
         </div>
       </div>
     </div>
-    
+
     <div class="prediction-section">
-      <button class="prediction-btn" onclick="loadPrediction('${match.id}', '${match.team1}', '${match.team2}', '${match.league}')">🔮 Prédiction IA</button>
+      <button class="prediction-btn" type="button" data-action="prediction">🔮 Prédiction IA</button>
       <a class="detail-link" href="/match.html?id=${encodeURIComponent(match.id)}">Voir les détails →</a>
     </div>
   `;
 
+  const predictionBtn = article.querySelector('[data-action="prediction"]');
+  if (predictionBtn) {
+    predictionBtn.addEventListener("click", () => loadPrediction(match.id, match.team1, match.team2, match.league));
+  }
+
   return article;
+}
+
+function renderPredictionRow(label, value) {
+  return `
+    <div class="prediction-bar">
+      <span class="prediction-team">${label}</span>
+      <div class="bar-container">
+        <div class="bar-fill" style="width: ${safeNumber(value) !== null ? (safeNumber(value) * 100).toFixed(0) : 0}%"></div>
+      </div>
+      <span class="prediction-percent">${formatPercent(value)}</span>
+    </div>
+  `;
 }
 
 async function loadPrediction(matchId, team1, team2, league) {
   try {
     const data = await window.SiteAPI.prediction(team1, team2, league);
-    
     if (!data.success) {
       throw new Error(data.error || "Erreur inconnue");
     }
 
     const prediction = data.prediction;
-    const matchCard = document.querySelector(`[data-match-id="${matchId}"]`);
-    
-    if (matchCard && prediction.predictions) {
-      const predictionSection = matchCard.querySelector('.prediction-section');
-      const x2 = prediction.predictions['1x2'] || {};
-      const totalGoals = prediction.predictions.total_goals || {};
-      const btts = prediction.predictions.btts || {};
-      const meta = prediction.meta || {};
-      
-      predictionSection.innerHTML = `
-        <div class="prediction-result">
-          <span class="prediction-label">🔮 IA Prediction:</span>
-          <div class="prediction-bars">
-            <div class="prediction-bar">
-              <span class="prediction-team">1</span>
-              <div class="bar-container">
-                <div class="bar-fill" style="width: ${(x2.home * 100).toFixed(0)}%"></div>
-              </div>
-              <span class="prediction-percent">${(x2.home * 100).toFixed(0)}%</span>
-            </div>
-            <div class="prediction-bar">
-              <span class="prediction-team">X</span>
-              <div class="bar-container">
-                <div class="bar-fill" style="width: ${(x2.draw * 100).toFixed(0)}%"></div>
-              </div>
-              <span class="prediction-percent">${(x2.draw * 100).toFixed(0)}%</span>
-            </div>
-            <div class="prediction-bar">
-              <span class="prediction-team">2</span>
-              <div class="bar-container">
-                <div class="bar-fill" style="width: ${(x2.away * 100).toFixed(0)}%"></div>
-              </div>
-              <span class="prediction-percent">${(x2.away * 100).toFixed(0)}%</span>
-            </div>
-          </div>
-          <div class="prediction-details">
-            ${prediction.predictions.exact_score ? `<span class="prediction-score">Score: ${prediction.predictions.exact_score.prediction}</span>` : ''}
-            ${totalGoals.predicted ? `<span class="prediction-total">Total Buts: ${totalGoals.predicted.toFixed(1)} ${totalGoals.platform_value ? `(Plateforme: ${totalGoals.platform_value})` : ''}</span>` : ''}
-            ${btts.yes ? `<span class="prediction-btts">BTTS: OUI ${(btts.yes * 100).toFixed(0)}% / NON ${(btts.no * 100).toFixed(0)}%</span>` : ''}
-            ${meta.lambda_home ? `<span class="prediction-meta">λ Home: ${meta.lambda_home.toFixed(2)} / Away: ${meta.lambda_away.toFixed(2)}</span>` : ''}
-          </div>
+    const matchCard = document.querySelector(`[data-match-id="${CSS.escape(String(matchId))}"]`);
+    if (!matchCard || !prediction?.predictions) return;
+
+    const predictionSection = matchCard.querySelector(".prediction-section");
+    const x2 = prediction.predictions["1x2"] || {};
+    const totalGoals = prediction.predictions.total_goals || {};
+    const btts = prediction.predictions.btts || {};
+    const parity = prediction.predictions.parity || {};
+    const handicap = prediction.predictions.handicap || {};
+
+    predictionSection.innerHTML = `
+      <div class="prediction-result">
+        <span class="prediction-label">🔮 IA Prediction</span>
+        <div class="prediction-bars">
+          ${renderPredictionRow("1", x2.home)}
+          ${renderPredictionRow("X", x2.draw)}
+          ${renderPredictionRow("2", x2.away)}
         </div>
-        <a class="detail-link" href="/match.html?id=${encodeURIComponent(matchId)}">Voir les détails →</a>
-      `;
-    }
+        <div class="prediction-details">
+          ${safeNumber(totalGoals.predicted) !== null ? `<span class="prediction-total">Total buts: ${safeNumber(totalGoals.predicted).toFixed(1)}${totalGoals.platform_value !== undefined ? ` (Plateforme: ${escapeHtml(totalGoals.platform_value)})` : ""}</span>` : ""}
+          ${safeNumber(btts.yes) !== null ? `<span class="prediction-btts">BTTS: OUI ${formatPercent(btts.yes)} / NON ${formatPercent(btts.no)}</span>` : ""}
+          ${safeNumber(parity.pair) !== null ? `<span class="prediction-btts">Parité: Pair ${formatPercent(parity.pair)} / Impair ${formatPercent(parity.impair)}</span>` : ""}
+          ${handicap.platform_value !== undefined ? `<span class="prediction-total">Handicap: ${escapeHtml(handicap.platform_value)}</span>` : ""}
+        </div>
+      </div>
+      <a class="detail-link" href="/match.html?id=${encodeURIComponent(matchId)}">Voir les détails →</a>
+    `;
   } catch (error) {
     console.error("Erreur de prédiction:", error);
-    alert("Impossible de charger la prédiction: " + error.message);
+    alert(`Impossible de charger la prédiction: ${error.message}`);
   }
 }
 
-// Mobile menu toggle
-if (mobileMenuBtn) {
-  mobileMenuBtn.addEventListener("click", () => {
-    mobileNav.classList.toggle("active");
-  });
+async function loadMatches() {
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "Chargement...";
+  }
+  if (mobileRefreshBtn) {
+    mobileRefreshBtn.disabled = true;
+  }
+
+  try {
+    const data = await window.SiteAPI.matches();
+    if (!data.success) {
+      throw new Error(data.error || "Erreur inconnue");
+    }
+
+    allMatches = Array.isArray(data.matches) ? data.matches : [];
+    currentMode = resolveBestMode(allMatches);
+    syncModeButtons();
+    updateLeagueFilter(allMatches);
+    updateStatusStats(allMatches);
+    filterAndRenderMatches();
+    syncUpdatedAt(`Mis à jour: ${new Date().toLocaleTimeString("fr-FR")}`);
+  } catch (error) {
+    console.error("Erreur de chargement:", error);
+    if (matchesContainer) {
+      matchesContainer.innerHTML = `
+        <div class="error-message">
+          <p>Impossible de charger les matchs: ${escapeHtml(error.message)}</p>
+        </div>
+      `;
+    }
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = "Actualiser";
+    }
+    if (mobileRefreshBtn) {
+      mobileRefreshBtn.disabled = false;
+    }
+  }
 }
 
-// Sync mobile and desktop refresh buttons
-if (mobileRefreshBtn && refreshBtn) {
-  mobileRefreshBtn.addEventListener("click", () => {
-    refreshBtn.click();
-  });
-}
+function setupEventListeners() {
+  refreshBtn?.addEventListener("click", loadMatches);
+  mobileRefreshBtn?.addEventListener("click", loadMatches);
 
-// Sync mobile and desktop league selects
-if (mobileLeagueSelect && leagueSelect) {
-  mobileLeagueSelect.addEventListener("change", () => {
-    leagueSelect.value = mobileLeagueSelect.value;
-    loadMatches();
+  leagueSelect?.addEventListener("change", () => {
+    if (mobileLeagueSelect) mobileLeagueSelect.value = leagueSelect.value;
+    filterAndRenderMatches();
   });
-  
-  leagueSelect.addEventListener("change", () => {
-    mobileLeagueSelect.value = leagueSelect.value;
-  });
-}
 
-// Sync mobile and desktop match modes
-if (mobileMatchModes && matchModes) {
-  const mobileModeButtons = mobileMatchModes.querySelectorAll(".match-mode");
-  const desktopModeButtons = matchModes.querySelectorAll(".match-mode");
-  
-  mobileModeButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const mode = btn.dataset.mode;
-      currentMode = mode;
-      
-      // Update mobile buttons
-      mobileModeButtons.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      
-      // Update desktop buttons
-      desktopModeButtons.forEach(b => {
-        b.classList.remove("active");
-        if (b.dataset.mode === mode) b.classList.add("active");
+  mobileLeagueSelect?.addEventListener("change", () => {
+    if (leagueSelect) leagueSelect.value = mobileLeagueSelect.value;
+    filterAndRenderMatches();
+  });
+
+  [matchModes, mobileMatchModes].filter(Boolean).forEach((group) => {
+    group.querySelectorAll(".match-mode").forEach((button) => {
+      button.addEventListener("click", () => {
+        currentMode = button.dataset.mode || "live";
+        syncModeButtons();
+        filterAndRenderMatches();
       });
-      
-      loadMatches();
     });
   });
-  
-  desktopModeButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const mode = btn.dataset.mode;
-      currentMode = mode;
-      
-      // Update desktop buttons
-      desktopModeButtons.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      
-      // Update mobile buttons
-      mobileModeButtons.forEach(b => {
-        b.classList.remove("active");
-        if (b.dataset.mode === mode) b.classList.add("active");
-      });
-      
-      loadMatches();
-    });
+
+  mobileMenuBtn?.addEventListener("click", () => {
+    mobileNav?.classList.toggle("active");
   });
 }
 
-// Sync updated time and version for mobile
-if (mobileUpdatedAt && updatedAt) {
-  mobileUpdatedAt.textContent = updatedAt.textContent;
-}
+window.loadPrediction = loadPrediction;
 
-if (mobileAppVersionTag && appVersionTag) {
-  mobileAppVersionTag.textContent = appVersionTag.textContent;
-}
+document.addEventListener("DOMContentLoaded", () => {
+  if (appVersionTag) appVersionTag.textContent = `v${APP_VERSION}`;
+  if (mobileAppVersionTag) mobileAppVersionTag.textContent = `v${APP_VERSION}`;
+  setupEventListeners();
+  loadMatches();
+});

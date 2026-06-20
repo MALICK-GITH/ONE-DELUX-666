@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
 
 <head>
@@ -16,7 +16,6 @@
   <meta name="format-detection" content="telephone=no" />
   <meta name="robots" content="noindex,nofollow" />
 
-  <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/svg+xml" sizes="192x192" href="/icons/icon-192x192.svg">
   <link rel="icon" type="image/svg+xml" sizes="512x512" href="/icons/icon-512x512.svg">
@@ -27,7 +26,6 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
   <link
     href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap"
     rel="stylesheet" />
@@ -37,7 +35,7 @@
 
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
-  
+
   <header class="hero coupon-hero">
     <p class="tag">FIFA Virtuel</p>
     <h1>Générateur de coupon</h1>
@@ -49,6 +47,7 @@
           <option value="888starz" selected>888Starz</option>
         </select>
       </label>
+
       <label class="league-filter" for="familySelect">
         <span>Famille de ligue</span>
         <select id="familySelect">
@@ -59,23 +58,26 @@
           <option value="Classic">Classic</option>
         </select>
       </label>
+
       <label class="league-filter" for="preLeagueSelect">
         <span>Ligue</span>
         <select id="preLeagueSelect">
-          <option value="all">Toutes</option>
+          <option value="all">Toutes les ligues</option>
         </select>
       </label>
+
       <label class="league-filter" for="preMarketSelect">
         <span>Marché</span>
         <select id="preMarketSelect">
           <option value="all">Auto</option>
           <option value="1x2">1X2</option>
           <option value="over">Over / Under</option>
+          <option value="btts">BTTS</option>
           <option value="parity">Pair / Impair</option>
-          <option value="exact">Score exact</option>
           <option value="handicap">Handicap</option>
         </select>
       </label>
+
       <label class="league-filter" for="sizeSelect">
         <span>Nombre de matchs</span>
         <select id="sizeSelect">
@@ -84,33 +86,7 @@
           <option value="7">7</option>
         </select>
       </label>
-      <label class="league-filter" for="preStatusSelect">
-        <span>Statut</span>
-        <select id="preStatusSelect">
-          <option value="all">Tous</option>
-          <option value="live">En cours</option>
-          <option value="upcoming">À venir</option>
-        </select>
-      </label>
-      <label class="league-filter" for="preConfidenceSelect">
-        <span>Confiance min</span>
-        <select id="preConfidenceSelect">
-          <option value="0">0%</option>
-          <option value="50">50%</option>
-          <option value="60">60%</option>
-          <option value="70">70%</option>
-          <option value="80">80%</option>
-        </select>
-      </label>
-      <label class="league-filter" for="preRiskThresholdSelect">
-        <span>Risque max</span>
-        <select id="preRiskThresholdSelect">
-          <option value="100">Tous</option>
-          <option value="65">Moyen</option>
-          <option value="45">Faible</option>
-          <option value="25">Très faible</option>
-        </select>
-      </label>
+
       <div class="coupon-risk-builder">
         <span>Niveau de risque</span>
         <div class="risk-presets">
@@ -128,6 +104,7 @@
           </label>
         </div>
       </div>
+
       <button id="refreshBtn" type="button" class="action-btn coupon-generate-btn">Générer le coupon</button>
     </div>
 
@@ -136,6 +113,7 @@
       <a class="coupon-page-link" href="/creator.html">👤 Créateur</a>
       <button id="generateVisualBtn" type="button" class="visual-btn">📸 Générer l'image</button>
     </div>
+
     <div class="visual-options" aria-label="Options de génération d'image">
       <label class="visual-option" for="visualFormatSelect">
         <span>Format</span>
@@ -158,11 +136,11 @@
 
   <main id="main-content">
     <section class="stats" id="couponStats"></section>
-    
+
     <section class="coupon-section" id="couponSection">
-      <div class="loading-card">Cliquez sur "Générer Coupon" pour commencer</div>
+      <div class="loading-card">Clique sur "Générer le coupon" pour commencer</div>
     </section>
-    
+
     <section class="coupon-actions" id="couponActions">
       <button id="ladderBtn" type="button" class="action-btn">Générer Ladder</button>
       <button id="multiBtn" type="button" class="action-btn">Générer Multi</button>
@@ -174,21 +152,13 @@
     <small id="updatedAt"></small>
     <small id="appVersionTag"></small>
     <p class="legal-foot">
-      Informations et scores a titre indicatif. Paris interdits aux mineurs. Joue avec moderation.
+      Informations et scores à titre indicatif. Paris interdits aux mineurs. Joue avec modération.
     </p>
     <div class="site-signature">😈 Signé par <strong>SOLITAIRE HACK 🇨🇮</strong></div>
   </footer>
 
-  <!-- API Client -->
   <script src="/site-api.js"></script>
-
-  <!-- 888starz API Client -->
-  <script src="/888starz-api.js"></script>
-
-  <!-- Visual Generator -->
   <script src="/visualGenerator.js"></script>
-
-  <!-- Coupon Application Script -->
   <script src="/coupon.js"></script>
 </body>
 

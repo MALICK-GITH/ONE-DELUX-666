@@ -4,7 +4,7 @@
  * Signé: SOLITAIRE HACK
  */
 
-const CACHE_NAME = 'fury-x-one-v1';
+const CACHE_NAME = 'fury-x-one-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -42,7 +42,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 

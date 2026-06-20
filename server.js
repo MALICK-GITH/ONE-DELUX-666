@@ -168,8 +168,8 @@ function extractOdds(event) {
     // Résultat 1X2 (Groupe 1)
     if (group === 1) {
       if (type === 1) odds.home = Number(price);
-      if (type === 2) odds.away = Number(price);
-      if (type === 3) odds.draw = Number(price);
+      if (type === 2) odds.draw = Number(price);
+      if (type === 3) odds.away = Number(price);
     }
 
     // Double chance (Groupe 8)

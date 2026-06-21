@@ -27,9 +27,16 @@ const aiAssistantInput = document.getElementById("aiAssistantInput");
 const aiAssistantMessages = document.getElementById("aiAssistantMessages");
 const aiAssistantSend = document.getElementById("aiAssistantSend");
 const aiAssistantModelSelect = document.getElementById("aiAssistantModelSelect");
+const aiAssistantActions = document.getElementById("aiAssistantActions");
+const aiFilterLeague = document.getElementById("aiFilterLeague");
+const aiFilterStatus = document.getElementById("aiFilterStatus");
+const aiFilterConfidence = document.getElementById("aiFilterConfidence");
+const aiFilterMinOdd = document.getElementById("aiFilterMinOdd");
+const aiCompareMatchId = document.getElementById("aiCompareMatchId");
 
 const APP_VERSION = "2026.06.20-r1";
 const DEFAULT_TEAM_LOGO = "/icons/icon-192x192.svg";
+const AI_ASSISTANT_STORAGE_KEY = "fury_x_one_assistant_history_v1";
 
 let allMatches = [];
 let currentMode = "live";
@@ -431,6 +438,13 @@ function setupEventListeners() {
   });
 
   aiAssistantForm?.addEventListener("submit", handleAiAssistantSubmit);
+  aiAssistantActions?.querySelectorAll("[data-quick-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!aiAssistantInput) return;
+      aiAssistantInput.value = button.dataset.quickAction || "";
+      aiAssistantForm?.requestSubmit();
+    });
+  });
 }
 
 window.loadPrediction = loadPrediction;
@@ -440,6 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (mobileAppVersionTag) mobileAppVersionTag.textContent = `v${APP_VERSION}`;
   setupEventListeners();
   loadAssistantModels();
+  restoreAssistantHistory();
   loadMatches();
 });
 
@@ -452,10 +467,7 @@ async function loadAssistantModels() {
       return;
     }
 
-    aiAssistantModels = response.models.filter((model) => !String(model.id || "").toLowerCase().includes("image"));
-    if (!aiAssistantModels.length) {
-      aiAssistantModels = response.models.slice();
-    }
+    aiAssistantModels = response.models.slice();
 
     aiAssistantModelSelect.innerHTML = aiAssistantModels
       .map((model) => `<option value="${escapeHtml(model.id)}">${escapeHtml(model.label || model.id)}</option>`)
@@ -480,7 +492,14 @@ async function handleAiAssistantSubmit(event) {
   try {
     const response = await window.SiteAPI.assistantChat({
       model: aiAssistantModelSelect?.value || "grok-4",
-      messages: aiAssistantHistory
+      messages: aiAssistantHistory,
+      filters: {
+        league: aiFilterLeague?.value || "",
+        status: aiFilterStatus?.value || "",
+        minConfidence: aiFilterConfidence?.value || "",
+        minOdd: aiFilterMinOdd?.value || ""
+      },
+      compare: aiCompareMatchId?.value ? { matchId: aiCompareMatchId.value.trim() } : null
     });
 
     removeAssistantLoading();
@@ -491,6 +510,7 @@ async function handleAiAssistantSubmit(event) {
 
     aiAssistantHistory.push({ role: "assistant", content: response.answer.content });
     appendAssistantMessage("bot", response.answer.content);
+    persistAssistantHistory();
   } catch (error) {
     removeAssistantLoading();
     appendAssistantMessage("bot", `Impossible de répondre: ${error.message}`);
@@ -511,4 +531,24 @@ function appendAssistantMessage(role, content, loading = false) {
 
 function removeAssistantLoading() {
   aiAssistantMessages?.querySelector('[data-loading="true"]')?.remove();
+}
+
+function persistAssistantHistory() {
+  try {
+    localStorage.setItem(AI_ASSISTANT_STORAGE_KEY, JSON.stringify(aiAssistantHistory.slice(-12)));
+  } catch {}
+}
+
+function restoreAssistantHistory() {
+  try {
+    const raw = localStorage.getItem(AI_ASSISTANT_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || !aiAssistantMessages) return;
+    aiAssistantHistory = parsed.slice(-12);
+    aiAssistantMessages.innerHTML = "";
+    aiAssistantHistory.forEach((item) => {
+      appendAssistantMessage(item.role === "assistant" ? "bot" : "user", item.content);
+    });
+  } catch {}
 }

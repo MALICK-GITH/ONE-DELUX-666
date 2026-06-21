@@ -398,10 +398,12 @@ async function handleAiAssistantChat(req, res) {
       try {
         const payload = JSON.parse(body || "{}");
         const messages = Array.isArray(payload.messages) ? payload.messages : [];
+        const filters = payload.filters || {};
+        const compareRequest = payload.compare || null;
 
         const matches = await liveFeedClient.fetchMatches();
-        const upcomingMatches = matches
-          .filter((match) => match.status === "a_venir" || match.status === "upcoming")
+        const filteredMatches = applyAssistantMatchFilters(matches, filters);
+        const previewMatches = filteredMatches
           .slice(0, 12)
           .map((match) => ({
             id: match.id,
@@ -410,34 +412,45 @@ async function handleAiAssistantChat(req, res) {
             league: match.league,
             status: match.status,
             startTime: match.startTime,
-            odds: match.odds || {}
+            odds: match.odds || {},
+            confidence: deriveSystemConfidence(match)
           }));
 
-        const couponSeed = upcomingMatches.slice(0, 4).map((match) => ({
+        const couponSeed = previewMatches.slice(0, 4).map((match) => ({
           matchId: match.id,
           teamHome: match.team1,
           teamAway: match.team2,
           pari: "1",
-          cote: match.odds?.home || 1.5
+          cote: match.odds?.home || 1.5,
+          confidence: deriveSystemConfidence(match)
         }));
+
+        const compareMode = await buildCompareMode(compareRequest);
 
         const siteContext = {
           creator: {
             name: "SOLITAIRE HACK",
-            signature: "SOLITAIRE HACK 🇨🇮",
+            signature: "SOLITAIRE HACK ????",
             phones: ["+225 01 00 15 05 93", "+225 05 76 45 98 75"],
             telegram: "https://t.me/FURYXONE225P1",
             whatsapp: "https://chat.whatsapp.com/GK4Yf48KxUJL9raPNYSZ4M"
           },
           stats: {
             totalMatches: matches.length,
-            upcomingMatches: upcomingMatches.length,
+            filteredMatches: filteredMatches.length,
             pages: ["/", "/coupon.html", "/match.html", "/creator.html"]
           },
-          matches: upcomingMatches,
+          matches: previewMatches,
           coupon: {
             suggestion: couponSeed
-          }
+          },
+          compareMode,
+          quickActions: [
+            "Analyser les matchs live",
+            "Cr?er un coupon 3 matchs",
+            "Me parler du cr?ateur",
+            "Comparer deux matchs"
+          ]
         };
 
         const answer = await aiModelClient.chatWithSiteAssistant({
@@ -468,6 +481,60 @@ async function handleAiAssistantChat(req, res) {
       success: false,
       error: error.message
     }));
+  }
+}
+
+function applyAssistantMatchFilters(matches, filters) {
+  const list = Array.isArray(matches) ? matches : [];
+  const league = String(filters.league || "").trim().toLowerCase();
+  const status = String(filters.status || "").trim().toLowerCase();
+  const minOdd = Number(filters.minOdd);
+  const maxOdd = Number(filters.maxOdd);
+  const minConfidence = Number(filters.minConfidence);
+
+  return list.filter((match) => {
+    const confidence = deriveSystemConfidence(match);
+    const odds = [match?.odds?.home, match?.odds?.draw, match?.odds?.away].map(Number).filter(Number.isFinite);
+    const bestOdd = odds.length ? Math.min(...odds) : null;
+
+    if (league && !String(match?.league || "").toLowerCase().includes(league)) return false;
+    if (status && !String(match?.status || "").toLowerCase().includes(status)) return false;
+    if (Number.isFinite(minConfidence) && confidence < minConfidence) return false;
+    if (Number.isFinite(minOdd) && (!Number.isFinite(bestOdd) || bestOdd < minOdd)) return false;
+    if (Number.isFinite(maxOdd) && Number.isFinite(bestOdd) && bestOdd > maxOdd) return false;
+    return true;
+  });
+}
+
+function deriveSystemConfidence(match) {
+  const odds = [match?.odds?.home, match?.odds?.draw, match?.odds?.away].map(Number).filter(Number.isFinite);
+  if (!odds.length) return 50;
+  const minOdd = Math.min(...odds);
+  return Math.max(45, Math.min(92, Math.round((1 / minOdd) * 100)));
+}
+
+async function buildCompareMode(compareRequest) {
+  if (!compareRequest || !compareRequest.matchId) return null;
+
+  try {
+    const matches = await liveFeedClient.fetchMatches();
+    const match = matches.find((item) => String(item.id) === String(compareRequest.matchId));
+    if (!match) return null;
+
+    const systemPrediction = await predictionClient.predictMatch(match.team1, match.team2, match.league);
+    return {
+      match: {
+        id: match.id,
+        team1: match.team1,
+        team2: match.team2,
+        league: match.league
+      },
+      systemPrediction
+    };
+  } catch (error) {
+    return {
+      error: error.message
+    };
   }
 }
 

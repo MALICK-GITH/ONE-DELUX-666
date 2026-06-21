@@ -55,63 +55,41 @@ class AIModelClient {
   }
 
   getJson(path) {
+    this.assertConfigured();
+    return this.requestJson("GET", path);
+  }
+
+  postJson(path, body) {
+    this.assertConfigured();
+    return this.requestJson("POST", path, body);
+  }
+
+  assertConfigured() {
+    if (!this.apiKey) {
+      throw new Error("Clé IA indisponible");
+    }
+  }
+
+  requestJson(method, path, body) {
     return new Promise((resolve, reject) => {
       const base = new URL(this.baseUrl);
       const protocol = base.protocol === "https:" ? https : http;
+      const payload = body ? JSON.stringify(body) : null;
       const options = {
         hostname: base.hostname,
         port: base.port || (base.protocol === "https:" ? 443 : 80),
         path: `${base.pathname.replace(/\/$/, "")}${path}`,
-        method: "GET",
+        method,
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${this.apiKey}`
         }
       };
 
-      const req = protocol.request(options, (res) => {
-        let data = "";
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
-        res.on("end", () => {
-          try {
-            const json = JSON.parse(data);
-            if (res.statusCode >= 200 && res.statusCode < 300) {
-              resolve(json);
-              return;
-            }
-            reject(new Error(json.error?.message || json.error || json.message || `HTTP ${res.statusCode}`));
-          } catch (error) {
-            reject(new Error(`Erreur de parsing JSON: ${error.message}`));
-          }
-        });
-      });
-
-      req.on("error", (error) => {
-        reject(new Error(`Erreur de connexion IA: ${error.message}`));
-      });
-
-      req.end();
-    });
-  }
-
-  postJson(path, body) {
-    return new Promise((resolve, reject) => {
-      const base = new URL(this.baseUrl);
-      const protocol = base.protocol === "https:" ? https : http;
-      const postData = JSON.stringify(body);
-      const options = {
-        hostname: base.hostname,
-        port: base.port || (base.protocol === "https:" ? 443 : 80),
-        path: `${base.pathname.replace(/\/$/, "")}${path}`,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(postData),
-          Authorization: `Bearer ${this.apiKey}`
-        }
-      };
+      if (payload) {
+        options.headers["Content-Type"] = "application/json";
+        options.headers["Content-Length"] = Buffer.byteLength(payload);
+      }
 
       const req = protocol.request(options, (res) => {
         let data = "";
@@ -136,7 +114,9 @@ class AIModelClient {
         reject(new Error(`Erreur de connexion IA: ${error.message}`));
       });
 
-      req.write(postData);
+      if (payload) {
+        req.write(payload);
+      }
       req.end();
     });
   }
@@ -167,6 +147,8 @@ function buildSiteAssistantMessages(payload) {
   const stats = payload?.siteContext?.stats || {};
   const matches = Array.isArray(payload?.siteContext?.matches) ? payload.siteContext.matches : [];
   const coupons = payload?.siteContext?.coupon || {};
+  const compareMode = payload?.siteContext?.compareMode || null;
+  const quickActions = Array.isArray(payload?.siteContext?.quickActions) ? payload.siteContext.quickActions : [];
   const history = Array.isArray(payload?.messages) ? payload.messages : [];
 
   const systemMessage = {
@@ -175,7 +157,9 @@ function buildSiteAssistantMessages(payload) {
       "Tu es l'assistant officiel de FURY X ONE.",
       "Tu connais parfaitement le site, son créateur, ses numéros, ses pages, les matchs disponibles, les prédictions et les coupons.",
       "Tu réponds en français, de façon naturelle, directe, utile et concise.",
-      "Tu peux recommander un pari, commenter une prédiction, suggérer un coupon et expliquer ton avis.",
+      "Tu peux recommander un pari, commenter une prédiction, suggérer un coupon, expliquer ton avis et proposer une suite logique.",
+      "Tu peux filtrer les matchs par ligue, statut, confiance ou cotes selon la demande utilisateur.",
+      "Quand un mode comparaison est fourni, compare clairement l'avis système et ton avis IA.",
       "Quand l'utilisateur demande des informations sur le créateur ou le site, réponds avec les données de contexte fournies.",
       "Quand l'utilisateur demande les matchs ou un coupon, base-toi sur les données de contexte les plus récentes."
     ].join(" ")
@@ -188,7 +172,9 @@ function buildSiteAssistantMessages(payload) {
       creator,
       stats,
       matches,
-      coupon: coupons
+      coupon: coupons,
+      compareMode,
+      quickActions
     })
   };
 

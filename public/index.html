@@ -192,6 +192,27 @@
         <option value="grok-4">grok-4</option>
       </select>
     </div>
+    <div class="ai-assistant-actions" id="aiAssistantActions">
+      <button type="button" class="ai-chip" data-quick-action="Analyser les matchs live">Analyser les matchs live</button>
+      <button type="button" class="ai-chip" data-quick-action="Créer un coupon 3 matchs">Créer un coupon 3 matchs</button>
+      <button type="button" class="ai-chip" data-quick-action="Me parler du créateur">Me parler du créateur</button>
+      <button type="button" class="ai-chip" data-quick-action="Comparer deux matchs">Comparer deux matchs</button>
+    </div>
+    <div class="ai-assistant-filters">
+      <input id="aiFilterLeague" type="text" placeholder="Ligue" />
+      <select id="aiFilterStatus">
+        <option value="">Statut</option>
+        <option value="a_venir">À venir</option>
+        <option value="en_cours">En cours</option>
+        <option value="termine">Terminé</option>
+      </select>
+      <input id="aiFilterConfidence" type="number" min="0" max="100" placeholder="Confiance min" />
+      <input id="aiFilterMinOdd" type="number" min="1" step="0.01" placeholder="Cote min" />
+    </div>
+    <div class="ai-assistant-compare">
+      <label for="aiCompareMatchId">Avis IA + avis système</label>
+      <input id="aiCompareMatchId" type="text" placeholder="ID du match à comparer" />
+    </div>
     <div id="aiAssistantMessages" class="ai-assistant-messages">
       <div class="ai-message ai-message-bot">Salut, je suis l’assistant FURY X ONE. Demande un match, un coupon, une vérification ou des infos sur SOLITAIRE HACK.</div>
     </div>

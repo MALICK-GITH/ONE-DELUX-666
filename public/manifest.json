@@ -1,13 +1,18 @@
 {
+  "id": "/",
   "name": "FURY X ONE - Predictions IA",
   "short_name": "FURY X ONE",
   "description": "Application de prédiction de matchs FIFA et penalties par intelligence artificielle",
+  "lang": "fr",
+  "dir": "ltr",
   "start_url": "/index.html",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
   "background_color": "#0a1628",
   "theme_color": "#00ff88",
   "orientation": "portrait-primary",
   "scope": "/",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-72x72.svg",
@@ -58,7 +63,22 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["sports", "entertainment"],
+  "screenshots": [
+    {
+      "src": "/icons/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "Accueil FURY X ONE"
+    },
+    {
+      "src": "/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "label": "Icône FURY X ONE"
+    }
+  ],
+  "categories": ["sports", "entertainment", "utilities"],
   "shortcuts": [
     {
       "name": "Matchs en direct",
@@ -79,6 +99,13 @@
       "short_name": "Match",
       "description": "Voir le match du jour",
       "url": "/match.html",
+      "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Créateur",
+      "short_name": "Créateur",
+      "description": "Voir le créateur",
+      "url": "/creator.html",
       "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96", "type": "image/svg+xml" }]
     }
   ]

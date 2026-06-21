@@ -16,7 +16,6 @@
   <meta name="format-detection" content="telephone=no" />
   <meta name="robots" content="noindex,nofollow" />
 
-  <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/svg+xml" sizes="192x192" href="/icons/icon-192x192.svg">
   <link rel="icon" type="image/svg+xml" sizes="512x512" href="/icons/icon-512x512.svg">
@@ -27,7 +26,6 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
   <link
     href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap"
     rel="stylesheet" />
@@ -37,8 +35,7 @@
 
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
-  
-  <!-- Mobile Header -->
+
   <header class="mobile-header">
     <div class="mobile-header-top">
       <div class="mobile-brand">
@@ -51,8 +48,7 @@
         <span></span>
       </button>
     </div>
-    
-    <!-- Mobile Navigation -->
+
     <nav class="mobile-nav" id="mobileNav">
       <a class="mobile-nav-link" href="/">🏠 Accueil</a>
       <a class="mobile-nav-link" href="/coupon.html">🎫 Coupon</a>
@@ -61,7 +57,6 @@
     </nav>
   </header>
 
-  <!-- Desktop Hero (hidden on mobile) -->
   <header class="hero desktop-only">
     <div class="hero-top">
       <p class="tag">🤖 IA Prediction</p>
@@ -80,7 +75,7 @@
         <button id="generateVisualBtn" type="button" class="visual-btn">📸 Image</button>
       </div>
     </div>
-    
+
     <div class="visual-options" aria-label="Options de génération d'image">
       <label class="visual-option" for="visualFormatSelect">
         <span>Format</span>
@@ -101,7 +96,6 @@
     </div>
   </header>
 
-  <!-- Mobile Actions (visible on mobile) -->
   <div class="mobile-actions mobile-only">
     <button id="mobileRefreshPredictionBtn" type="button" class="mobile-action-btn">
       <span class="mobile-btn-icon">🔄</span>
@@ -113,7 +107,6 @@
     </button>
   </div>
 
-  <!-- Mobile Visual Options (visible on mobile) -->
   <div class="mobile-visual-options mobile-only">
     <label class="mobile-visual-option" for="mobileVisualFormatSelect">
       <span>Format</span>
@@ -147,7 +140,6 @@
     </section>
   </main>
 
-  <!-- Mobile Footer -->
   <footer class="mobile-footer mobile-only">
     <div class="mobile-footer-nav">
       <a class="mobile-footer-link" href="/">🏠</a>
@@ -160,7 +152,6 @@
     <small id="mobileApiStatus"></small>
   </footer>
 
-  <!-- Desktop Footer -->
   <footer class="desktop-footer desktop-only">
     <div class="footer-info">
       <small id="updatedAt"></small>
@@ -173,16 +164,9 @@
     <div class="site-signature">😈 Signé par <strong>SOLITAIRE HACK 🇨🇮</strong></div>
   </footer>
 
-  <!-- API Client -->
   <script src="/site-api.js"></script>
-
-  <!-- 888starz API Client -->
   <script src="/888starz-api.js"></script>
-
-  <!-- Visual Generator -->
   <script src="/visualGenerator.js"></script>
-
-  <!-- Match Detail Script -->
   <script src="/match.js"></script>
 </body>
 

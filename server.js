@@ -6,6 +6,7 @@ const config = require("./server/config");
 const LiveFeedClient = require("./services/liveFeedClient");
 const PredictionClient = require("./services/predictionClient");
 const PenaltyClient = require("./services/penaltyClient");
+const AIModelClient = require("./services/aiModelClient");
 
 const REQUIRED_NODE_MAJOR = 18;
 const REQUIRED_NODE_MINOR = 17;
@@ -15,6 +16,7 @@ const publicDir = path.join(__dirname, "public");
 const liveFeedClient = new LiveFeedClient(config.liveFeedUrl);
 const predictionClient = new PredictionClient(config.predictionApiUrl);
 const penaltyClient = new PenaltyClient(config.penaltyApiUrl);
+const aiModelClient = new AIModelClient(config.aiModelApiUrl, config.aiModelApiKey, config.aiModelName);
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -320,6 +322,147 @@ async function handlePredictionHealth(req, res) {
     }));
   } catch (error) {
     console.error("Erreur lors du health check:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handleAiInsight(req, res) {
+  try {
+    let body = "";
+    req.on("data", (chunk) => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const payload = JSON.parse(body || "{}");
+        if (!payload.teamHome || !payload.teamAway || !payload.league || !payload.prediction) {
+          res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({
+            success: false,
+            error: "Paramètres manquants: teamHome, teamAway, league, prediction requis"
+          }));
+          return;
+        }
+
+        const insight = await aiModelClient.generateMatchInsight(payload);
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          insight
+        }));
+      } catch (error) {
+        console.error("Erreur lors de l'analyse IA:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur de traitement IA:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handleAiModels(req, res) {
+  try {
+    const models = await aiModelClient.listModels();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      defaultModel: config.aiModelName,
+      models
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération des modèles IA:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handleAiAssistantChat(req, res) {
+  try {
+    let body = "";
+    req.on("data", (chunk) => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const payload = JSON.parse(body || "{}");
+        const messages = Array.isArray(payload.messages) ? payload.messages : [];
+
+        const matches = await liveFeedClient.fetchMatches();
+        const upcomingMatches = matches
+          .filter((match) => match.status === "a_venir" || match.status === "upcoming")
+          .slice(0, 12)
+          .map((match) => ({
+            id: match.id,
+            team1: match.team1,
+            team2: match.team2,
+            league: match.league,
+            status: match.status,
+            startTime: match.startTime,
+            odds: match.odds || {}
+          }));
+
+        const couponSeed = upcomingMatches.slice(0, 4).map((match) => ({
+          matchId: match.id,
+          teamHome: match.team1,
+          teamAway: match.team2,
+          pari: "1",
+          cote: match.odds?.home || 1.5
+        }));
+
+        const siteContext = {
+          creator: {
+            name: "SOLITAIRE HACK",
+            signature: "SOLITAIRE HACK 🇨🇮",
+            phones: ["+225 01 00 15 05 93", "+225 05 76 45 98 75"],
+            telegram: "https://t.me/FURYXONE225P1",
+            whatsapp: "https://chat.whatsapp.com/GK4Yf48KxUJL9raPNYSZ4M"
+          },
+          stats: {
+            totalMatches: matches.length,
+            upcomingMatches: upcomingMatches.length,
+            pages: ["/", "/coupon.html", "/match.html", "/creator.html"]
+          },
+          matches: upcomingMatches,
+          coupon: {
+            suggestion: couponSeed
+          }
+        };
+
+        const answer = await aiModelClient.chatWithSiteAssistant({
+          model: payload.model,
+          messages,
+          siteContext
+        });
+
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          answer,
+          siteContext
+        }));
+      } catch (error) {
+        console.error("Erreur assistant IA site:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur traitement assistant IA site:", error);
     res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: false,
@@ -810,6 +953,21 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === "/api/prediction/health") {
     await handlePredictionHealth(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/insight") {
+    await handleAiInsight(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/models") {
+    await handleAiModels(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/assistant/chat") {
+    await handleAiAssistantChat(req, res);
     return;
   }
 

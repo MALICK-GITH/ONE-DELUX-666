@@ -177,6 +177,30 @@
     <div class="site-signature">😈 Signé par <strong>SOLITAIRE HACK 🇨🇮</strong></div>
   </footer>
 
+  <button id="aiAssistantFab" type="button" aria-label="Ouvrir l'assistant IA" class="ai-assistant-fab">🧠</button>
+  <aside id="aiAssistantPanel" class="ai-assistant-panel hidden" aria-live="polite">
+    <div class="ai-assistant-header">
+      <div>
+        <strong>Assistant FURY X ONE</strong>
+        <p>Site, créateur, matchs, coupons, prédictions.</p>
+      </div>
+      <button id="aiAssistantClose" type="button" class="ai-assistant-close" aria-label="Fermer">✕</button>
+    </div>
+    <div class="ai-assistant-toolbar">
+      <label for="aiAssistantModelSelect">Modèle</label>
+      <select id="aiAssistantModelSelect">
+        <option value="grok-4">grok-4</option>
+      </select>
+    </div>
+    <div id="aiAssistantMessages" class="ai-assistant-messages">
+      <div class="ai-message ai-message-bot">Salut, je suis l’assistant FURY X ONE. Demande un match, un coupon, une vérification ou des infos sur SOLITAIRE HACK.</div>
+    </div>
+    <form id="aiAssistantForm" class="ai-assistant-form">
+      <textarea id="aiAssistantInput" rows="3" placeholder="Ex: donne-moi un coupon de 3 matchs ou quel match est le plus intéressant ?"></textarea>
+      <button id="aiAssistantSend" type="submit">Envoyer</button>
+    </form>
+  </aside>
+
   <!-- API Client -->
   <script src="/site-api.js"></script>
   

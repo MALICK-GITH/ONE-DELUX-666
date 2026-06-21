@@ -59,6 +59,15 @@
     predictionHealth() {
       return requestJson("/prediction/health");
     },
+    predictionInsight(body) {
+      return requestJson("/prediction/insight", { method: "POST", body });
+    },
+    predictionModels() {
+      return requestJson("/prediction/models");
+    },
+    assistantChat(body) {
+      return requestJson("/assistant/chat", { method: "POST", body });
+    },
     predictionFamilies() {
       return requestJson("/prediction/families");
     },

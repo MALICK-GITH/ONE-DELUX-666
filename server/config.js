@@ -26,6 +26,8 @@ const DEFAULT_PORT = 3000;
 const DEFAULT_LIVE_FEED_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
 const DEFAULT_PREDICTION_API_URL = "https://top-modele-train-api-vmp.onrender.com";
 const DEFAULT_PENALTY_API_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
+const DEFAULT_AI_MODEL_API_URL = "https://aimodelapi.onrender.com/v1";
+const DEFAULT_AI_MODEL = "grok-4";
 
 function parseNumber(value, fallback) {
   const parsed = Number(value);
@@ -46,4 +48,7 @@ module.exports = {
   predictionApiUrl: process.env.PREDICTION_API_URL || DEFAULT_PREDICTION_API_URL,
   liveFeedUrl: process.env.LIVE_FEED_URL || DEFAULT_LIVE_FEED_URL,
   penaltyApiUrl: process.env.PENALTY_API_URL || DEFAULT_PENALTY_API_URL,
+  aiModelApiUrl: process.env.AI_MODEL_API_URL || DEFAULT_AI_MODEL_API_URL,
+  aiModelApiKey: process.env.AI_MODEL_API_KEY || "devx-s3lkpld19bvhbsv2ex5omi1b2vjet5a5",
+  aiModelName: process.env.AI_MODEL_NAME || DEFAULT_AI_MODEL,
 };

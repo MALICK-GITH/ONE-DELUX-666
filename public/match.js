@@ -156,6 +156,50 @@ async function refreshPrediction() {
   }
 }
 
+async function loadMatch() {
+  if (!matchId) {
+    if (matchDetail) {
+      matchDetail.innerHTML = `
+        <div class="error-message">
+          <p>Aucun identifiant de match fourni.</p>
+        </div>
+      `;
+    }
+    updatePredictionStatus(false, "Match introuvable");
+    return;
+  }
+
+  if (matchDetail) {
+    matchDetail.innerHTML = `
+      <div class="loading-card">
+        <div class="loading-spinner"></div>
+        <p>Chargement du match...</p>
+      </div>
+    `;
+  }
+
+  try {
+    const data = await window.SiteAPI.matchById(matchId);
+    if (!data.success || !data.match) {
+      throw new Error(data.error || "Match introuvable");
+    }
+
+    currentMatchData = data.match;
+    window.currentMatchData = currentMatchData;
+    renderMatchDetail(currentMatchData);
+  } catch (error) {
+    console.error("Erreur de chargement du match:", error);
+    if (matchDetail) {
+      matchDetail.innerHTML = `
+        <div class="error-message">
+          <p>Impossible de charger le match: ${escapeHtml(error.message)}</p>
+        </div>
+      `;
+    }
+    updatePredictionStatus(false, "Erreur de chargement");
+  }
+}
+
 function formatTimestamp(timestamp) {
   if (!timestamp) return "Non définie";
   const numeric = Number(timestamp);
@@ -600,6 +644,20 @@ async function loadMatchPrediction() {
       </div>
     `;
     updatePredictionStatus(false, "Erreur d'analyse");
+  }
+}
+
+function attachPredictionToolEvents() {
+  const clearCacheBtn = document.getElementById("clearCacheBtn");
+
+  if (clearCacheBtn) {
+    clearCacheBtn.addEventListener("click", async () => {
+      try {
+        await window.SiteAPI.predictionClearCache();
+      } catch (error) {
+        console.error("Erreur de vidage cache:", error);
+      }
+    });
   }
 }
 

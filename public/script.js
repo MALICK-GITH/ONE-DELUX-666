@@ -19,12 +19,22 @@ const mobileNav = document.getElementById("mobileNav");
 const mobileMatchModes = document.getElementById("mobileMatchModes");
 const mobileUpdatedAt = document.getElementById("mobileUpdatedAt");
 const mobileAppVersionTag = document.getElementById("mobileAppVersionTag");
+const aiAssistantFab = document.getElementById("aiAssistantFab");
+const aiAssistantPanel = document.getElementById("aiAssistantPanel");
+const aiAssistantClose = document.getElementById("aiAssistantClose");
+const aiAssistantForm = document.getElementById("aiAssistantForm");
+const aiAssistantInput = document.getElementById("aiAssistantInput");
+const aiAssistantMessages = document.getElementById("aiAssistantMessages");
+const aiAssistantSend = document.getElementById("aiAssistantSend");
+const aiAssistantModelSelect = document.getElementById("aiAssistantModelSelect");
 
 const APP_VERSION = "2026.06.20-r1";
 const DEFAULT_TEAM_LOGO = "/icons/icon-192x192.svg";
 
 let allMatches = [];
 let currentMode = "live";
+let aiAssistantModels = [];
+let aiAssistantHistory = [];
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -411,6 +421,16 @@ function setupEventListeners() {
   mobileMenuBtn?.addEventListener("click", () => {
     mobileNav?.classList.toggle("active");
   });
+
+  aiAssistantFab?.addEventListener("click", () => {
+    aiAssistantPanel?.classList.toggle("hidden");
+  });
+
+  aiAssistantClose?.addEventListener("click", () => {
+    aiAssistantPanel?.classList.add("hidden");
+  });
+
+  aiAssistantForm?.addEventListener("submit", handleAiAssistantSubmit);
 }
 
 window.loadPrediction = loadPrediction;
@@ -419,5 +439,76 @@ document.addEventListener("DOMContentLoaded", () => {
   if (appVersionTag) appVersionTag.textContent = `v${APP_VERSION}`;
   if (mobileAppVersionTag) mobileAppVersionTag.textContent = `v${APP_VERSION}`;
   setupEventListeners();
+  loadAssistantModels();
   loadMatches();
 });
+
+async function loadAssistantModels() {
+  if (!aiAssistantModelSelect) return;
+
+  try {
+    const response = await window.SiteAPI.predictionModels();
+    if (!response.success || !Array.isArray(response.models) || !response.models.length) {
+      return;
+    }
+
+    aiAssistantModels = response.models.filter((model) => !String(model.id || "").toLowerCase().includes("image"));
+    if (!aiAssistantModels.length) {
+      aiAssistantModels = response.models.slice();
+    }
+
+    aiAssistantModelSelect.innerHTML = aiAssistantModels
+      .map((model) => `<option value="${escapeHtml(model.id)}">${escapeHtml(model.label || model.id)}</option>`)
+      .join("");
+  } catch (error) {
+    console.error("Erreur de chargement des modèles assistant:", error);
+  }
+}
+
+async function handleAiAssistantSubmit(event) {
+  event.preventDefault();
+  const message = String(aiAssistantInput?.value || "").trim();
+  if (!message || !aiAssistantMessages) return;
+
+  appendAssistantMessage("user", message);
+  aiAssistantHistory.push({ role: "user", content: message });
+  aiAssistantInput.value = "";
+
+  if (aiAssistantSend) aiAssistantSend.disabled = true;
+  appendAssistantMessage("bot", "Analyse en cours...", true);
+
+  try {
+    const response = await window.SiteAPI.assistantChat({
+      model: aiAssistantModelSelect?.value || "grok-4",
+      messages: aiAssistantHistory
+    });
+
+    removeAssistantLoading();
+
+    if (!response.success || !response.answer?.content) {
+      throw new Error(response.error || "Assistant indisponible");
+    }
+
+    aiAssistantHistory.push({ role: "assistant", content: response.answer.content });
+    appendAssistantMessage("bot", response.answer.content);
+  } catch (error) {
+    removeAssistantLoading();
+    appendAssistantMessage("bot", `Impossible de répondre: ${error.message}`);
+  } finally {
+    if (aiAssistantSend) aiAssistantSend.disabled = false;
+  }
+}
+
+function appendAssistantMessage(role, content, loading = false) {
+  if (!aiAssistantMessages) return;
+  const item = document.createElement("div");
+  item.className = `ai-message ${role === "user" ? "ai-message-user" : "ai-message-bot"}`;
+  if (loading) item.dataset.loading = "true";
+  item.textContent = content;
+  aiAssistantMessages.appendChild(item);
+  aiAssistantMessages.scrollTop = aiAssistantMessages.scrollHeight;
+}
+
+function removeAssistantLoading() {
+  aiAssistantMessages?.querySelector('[data-loading="true"]')?.remove();
+}

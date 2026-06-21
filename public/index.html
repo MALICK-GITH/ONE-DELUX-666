@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0a1628" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FURY X ONE 👿" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="FURY X ONE 👿" />
+  <meta name="msapplication-TileColor" content="#050508" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="robots" content="noindex,nofollow" />
+
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self'; manifest-src 'self';">
+
+  <!-- Open Graph / Social -->
+  <meta property="og:title" content="FURY X ONE 👿">
+  <meta property="og:description" content="Hub FIFA virtuel, matchs live, details et exports">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="/">
+  <meta property="og:image" content="/icon-512.png">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" sizes="192x192" href="/icons/icon-192x192.svg">
+  <link rel="icon" type="image/svg+xml" sizes="512x512" href="/icons/icon-512x512.svg">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.svg">
+  <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.svg">
+
+  <title>FURY X ONE 👿</title>
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/pwa.js" defer></script>
+</head>
+
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <div class="mobile-header-top">
+      <div class="mobile-brand">
+        <span class="mobile-logo">👿</span>
+        <h1 class="mobile-title">FURY X ONE</h1>
+      </div>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav" id="mobileNav">
+      <a class="mobile-nav-link" href="/">🏠 Accueil</a>
+      <a class="mobile-nav-link" href="/coupon.html">🎫 Coupon</a>
+      <a class="mobile-nav-link" href="/match.html">🤖 Prédiction</a>
+      <a class="mobile-nav-link" href="/creator.html">👤 Créateur</a>
+    </nav>
+  </header>
+
+  <!-- Desktop Hero (hidden on mobile) -->
+  <header class="hero desktop-only">
+    <p class="tag">Live Feed</p>
+    <h1>FURY X ONE 👿</h1>
+    <p id="subTitle">FURY X ONE 👿 - Le signal avant le coup d'envoi. Hub FIFA virtuel, matchs live, details et exports.</p>
+    <p class="hero-slogan">L'IA voit ce que les autres ignorent.</p>
+    <p class="hero-slogan">Nous prédisons, vous gagnez.</p>
+    <p class="hero-slogan">Objectif : DOMINATION.</p>
+    
+    <div class="controls">
+      <button id="refreshBtn" type="button">Actualiser</button>
+      <label class="league-filter" for="leagueSelect">
+        <span>Ligue</span>
+        <select id="leagueSelect">
+          <option value="all">Toutes les ligues</option>
+        </select>
+      </label>
+      <a class="coupon-page-link" href="/coupon.html">Page Coupon</a>
+      <a class="coupon-page-link" href="/match.html">Page Match</a>
+      <a class="coupon-page-link" href="/creator.html">Créateur</a>
+    </div>
+    
+    <div class="hero-metric-strip" aria-hidden="true">
+      <article class="hero-metric-card">
+        <span>Direction</span>
+        <strong>Live Command</strong>
+        <em>Accueil pilote, denicheur, alertes et lecture rapide.</em>
+      </article>
+      <article class="hero-metric-card">
+        <span>Experience</span>
+        <strong>Touch Native</strong>
+        <em>Rendu fluide et dense pour iPhone, Android et desktop.</em>
+      </article>
+      <article class="hero-metric-card">
+        <span>Puissance</span>
+        <strong>Neural Visuals</strong>
+        <em>Logos, scores, heatmap et filtres dans une meme ligne visuelle.</em>
+      </article>
+      <article class="hero-metric-card">
+        <span>Objectif</span>
+        <strong>Signal Visible</strong>
+        <em>Le nom et le message restent presents partout ou l'oeil passe.</em>
+      </article>
+    </div>
+  </header>
+
+  <!-- Mobile Controls (visible on mobile) -->
+  <div class="mobile-controls mobile-only">
+    <button id="mobileRefreshBtn" type="button" class="mobile-action-btn">
+      <span class="mobile-btn-icon">🔄</span>
+      <span class="mobile-btn-text">Actualiser</span>
+    </button>
+    <label class="mobile-league-filter" for="mobileLeagueSelect">
+      <select id="mobileLeagueSelect">
+        <option value="all">Toutes les ligues</option>
+      </select>
+    </label>
+  </div>
+
+  <main id="main-content">
+    <section class="stats" id="stats"></section>
+    
+    <!-- Mobile Match Modes -->
+    <section class="match-modes mobile-only" id="mobileMatchModes">
+      <button class="match-mode active" type="button" data-mode="upcoming">📅 À venir</button>
+      <button class="match-mode" type="button" data-mode="live">🔴 En cours</button>
+      <button class="match-mode" type="button" data-mode="finished">✅ Terminés</button>
+    </section>
+    
+    <!-- Desktop Match Modes -->
+    <section class="match-modes desktop-only" id="matchModes">
+      <button class="match-mode active" type="button" data-mode="upcoming">A venir</button>
+      <button class="match-mode" type="button" data-mode="live">En cours</button>
+      <button class="match-mode" type="button" data-mode="finished">Termines</button>
+    </section>
+    
+    <section class="matches" id="matches"></section>
+    <p class="empty hidden" id="emptyState">
+      Aucun match FIFA detecte pour le moment.
+    </p>
+  </main>
+
+  <!-- Mobile Footer -->
+  <footer class="mobile-footer mobile-only">
+    <div class="mobile-footer-nav">
+      <a class="mobile-footer-link" href="/">🏠</a>
+      <a class="mobile-footer-link" href="/coupon.html">🎫</a>
+      <a class="mobile-footer-link" href="/match.html">🤖</a>
+      <a class="mobile-footer-link" href="/creator.html">👤</a>
+    </div>
+    <small id="mobileUpdatedAt"></small>
+    <small id="mobileAppVersionTag"></small>
+  </footer>
+
+  <!-- Desktop Footer -->
+  <footer class="desktop-footer desktop-only">
+    <small id="updatedAt"></small>
+    <small id="appVersionTag"></small>
+    <p class="legal-foot">
+      Informations et scores a titre indicatif. Paris interdits aux mineurs. Joue avec moderation.
+    </p>
+    <div class="site-signature">😈 Signé par <strong>SOLITAIRE HACK 🇨🇮</strong></div>
+  </footer>
+
+  <!-- API Client -->
+  <script src="/site-api.js"></script>
+<!-- Main Application Script -->
+  <script src="/script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,165 @@
+﻿<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0a1628" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FURY X ONE 👿" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="FURY X ONE 👿" />
+  <meta name="msapplication-TileColor" content="#050508" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="robots" content="noindex,nofollow" />
+
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" sizes="192x192" href="/icons/icon-192x192.svg">
+  <link rel="icon" type="image/svg+xml" sizes="512x512" href="/icons/icon-512x512.svg">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.svg">
+  <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.svg">
+
+  <title>FURY X ONE 👿 - Coupon</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Sora:wght@400;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/pwa.js" defer></script>
+</head>
+
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <header class="hero coupon-hero">
+    <p class="tag">FIFA Virtuel</p>
+    <h1>Générateur de coupon</h1>
+
+    <div class="coupon-builder">
+      <label class="league-filter" for="sourceSelect">
+        <span>Source</span>
+        <select id="sourceSelect" disabled>
+          <option value="livefeed" selected>Live Feed</option>
+        </select>
+      </label>
+
+      <label class="league-filter" for="familySelect">
+        <span>Famille de ligue</span>
+        <select id="familySelect">
+          <option value="all">Toutes</option>
+          <option value="Penalty">Penalty</option>
+          <option value="Highscore">Highscore</option>
+          <option value="Rush">Rush</option>
+          <option value="Classic">Classic</option>
+        </select>
+      </label>
+
+      <label class="league-filter" for="preLeagueSelect">
+        <span>Ligue</span>
+        <select id="preLeagueSelect">
+          <option value="all">Toutes les ligues</option>
+        </select>
+      </label>
+
+      <label class="league-filter" for="preMarketSelect">
+        <span>Marché</span>
+        <select id="preMarketSelect">
+          <option value="all">Auto</option>
+          <option value="1x2">1X2</option>
+          <option value="over">Over / Under</option>
+          <option value="btts">BTTS</option>
+          <option value="parity">Pair / Impair</option>
+          <option value="handicap">Handicap</option>
+        </select>
+      </label>
+
+      <label class="league-filter" for="sizeSelect">
+        <span>Nombre de matchs</span>
+        <select id="sizeSelect">
+          <option value="3" selected>3</option>
+          <option value="5">5</option>
+          <option value="7">7</option>
+        </select>
+      </label>
+
+      <div class="coupon-risk-builder">
+        <span>Niveau de risque</span>
+        <div class="risk-presets">
+          <label class="risk-preset">
+            <input type="radio" name="riskPreset" value="70">
+            <span><strong>Super Safe</strong><small>≥ 70%</small></span>
+          </label>
+          <label class="risk-preset">
+            <input type="radio" name="riskPreset" value="55" checked>
+            <span><strong>Safe</strong><small>≥ 55%</small></span>
+          </label>
+          <label class="risk-preset">
+            <input type="radio" name="riskPreset" value="40">
+            <span><strong>Agressif</strong><small>≥ 40%</small></span>
+          </label>
+        </div>
+      </div>
+
+      <button id="refreshBtn" type="button" class="action-btn coupon-generate-btn">Générer le coupon</button>
+    </div>
+
+    <div class="controls coupon-links">
+      <a class="coupon-page-link" href="/">← Retour accueil</a>
+      <a class="coupon-page-link" href="/creator.html">👤 Créateur</a>
+      <button id="generateVisualBtn" type="button" class="visual-btn">📸 Générer l'image</button>
+    </div>
+
+    <div class="visual-options" aria-label="Options de génération d'image">
+      <label class="visual-option" for="visualFormatSelect">
+        <span>Format</span>
+        <select id="visualFormatSelect">
+          <option value="png" selected>PNG</option>
+          <option value="jpeg">JPEG</option>
+          <option value="webp">WebP</option>
+        </select>
+      </label>
+      <label class="visual-option" for="visualQualitySelect">
+        <span>Qualité</span>
+        <select id="visualQualitySelect">
+          <option value="0.85">Économie</option>
+          <option value="0.92" selected>Équilibrée</option>
+          <option value="0.98">Haute</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="stats" id="couponStats"></section>
+
+    <section class="coupon-section" id="couponSection">
+      <div class="loading-card">Clique sur "Générer le coupon" pour commencer</div>
+    </section>
+
+    <section class="coupon-actions" id="couponActions">
+      <button id="ladderBtn" type="button" class="action-btn">Générer Ladder</button>
+      <button id="multiBtn" type="button" class="action-btn">Générer Multi</button>
+      <button id="validateBtn" type="button" class="action-btn">Valider Coupon</button>
+    </section>
+  </main>
+
+  <footer>
+    <small id="updatedAt"></small>
+    <small id="appVersionTag"></small>
+    <p class="legal-foot">
+      Informations et scores à titre indicatif. Paris interdits aux mineurs. Joue avec modération.
+    </p>
+    <div class="site-signature">😈 Signé par <strong>SOLITAIRE HACK 🇨🇮</strong></div>
+  </footer>
+
+  <script src="/site-api.js"></script>
+  <script src="/visualGenerator.js"></script>
+  <script src="/coupon.js"></script>
+</body>
+
+</html>

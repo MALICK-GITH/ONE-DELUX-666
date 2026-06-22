@@ -411,6 +411,7 @@ function setupEventListeners() {
   mobileMenuBtn?.addEventListener("click", () => {
     mobileNav?.classList.toggle("active");
   });
+}
 
 window.loadPrediction = loadPrediction;
 

@@ -19,24 +19,12 @@ const mobileNav = document.getElementById("mobileNav");
 const mobileMatchModes = document.getElementById("mobileMatchModes");
 const mobileUpdatedAt = document.getElementById("mobileUpdatedAt");
 const mobileAppVersionTag = document.getElementById("mobileAppVersionTag");
-const aiAssistantFab = document.getElementById("aiAssistantFab");
-const aiAssistantPanel = document.getElementById("aiAssistantPanel");
-const aiAssistantClose = document.getElementById("aiAssistantClose");
-const aiAssistantForm = document.getElementById("aiAssistantForm");
-const aiAssistantInput = document.getElementById("aiAssistantInput");
-const aiAssistantMessages = document.getElementById("aiAssistantMessages");
-const aiAssistantSend = document.getElementById("aiAssistantSend");
-const aiAssistantModelSelect = document.getElementById("aiAssistantModelSelect");
-const aiAssistantActions = document.getElementById("aiAssistantActions");
 
 const APP_VERSION = "2026.06.20-r1";
 const DEFAULT_TEAM_LOGO = "/icons/icon-192x192.svg";
-const AI_ASSISTANT_STORAGE_KEY = "fury_x_one_assistant_history_v1";
 
 let allMatches = [];
 let currentMode = "live";
-let aiAssistantModels = [];
-let aiAssistantHistory = [];
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -424,125 +412,13 @@ function setupEventListeners() {
     mobileNav?.classList.toggle("active");
   });
 
-  aiAssistantFab?.addEventListener("click", () => {
-    aiAssistantPanel?.classList.toggle("hidden");
-    aiAssistantInput?.focus();
-  });
-
-  aiAssistantClose?.addEventListener("click", () => {
-    aiAssistantPanel?.classList.add("hidden");
-  });
-
-  aiAssistantForm?.addEventListener("submit", handleAiAssistantSubmit);
-  aiAssistantActions?.querySelectorAll("[data-quick-action]").forEach((button) => {
-    button.addEventListener("click", () => {
-      if (!aiAssistantInput) return;
-      aiAssistantInput.value = button.dataset.quickAction || "";
-      aiAssistantForm?.requestSubmit();
-    });
-  });
-}
-
 window.loadPrediction = loadPrediction;
 
 document.addEventListener("DOMContentLoaded", () => {
   if (appVersionTag) appVersionTag.textContent = `v${APP_VERSION}`;
   if (mobileAppVersionTag) mobileAppVersionTag.textContent = `v${APP_VERSION}`;
   setupEventListeners();
-  loadAssistantModels();
-  restoreAssistantHistory();
+  window.initAssistantWidget?.();
   loadMatches();
 });
 
-async function loadAssistantModels() {
-  if (!aiAssistantModelSelect) return;
-
-  try {
-    const response = await window.SiteAPI.predictionModels();
-    if (!response.success || !Array.isArray(response.models) || !response.models.length) {
-      return;
-    }
-
-    aiAssistantModels = response.models.slice();
-
-    aiAssistantModelSelect.innerHTML = aiAssistantModels
-      .map((model) => `<option value="${escapeHtml(model.id)}">${escapeHtml(model.label || model.id)}</option>`)
-      .join("");
-  } catch (error) {
-    console.error("Erreur de chargement des modèles assistant:", error);
-  }
-}
-
-async function handleAiAssistantSubmit(event) {
-  event.preventDefault();
-  const message = String(aiAssistantInput?.value || "").trim();
-  if (!message || !aiAssistantMessages) return;
-
-  appendAssistantMessage("user", message);
-  aiAssistantHistory.push({ role: "user", content: message });
-  aiAssistantInput.value = "";
-
-  if (aiAssistantSend) aiAssistantSend.disabled = true;
-  appendAssistantMessage("bot", "Analyse en cours...", true);
-
-  try {
-    const response = await window.SiteAPI.assistantChat({
-      model: aiAssistantModelSelect?.value || "grok-4",
-      messages: aiAssistantHistory,
-      userTime: {
-        iso: new Date().toISOString(),
-        locale: navigator.language || "",
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || ""
-      }
-    });
-
-    removeAssistantLoading();
-
-    if (!response.success || !response.answer?.content) {
-      throw new Error(response.error || "Assistant indisponible");
-    }
-
-    aiAssistantHistory.push({ role: "assistant", content: response.answer.content });
-    appendAssistantMessage("bot", response.answer.content);
-    persistAssistantHistory();
-  } catch (error) {
-    removeAssistantLoading();
-    appendAssistantMessage("bot", `Impossible de répondre: ${error.message}`);
-  } finally {
-    if (aiAssistantSend) aiAssistantSend.disabled = false;
-  }
-}
-
-function appendAssistantMessage(role, content, loading = false) {
-  if (!aiAssistantMessages) return;
-  const item = document.createElement("div");
-  item.className = `ai-message ${role === "user" ? "ai-message-user" : "ai-message-bot"}`;
-  if (loading) item.dataset.loading = "true";
-  item.textContent = content;
-  aiAssistantMessages.appendChild(item);
-  aiAssistantMessages.scrollTop = aiAssistantMessages.scrollHeight;
-}
-
-function removeAssistantLoading() {
-  aiAssistantMessages?.querySelector('[data-loading="true"]')?.remove();
-}
-
-function persistAssistantHistory() {
-  try {
-    localStorage.setItem(AI_ASSISTANT_STORAGE_KEY, JSON.stringify(aiAssistantHistory.slice(-12)));
-  } catch {}
-}
-
-function restoreAssistantHistory() {
-  try {
-    const raw = localStorage.getItem(AI_ASSISTANT_STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || !aiAssistantMessages) return;
-    aiAssistantHistory = parsed.slice(-12);
-    aiAssistantMessages.innerHTML = "";
-    aiAssistantHistory.forEach((item) => {
-      appendAssistantMessage(item.role === "assistant" ? "bot" : "user", item.content);
-    });
-  } catch {}
-}

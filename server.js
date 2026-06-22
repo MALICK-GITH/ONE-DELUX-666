@@ -430,6 +430,7 @@ async function handleAiAssistantChat(req, res) {
         const compareMode = await buildCompareMode(compareRequest);
 
         const siteContext = {
+          scope: "FURY_X_ONE_ONLY",
           creator: {
             name: "SOLITAIRE HACK",
             signature: "SOLITAIRE HACK ????",

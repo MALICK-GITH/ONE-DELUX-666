@@ -400,6 +400,7 @@ async function handleAiAssistantChat(req, res) {
         const messages = Array.isArray(payload.messages) ? payload.messages : [];
         const filters = payload.filters || {};
         const compareRequest = payload.compare || null;
+        const userTime = payload.userTime || null;
 
         const matches = await liveFeedClient.fetchMatches();
         const filteredMatches = applyAssistantMatchFilters(matches, filters);
@@ -413,7 +414,8 @@ async function handleAiAssistantChat(req, res) {
             status: match.status,
             startTime: match.startTime,
             odds: match.odds || {},
-            confidence: deriveSystemConfidence(match)
+            confidence: deriveSystemConfidence(match),
+            timing: deriveMatchTiming(match, userTime)
           }));
 
         const couponSeed = previewMatches.slice(0, 4).map((match) => ({
@@ -438,6 +440,8 @@ async function handleAiAssistantChat(req, res) {
           stats: {
             totalMatches: matches.length,
             filteredMatches: filteredMatches.length,
+            imminentMatches: previewMatches.filter((match) => match.timing.phase === "imminent").length,
+            liveMatches: previewMatches.filter((match) => match.timing.phase === "live").length,
             pages: ["/", "/coupon.html", "/match.html", "/creator.html"]
           },
           matches: previewMatches,
@@ -445,6 +449,11 @@ async function handleAiAssistantChat(req, res) {
             suggestion: couponSeed
           },
           compareMode,
+          userTime: buildUserTimeContext(userTime),
+          predictionSource: {
+            endpoint: "/api/prediction",
+            upstream: config.predictionApiUrl
+          },
           quickActions: [
             "Analyser les matchs live",
             "Cr?er un coupon 3 matchs",
@@ -511,6 +520,47 @@ function deriveSystemConfidence(match) {
   if (!odds.length) return 50;
   const minOdd = Math.min(...odds);
   return Math.max(45, Math.min(92, Math.round((1 / minOdd) * 100)));
+}
+
+function buildUserTimeContext(userTime) {
+  const now = parseUserTime(userTime) || new Date();
+  return {
+    iso: now.toISOString(),
+    locale: String(userTime?.locale || ""),
+    timezone: String(userTime?.timeZone || ""),
+    unixMs: now.getTime()
+  };
+}
+
+function parseUserTime(userTime) {
+  if (!userTime || !userTime.iso) return null;
+  const date = new Date(userTime.iso);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function deriveMatchTiming(match, userTime) {
+  const now = parseUserTime(userTime) || new Date();
+  const start = match?.startTime ? new Date(match.startTime) : null;
+  if (!start || Number.isNaN(start.getTime())) {
+    return { phase: "unknown", startsInMinutes: null };
+  }
+
+  const diffMinutes = Math.round((start.getTime() - now.getTime()) / 60000);
+  const rawStatus = String(match?.status || "").toLowerCase();
+
+  if (diffMinutes <= 0 && diffMinutes >= -35) {
+    return { phase: "live", startsInMinutes: diffMinutes };
+  }
+
+  if (diffMinutes > 0 && diffMinutes <= 20) {
+    return { phase: "imminent", startsInMinutes: diffMinutes };
+  }
+
+  if (diffMinutes < -35 || rawStatus.includes("term")) {
+    return { phase: "passed", startsInMinutes: diffMinutes };
+  }
+
+  return { phase: "scheduled", startsInMinutes: diffMinutes };
 }
 
 async function buildCompareMode(compareRequest) {
@@ -583,6 +633,71 @@ async function handlePredictionLeagues(req, res) {
       success: false,
       error: error.message
     }));
+  }
+}
+
+async function handlePredictionModelInfo(req, res) {
+  try {
+    const info = await predictionClient.getModelInfo();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      info
+    }));
+  } catch (error) {
+    console.error("Erreur model-info:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ success: false, error: error.message }));
+  }
+}
+
+async function handlePredictionBatch(req, res) {
+  try {
+    let body = "";
+    req.on("data", (chunk) => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const payload = JSON.parse(body || "{}");
+        const matches = Array.isArray(payload.matches) ? payload.matches : [];
+        const batch = await predictionClient.batchPredict(matches);
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ success: true, batch }));
+      } catch (error) {
+        console.error("Erreur batch-predict:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur traitement batch-predict:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ success: false, error: error.message }));
+  }
+}
+
+async function handlePredictionTeamStats(req, res) {
+  try {
+    const team = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname.split("/").pop() || "");
+    const stats = await predictionClient.getTeamStats(team);
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ success: true, stats }));
+  } catch (error) {
+    console.error("Erreur team-stats:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ success: false, error: error.message }));
+  }
+}
+
+async function handlePredictionLeagueStats(req, res) {
+  try {
+    const league = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname.split("/").pop() || "");
+    const stats = await predictionClient.getLeagueStats(league);
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ success: true, stats }));
+  } catch (error) {
+    console.error("Erreur league-stats:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ success: false, error: error.message }));
   }
 }
 
@@ -1045,6 +1160,26 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname.startsWith("/api/prediction/leagues/")) {
     await handlePredictionLeagues(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/model-info") {
+    await handlePredictionModelInfo(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/batch") {
+    await handlePredictionBatch(req, res);
+    return;
+  }
+
+  if (url.pathname.startsWith("/api/prediction/team-stats/")) {
+    await handlePredictionTeamStats(req, res);
+    return;
+  }
+
+  if (url.pathname.startsWith("/api/prediction/league-stats/")) {
+    await handlePredictionLeagueStats(req, res);
     return;
   }
 

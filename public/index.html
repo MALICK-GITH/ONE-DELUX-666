@@ -175,52 +175,45 @@
       Informations et scores a titre indicatif. Paris interdits aux mineurs. Joue avec moderation.
     </p>
     <div class="site-signature">😈 Signé par <strong>SOLITAIRE HACK 🇨🇮</strong></div>
-  </footer>
-
-  <button id="aiAssistantFab" type="button" aria-label="Ouvrir l'assistant IA" class="ai-assistant-fab">🧠</button>
+  </footer>  <button id="aiAssistantFab" type="button" aria-label="Ouvrir l'assistant IA" class="ai-assistant-fab">
+    <span class="ai-fab-icon">??</span>
+    <span class="ai-fab-pulse"></span>
+  </button>
   <aside id="aiAssistantPanel" class="ai-assistant-panel hidden" aria-live="polite">
+    <div class="ai-assistant-grabber"></div>
     <div class="ai-assistant-header">
-      <div>
-        <strong>Assistant FURY X ONE</strong>
-        <p>Site, créateur, matchs, coupons, prédictions.</p>
+      <div class="ai-assistant-brand">
+        <div class="ai-assistant-avatar">??</div>
+        <div>
+          <strong>Assistant FURY X ONE</strong>
+          <p>Site, cr?ateur, matchs, coupons, pr?dictions.</p>
+        </div>
       </div>
-      <button id="aiAssistantClose" type="button" class="ai-assistant-close" aria-label="Fermer">✕</button>
+      <button id="aiAssistantClose" type="button" class="ai-assistant-close" aria-label="Fermer">?</button>
     </div>
     <div class="ai-assistant-toolbar">
-      <label for="aiAssistantModelSelect">Modèle</label>
+      <label for="aiAssistantModelSelect">Mod?le</label>
       <select id="aiAssistantModelSelect">
         <option value="grok-4">grok-4</option>
       </select>
     </div>
     <div class="ai-assistant-actions" id="aiAssistantActions">
       <button type="button" class="ai-chip" data-quick-action="Analyser les matchs live">Analyser les matchs live</button>
-      <button type="button" class="ai-chip" data-quick-action="Créer un coupon 3 matchs">Créer un coupon 3 matchs</button>
-      <button type="button" class="ai-chip" data-quick-action="Me parler du créateur">Me parler du créateur</button>
+      <button type="button" class="ai-chip" data-quick-action="Cr?er un coupon 3 matchs">Cr?er un coupon 3 matchs</button>
+      <button type="button" class="ai-chip" data-quick-action="Me parler du cr?ateur">Me parler du cr?ateur</button>
       <button type="button" class="ai-chip" data-quick-action="Comparer deux matchs">Comparer deux matchs</button>
     </div>
-    <div class="ai-assistant-filters">
-      <input id="aiFilterLeague" type="text" placeholder="Ligue" />
-      <select id="aiFilterStatus">
-        <option value="">Statut</option>
-        <option value="a_venir">À venir</option>
-        <option value="en_cours">En cours</option>
-        <option value="termine">Terminé</option>
-      </select>
-      <input id="aiFilterConfidence" type="number" min="0" max="100" placeholder="Confiance min" />
-      <input id="aiFilterMinOdd" type="number" min="1" step="0.01" placeholder="Cote min" />
-    </div>
-    <div class="ai-assistant-compare">
-      <label for="aiCompareMatchId">Avis IA + avis système</label>
-      <input id="aiCompareMatchId" type="text" placeholder="ID du match à comparer" />
-    </div>
     <div id="aiAssistantMessages" class="ai-assistant-messages">
-      <div class="ai-message ai-message-bot">Salut, je suis l’assistant FURY X ONE. Demande un match, un coupon, une vérification ou des infos sur SOLITAIRE HACK.</div>
+      <div class="ai-message ai-message-bot">Salut, je suis l?assistant FURY X ONE. Demande un match, un coupon, une v?rification ou des infos sur SOLITAIRE HACK.</div>
     </div>
     <form id="aiAssistantForm" class="ai-assistant-form">
-      <textarea id="aiAssistantInput" rows="3" placeholder="Ex: donne-moi un coupon de 3 matchs ou quel match est le plus intéressant ?"></textarea>
-      <button id="aiAssistantSend" type="submit">Envoyer</button>
+      <div class="ai-input-shell">
+        <textarea id="aiAssistantInput" rows="2" placeholder="?cris ton message?"></textarea>
+        <button id="aiAssistantSend" type="submit">?</button>
+      </div>
     </form>
   </aside>
+
 
   <!-- API Client -->
   <script src="/site-api.js"></script>

@@ -149,6 +149,8 @@ function buildSiteAssistantMessages(payload) {
   const coupons = payload?.siteContext?.coupon || {};
   const compareMode = payload?.siteContext?.compareMode || null;
   const quickActions = Array.isArray(payload?.siteContext?.quickActions) ? payload.siteContext.quickActions : [];
+  const userTime = payload?.siteContext?.userTime || null;
+  const predictionSource = payload?.siteContext?.predictionSource || null;
   const history = Array.isArray(payload?.messages) ? payload.messages : [];
 
   const systemMessage = {
@@ -174,7 +176,9 @@ function buildSiteAssistantMessages(payload) {
       matches,
       coupon: coupons,
       compareMode,
-      quickActions
+      quickActions,
+      userTime,
+      predictionSource
     })
   };
 

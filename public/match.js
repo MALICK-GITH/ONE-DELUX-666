@@ -460,6 +460,11 @@ function renderPredictionContent(match, prediction) {
   const handicap = prediction?.predictions?.handicap || {};
   const parity = prediction?.predictions?.parity || {};
   const btts = prediction?.predictions?.btts || {};
+  const scoreRange = prediction?.predictions?.score_range || {};
+  const doubleChance = prediction?.predictions?.double_chance || {};
+  const cleanSheet = prediction?.predictions?.clean_sheet || {};
+  const drawNoBet = prediction?.predictions?.draw_no_bet || {};
+  const winBothHalves = prediction?.predictions?.win_both_halves || {};
   const family = normalizeText(prediction?.family, "HIGHSCORE");
   const mainPrediction = getMainPrediction(x2, match);
   const predictedGoals = safeNumber(totalGoals.predicted);
@@ -470,6 +475,19 @@ function renderPredictionContent(match, prediction) {
   const underValue = safeNumber(totalGoals?.over_under?.under);
   const bttsYes = safeNumber(btts.yes);
   const bttsNo = safeNumber(btts.no);
+  const score0to2 = safeNumber(scoreRange["0-2"]);
+  const score3to5 = safeNumber(scoreRange["3-5"]);
+  const score6to8 = safeNumber(scoreRange["6-8"]);
+  const score9Plus = safeNumber(scoreRange["9+"]);
+  const dc1x = safeNumber(doubleChance["1x"]);
+  const dcx2 = safeNumber(doubleChance["x2"]);
+  const dc12 = safeNumber(doubleChance["12"]);
+  const cleanSheetHomeYes = safeNumber(cleanSheet.home_yes);
+  const cleanSheetAwayYes = safeNumber(cleanSheet.away_yes);
+  const dnbHome = safeNumber(drawNoBet.home);
+  const dnbAway = safeNumber(drawNoBet.away);
+  const bothHalvesYes = safeNumber(winBothHalves.yes);
+  const bothHalvesNo = safeNumber(winBothHalves.no);
 
   const totalGoalsCard = predictedGoals !== null
     ? `
@@ -543,6 +561,8 @@ function renderPredictionContent(match, prediction) {
     renderStatCard("BTTS", bttsYes !== null && bttsNo !== null ? `${(Math.max(bttsYes, bttsNo) * 100).toFixed(0)}%` : "N/A", "green"),
     renderStatCard("Parité pair", parityPair !== null ? `${(parityPair * 100).toFixed(0)}%` : "N/A", "cyan"),
     renderStatCard("Handicap", handicapPredicted !== null ? handicapPredicted.toFixed(1) : normalizeText(handicap?.platform_value, "N/A"), "red"),
+    renderStatCard("Double chance", dc1x !== null || dcx2 !== null || dc12 !== null ? `${Math.round(Math.max(dc1x ?? 0, dcx2 ?? 0, dc12 ?? 0) * 100)}%` : "N/A", "green"),
+    renderStatCard("Score range", score3to5 !== null ? `${Math.round(score3to5 * 100)}%` : "N/A", "amber"),
   ].join("");
 
   return `
@@ -581,6 +601,52 @@ function renderPredictionContent(match, prediction) {
           <div class="premium-1x2-bars">
             ${renderBarRow("Oui", bttsYes ?? 0, "home", "✅")}
             ${renderBarRow("Non", bttsNo ?? 0, "away", "⛔")}
+          </div>
+        </div>
+      ` : ""}
+
+      ${(dc1x !== null || dcx2 !== null || dc12 !== null) ? `
+        <div class="premium-section-card fade-in-up">
+          <div class="section-title-wrap compact">
+            <h4>🛡️ Double chance</h4>
+            <p>Lecture des couvertures principales.</p>
+          </div>
+          <div class="premium-1x2-bars">
+            ${renderBarRow("1X", dc1x ?? 0, "home", "🧱")}
+            ${renderBarRow("X2", dcx2 ?? 0, "draw", "🛡️")}
+            ${renderBarRow("12", dc12 ?? 0, "away", "⚔️")}
+          </div>
+        </div>
+      ` : ""}
+
+      ${(score0to2 !== null || score3to5 !== null || score6to8 !== null || score9Plus !== null) ? `
+        <div class="premium-section-card fade-in-up">
+          <div class="section-title-wrap compact">
+            <h4>🎯 Score range</h4>
+            <p>Projection des plages de buts.</p>
+          </div>
+          <div class="premium-1x2-bars">
+            ${renderBarRow("0-2", score0to2 ?? 0, "draw", "0️⃣")}
+            ${renderBarRow("3-5", score3to5 ?? 0, "home", "3️⃣")}
+            ${renderBarRow("6-8", score6to8 ?? 0, "away", "6️⃣")}
+            ${renderBarRow("9+", score9Plus ?? 0, "home", "9️⃣")}
+          </div>
+        </div>
+      ` : ""}
+
+      ${(cleanSheetHomeYes !== null || cleanSheetAwayYes !== null || dnbHome !== null || dnbAway !== null || bothHalvesYes !== null || bothHalvesNo !== null) ? `
+        <div class="premium-section-card fade-in-up">
+          <div class="section-title-wrap compact">
+            <h4>🧠 Signaux avancés</h4>
+            <p>Clean sheet, draw no bet et domination mi-temps.</p>
+          </div>
+          <div class="stats-grid-premium">
+            ${renderStatCard("CS domicile", cleanSheetHomeYes !== null ? `${Math.round(cleanSheetHomeYes * 100)}%` : "N/A", "cyan")}
+            ${renderStatCard("CS extérieur", cleanSheetAwayYes !== null ? `${Math.round(cleanSheetAwayYes * 100)}%` : "N/A", "cyan")}
+            ${renderStatCard("DNB domicile", dnbHome !== null ? `${Math.round(dnbHome * 100)}%` : "N/A", "green")}
+            ${renderStatCard("DNB extérieur", dnbAway !== null ? `${Math.round(dnbAway * 100)}%` : "N/A", "green")}
+            ${renderStatCard("Gagne 2 mi-temps", bothHalvesYes !== null ? `${Math.round(bothHalvesYes * 100)}%` : "N/A", "red")}
+            ${renderStatCard("Ne gagne pas 2 mi-temps", bothHalvesNo !== null ? `${Math.round(bothHalvesNo * 100)}%` : "N/A", "amber")}
           </div>
         </div>
       ` : ""}

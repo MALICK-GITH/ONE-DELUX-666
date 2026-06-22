@@ -28,11 +28,6 @@ const aiAssistantMessages = document.getElementById("aiAssistantMessages");
 const aiAssistantSend = document.getElementById("aiAssistantSend");
 const aiAssistantModelSelect = document.getElementById("aiAssistantModelSelect");
 const aiAssistantActions = document.getElementById("aiAssistantActions");
-const aiFilterLeague = document.getElementById("aiFilterLeague");
-const aiFilterStatus = document.getElementById("aiFilterStatus");
-const aiFilterConfidence = document.getElementById("aiFilterConfidence");
-const aiFilterMinOdd = document.getElementById("aiFilterMinOdd");
-const aiCompareMatchId = document.getElementById("aiCompareMatchId");
 
 const APP_VERSION = "2026.06.20-r1";
 const DEFAULT_TEAM_LOGO = "/icons/icon-192x192.svg";
@@ -431,6 +426,7 @@ function setupEventListeners() {
 
   aiAssistantFab?.addEventListener("click", () => {
     aiAssistantPanel?.classList.toggle("hidden");
+    aiAssistantInput?.focus();
   });
 
   aiAssistantClose?.addEventListener("click", () => {
@@ -493,13 +489,11 @@ async function handleAiAssistantSubmit(event) {
     const response = await window.SiteAPI.assistantChat({
       model: aiAssistantModelSelect?.value || "grok-4",
       messages: aiAssistantHistory,
-      filters: {
-        league: aiFilterLeague?.value || "",
-        status: aiFilterStatus?.value || "",
-        minConfidence: aiFilterConfidence?.value || "",
-        minOdd: aiFilterMinOdd?.value || ""
-      },
-      compare: aiCompareMatchId?.value ? { matchId: aiCompareMatchId.value.trim() } : null
+      userTime: {
+        iso: new Date().toISOString(),
+        locale: navigator.language || "",
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || ""
+      }
     });
 
     removeAssistantLoading();

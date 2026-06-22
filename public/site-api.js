@@ -65,6 +65,18 @@
     predictionModels() {
       return requestJson("/prediction/models");
     },
+    predictionModelInfo() {
+      return requestJson("/prediction/model-info");
+    },
+    predictionBatch(matches) {
+      return requestJson("/prediction/batch", { method: "POST", body: { matches } });
+    },
+    predictionTeamStats(teamName) {
+      return requestJson(`/prediction/team-stats/${encodeURIComponent(teamName)}`);
+    },
+    predictionLeagueStats(leagueName) {
+      return requestJson(`/prediction/league-stats/${encodeURIComponent(leagueName)}`);
+    },
     assistantChat(body) {
       return requestJson("/assistant/chat", { method: "POST", body });
     },

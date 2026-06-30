@@ -24,7 +24,7 @@ loadDotEnvFile(path.join(process.cwd(), ".env"));
 
 const DEFAULT_PORT = 3000;
 const DEFAULT_LIVE_FEED_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
-const DEFAULT_PREDICTION_API_URL = "https://top-modele-train-api-vmp.onrender.com";
+const DEFAULT_PREDICTION_API_URL = "https://top-modele-train-api-3cap.onrender.com";
 const DEFAULT_PENALTY_API_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
 const DEFAULT_AI_MODEL_API_URL = "https://aimodelapi.onrender.com/v1";
 const DEFAULT_AI_MODEL = "grok-4";

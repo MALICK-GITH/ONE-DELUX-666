@@ -10,12 +10,18 @@ class PredictionClient {
     return this.getJson("/health");
   }
 
-  async predictMatch(teamHome, teamAway, league) {
-    return this.postJson("/predict", {
+  async predictMatch(teamHome, teamAway, league, marketData = null) {
+    const payload = {
       team_home: teamHome,
       team_away: teamAway,
       league
-    });
+    };
+    
+    if (marketData) {
+      payload.market_data = marketData;
+    }
+    
+    return this.postJson("/predict", payload);
   }
 
   async batchPredict(matches) {

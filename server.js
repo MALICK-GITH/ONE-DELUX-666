@@ -275,7 +275,7 @@ async function handlePrediction(req, res) {
     req.on("data", chunk => { body += chunk; });
     req.on("end", async () => {
       try {
-        const { team_home, team_away, league } = JSON.parse(body);
+        const { team_home, team_away, league, market_data } = JSON.parse(body);
         
         if (!team_home || !team_away || !league) {
           res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
@@ -286,7 +286,7 @@ async function handlePrediction(req, res) {
           return;
         }
 
-        const prediction = await predictionClient.predictMatch(team_home, team_away, league);
+        const prediction = await predictionClient.predictMatch(team_home, team_away, league, market_data);
         
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({
@@ -572,7 +572,7 @@ async function buildCompareMode(compareRequest) {
     const match = matches.find((item) => String(item.id) === String(compareRequest.matchId));
     if (!match) return null;
 
-    const systemPrediction = await predictionClient.predictMatch(match.team1, match.team2, match.league);
+    const systemPrediction = await predictionClient.predictMatch(match.team1, match.team2, match.league, match.raw);
     return {
       match: {
         id: match.id,

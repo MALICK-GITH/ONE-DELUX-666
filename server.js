@@ -13,9 +13,9 @@ const REQUIRED_NODE_MINOR = 17;
 const port = config.port;
 
 const publicDir = path.join(__dirname, "public");
-const liveFeedClient = new LiveFeedClient(config.liveFeedUrl);
-const predictionClient = new PredictionClient(config.predictionApiUrl);
-const penaltyClient = new PenaltyClient(config.penaltyApiUrl);
+const liveFeedClient = new LiveFeedClient(config.liveFeedUrl, config.sslVerify);
+const predictionClient = new PredictionClient(config.predictionApiUrl, config.sslVerify);
+const penaltyClient = new PenaltyClient(config.penaltyApiUrl, config.sslVerify);
 const aiModelClient = new AIModelClient(config.aiModelApiUrl, config.aiModelApiKey, config.aiModelName);
 
 const mimeTypes = {

@@ -8,8 +8,9 @@ const https = require("https");
 const http = require("http");
 
 class PenaltyClient {
-  constructor(url) {
+  constructor(url, sslVerify = true) {
     this.url = url;
+    this.sslVerify = sslVerify;
     this.defaultParams = {
       sports: "85",
       count: "40",
@@ -35,6 +36,7 @@ class PenaltyClient {
       const protocol = this.url.startsWith("https") ? https : http;
       
       const options = {
+        rejectUnauthorized: this.sslVerify,
         headers: {
           'authority': '888starz.bet',
           'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',

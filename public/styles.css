@@ -654,13 +654,33 @@ footer small {
   height: 64px;
   border: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, #19f5a7 0%, #10b8ff 100%);
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
   color: #04111f;
   font-size: 1.6rem;
   cursor: pointer;
-  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.35), 0 0 0 6px rgba(25, 245, 167, 0.08);
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.35), 0 0 0 6px rgba(66, 245, 108, 0.12), 0 0 0 12px rgba(66, 245, 108, 0.04);
   z-index: 1001;
   overflow: hidden;
+  transition: all 0.4s var(--spring);
+  animation: fabFloat 3s ease-in-out infinite;
+}
+
+.ai-assistant-fab:hover {
+  transform: scale(1.08) translateY(-4px);
+  box-shadow: 0 22px 45px rgba(0, 0, 0, 0.45), 0 0 0 8px rgba(66, 245, 108, 0.18), 0 0 0 16px rgba(66, 245, 108, 0.06);
+}
+
+.ai-assistant-fab:active {
+  transform: scale(0.95);
+}
+
+@keyframes fabFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 .ai-fab-icon {
@@ -689,9 +709,11 @@ footer small {
   border-radius: 28px;
   background: linear-gradient(180deg, rgba(16, 25, 43, 0.98) 0%, rgba(7, 12, 24, 0.98) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(66, 245, 108, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   z-index: 1001;
   backdrop-filter: blur(18px);
+  transform-origin: bottom right;
+  transition: all 0.4s var(--spring);
 }
 
 .ai-assistant-panel.hidden {
@@ -726,9 +748,10 @@ footer small {
   border-radius: 16px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, rgba(25, 245, 167, 0.24), rgba(16, 184, 255, 0.24));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(66, 245, 108, 0.24), rgba(36, 215, 255, 0.24));
+  border: 1px solid rgba(66, 245, 108, 0.2);
   font-size: 1.2rem;
+  box-shadow: 0 4px 16px rgba(66, 245, 108, 0.15);
 }
 
 .ai-assistant-header p {
@@ -745,6 +768,13 @@ footer small {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
   cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.ai-assistant-close:hover,
+.ai-assistant-form button:hover {
+  background: linear-gradient(135deg, rgba(66, 245, 108, 0.15) 0%, rgba(36, 215, 255, 0.12) 100%);
+  transform: scale(1.05);
 }
 
 .ai-assistant-toolbar select,
@@ -774,6 +804,14 @@ footer small {
   cursor: pointer;
   white-space: nowrap;
   font-size: 0.86rem;
+  transition: all 0.2s var(--ease);
+}
+
+.ai-chip:hover {
+  background: linear-gradient(135deg, rgba(66, 245, 108, 0.12) 0%, rgba(36, 215, 255, 0.1) 100%);
+  border-color: rgba(66, 245, 108, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(66, 245, 108, 0.15);
 }
 
 .ai-assistant-messages {
@@ -851,11 +889,31 @@ footer small {
     max-height: 86vh;
     border-radius: 24px 24px 0 0;
     padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    animation: slideUp 0.4s var(--spring);
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
   }
 
   .ai-assistant-fab {
     right: 14px;
     bottom: 84px;
+    animation: fabFloatMobile 3s ease-in-out infinite;
+  }
+
+  @keyframes fabFloatMobile {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
   }
 
   .ai-assistant-messages {
@@ -2956,10 +3014,11 @@ footer small {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: rgba(10, 22, 40, 0.95);
+  background: linear-gradient(180deg, rgba(10, 22, 40, 0.98) 0%, rgba(10, 22, 40, 0.92) 100%);
   backdrop-filter: var(--ios-blur);
   border-bottom: 1px solid var(--line);
   padding: 0.75rem 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(66, 245, 108, 0.05);
 }
 
 .mobile-header-top {
@@ -3010,6 +3069,18 @@ footer small {
   padding: 1rem 0;
   border-top: 1px solid var(--line);
   margin-top: 0.75rem;
+  animation: slideDown 0.3s var(--spring);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .mobile-nav.active {
@@ -3024,12 +3095,15 @@ footer small {
   color: var(--text);
   text-decoration: none;
   border-radius: var(--radius-md);
-  transition: background 0.2s ease;
+  transition: all 0.2s var(--ease);
+  border: 1px solid transparent;
 }
 
 .mobile-nav-link:hover,
 .mobile-nav-link:active {
-  background: var(--panel);
+  background: linear-gradient(135deg, rgba(66, 245, 108, 0.08) 0%, rgba(36, 215, 255, 0.06) 100%);
+  border-color: rgba(66, 245, 108, 0.15);
+  transform: translateX(4px);
 }
 
 /* Mobile Controls */

@@ -3,8 +3,9 @@ const http = require("http");
 const zlib = require("zlib");
 
 class LiveFeedClient {
-  constructor(url) {
+  constructor(url, sslVerify = true) {
     this.url = url;
+    this.sslVerify = sslVerify;
     this.defaultParams = {
       sports: "85",
       lng: "fr",
@@ -61,7 +62,7 @@ class LiveFeedClient {
     const protocol = this.url.startsWith("https") ? https : http;
 
     return new Promise((resolve, reject) => {
-      const request = protocol.get(fullUrl, { headers: this.defaultHeaders }, (res) => {
+      const request = protocol.get(fullUrl, { headers: this.defaultHeaders, rejectUnauthorized: this.sslVerify }, (res) => {
         const chunks = [];
 
         res.on("data", (chunk) => {

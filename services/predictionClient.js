@@ -2,8 +2,9 @@ const https = require("https");
 const http = require("http");
 
 class PredictionClient {
-  constructor(url) {
+  constructor(url, sslVerify = true) {
     this.url = url;
+    this.sslVerify = sslVerify;
   }
 
   async healthCheck() {
@@ -70,7 +71,8 @@ class PredictionClient {
         port: base.port || (base.protocol === "https:" ? 443 : 80),
         path,
         method,
-        headers: {}
+        headers: {},
+        rejectUnauthorized: this.sslVerify
       };
 
       if (payload) {

@@ -3648,6 +3648,20 @@ footer small {
   font-weight: 800;
 }
 
+.premium-bar-metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.premium-bar-confidence {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-weight: 500;
+  opacity: 0.8;
+}
+
 .premium-bar-track {
   width: 100%;
   height: 14px;
@@ -3756,6 +3770,14 @@ footer small {
   display: grid;
   gap: 8px;
   align-content: start;
+}
+
+.stat-confidence {
+  font-size: 0.65rem;
+  color: var(--muted);
+  font-weight: 500;
+  opacity: 0.7;
+  margin-top: auto;
 }
 
 .premium-stat-card.tone-red {

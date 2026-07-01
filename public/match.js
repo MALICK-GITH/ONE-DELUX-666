@@ -337,13 +337,47 @@ function getMainPrediction(x2, match) {
   };
 }
 
-function renderBarRow(label, value, colorClass, emoji) {
+function getScoreRangesForFamily(family) {
+  const familyUpper = String(family || "").toUpperCase();
+  
+  const ranges = {
+    "RUSH": ["0-2", "3-5", "6-8", "9+"],
+    "ENGLAND": ["0-8", "9-12", "13-16", "17+"],
+    "CLASSIC": ["0-2", "3-4", "5-6", "7+"],
+    "CHAMPIONS": ["0-2", "3-4", "5-6", "7+"],
+    "WORLD": ["0-2", "3-4", "5-6", "7+"],
+    "PENALTY": ["0-2", "3-5", "6-8", "9+"],
+    "HIGHSCORE": ["0-2", "3-5", "6-8", "9+"]
+  };
+  
+  return ranges[familyUpper] || ["0-2", "3-5", "6-8", "9+"];
+}
+
+function getScoreRangeLabels(family, scoreRangeData) {
+  const ranges = getScoreRangesForFamily(family);
+  const labels = {};
+  
+  ranges.forEach((range, index) => {
+    const keys = Object.keys(scoreRangeData || {});
+    const key = keys[index] || range;
+    labels[range] = scoreRangeData?.[key] ?? 0;
+  });
+  
+  return labels;
+}
+
+function renderBarRow(label, value, colorClass, emoji, confidence = null) {
   const ratio = Math.max(0, Math.min(100, (safeNumber(value) ?? 0) * 100));
+  const confidenceDisplay = confidence !== null ? `<span class="premium-bar-confidence">Confiance: ${(confidence * 100).toFixed(0)}%</span>` : '';
+  
   return `
     <div class="premium-bar-row fade-in-up">
       <div class="premium-bar-head">
         <span class="premium-bar-label">${emoji} ${label}</span>
-        <span class="premium-bar-value ${colorClass}">${ratio.toFixed(1)}%</span>
+        <div class="premium-bar-metrics">
+          <span class="premium-bar-value ${colorClass}">${ratio.toFixed(1)}%</span>
+          ${confidenceDisplay}
+        </div>
       </div>
       <div class="premium-bar-track">
         <div class="premium-bar-fill ${colorClass}" style="width:${ratio.toFixed(0)}%"></div>
@@ -361,11 +395,14 @@ function renderEmptyState(title, message) {
   `;
 }
 
-function renderStatCard(label, value, tone = "cyan") {
+function renderStatCard(label, value, tone = "cyan", confidence = null) {
+  const confidenceDisplay = confidence !== null ? `<span class="stat-confidence">Confiance: ${(confidence * 100).toFixed(0)}%</span>` : '';
+  
   return `
     <div class="premium-stat-card tone-${tone} fade-in-up">
       <span class="premium-stat-label">${label}</span>
       <strong class="premium-stat-value">${value}</strong>
+      ${confidenceDisplay}
     </div>
   `;
 }
@@ -475,10 +512,10 @@ function renderPredictionContent(match, prediction) {
   const underValue = safeNumber(totalGoals?.over_under?.under);
   const bttsYes = safeNumber(btts.yes);
   const bttsNo = safeNumber(btts.no);
-  const score0to2 = safeNumber(scoreRange["0-2"]);
-  const score3to5 = safeNumber(scoreRange["3-5"]);
-  const score6to8 = safeNumber(scoreRange["6-8"]);
-  const score9Plus = safeNumber(scoreRange["9+"]);
+  
+  // Dynamic score ranges based on family
+  const dynamicScoreRanges = getScoreRangeLabels(family, scoreRange);
+  
   const dc1x = safeNumber(doubleChance["1x"]);
   const dcx2 = safeNumber(doubleChance["x2"]);
   const dc12 = safeNumber(doubleChance["12"]);
@@ -579,9 +616,9 @@ function renderPredictionContent(match, prediction) {
           <h4>📊 Analyse 1X2</h4>
         </div>
         <div class="premium-1x2-bars">
-          ${renderBarRow("Domicile", x2.home, "home", "🏠")}
-          ${renderBarRow("Nul", x2.draw, "draw", "⚖️")}
-          ${renderBarRow("Extérieur", x2.away, "away", "✈️")}
+          ${renderBarRow("Domicile", x2.home, "home", "🏠", x2.confidence)}
+          ${renderBarRow("Nul", x2.draw, "draw", "⚖️", x2.confidence)}
+          ${renderBarRow("Extérieur", x2.away, "away", "✈️", x2.confidence)}
         </div>
       </div>
 
@@ -599,8 +636,8 @@ function renderPredictionContent(match, prediction) {
             <p>Signal des deux équipes qui marquent.</p>
           </div>
           <div class="premium-1x2-bars">
-            ${renderBarRow("Oui", bttsYes ?? 0, "home", "✅")}
-            ${renderBarRow("Non", bttsNo ?? 0, "away", "⛔")}
+            ${renderBarRow("Oui", bttsYes ?? 0, "home", "✅", btts.confidence)}
+            ${renderBarRow("Non", bttsNo ?? 0, "away", "⛔", btts.confidence)}
           </div>
         </div>
       ` : ""}
@@ -612,24 +649,25 @@ function renderPredictionContent(match, prediction) {
             <p>Lecture des couvertures principales.</p>
           </div>
           <div class="premium-1x2-bars">
-            ${renderBarRow("1X", dc1x ?? 0, "home", "🧱")}
-            ${renderBarRow("X2", dcx2 ?? 0, "draw", "🛡️")}
-            ${renderBarRow("12", dc12 ?? 0, "away", "⚔️")}
+            ${renderBarRow("1X", dc1x ?? 0, "home", "🧱", doubleChance.confidence)}
+            ${renderBarRow("X2", dcx2 ?? 0, "draw", "🛡️", doubleChance.confidence)}
+            ${renderBarRow("12", dc12 ?? 0, "away", "⚔️", doubleChance.confidence)}
           </div>
         </div>
       ` : ""}
 
-      ${(score0to2 !== null || score3to5 !== null || score6to8 !== null || score9Plus !== null) ? `
+      ${(Object.keys(dynamicScoreRanges).length > 0) ? `
         <div class="premium-section-card fade-in-up">
           <div class="section-title-wrap compact">
-            <h4>🎯 Score range</h4>
-            <p>Projection des plages de buts.</p>
+            <h4>🎯 Score range (${family})</h4>
+            <p>Projection des plages de buts adaptées à la famille.</p>
           </div>
           <div class="premium-1x2-bars">
-            ${renderBarRow("0-2", score0to2 ?? 0, "draw", "0️⃣")}
-            ${renderBarRow("3-5", score3to5 ?? 0, "home", "3️⃣")}
-            ${renderBarRow("6-8", score6to8 ?? 0, "away", "6️⃣")}
-            ${renderBarRow("9+", score9Plus ?? 0, "home", "9️⃣")}
+            ${Object.entries(dynamicScoreRanges).map(([range, value]) => {
+              const emoji = range.includes("0") ? "0️⃣" : range.includes("3") ? "3️⃣" : range.includes("6") ? "6️⃣" : "9️⃣";
+              const colorClass = value > 0.5 ? "home" : value > 0.3 ? "draw" : "away";
+              return renderBarRow(range, value, colorClass, emoji, scoreRange.confidence);
+            }).join('')}
           </div>
         </div>
       ` : ""}
@@ -641,12 +679,12 @@ function renderPredictionContent(match, prediction) {
             <p>Clean sheet, draw no bet et domination mi-temps.</p>
           </div>
           <div class="stats-grid-premium">
-            ${renderStatCard("CS domicile", cleanSheetHomeYes !== null ? `${Math.round(cleanSheetHomeYes * 100)}%` : "N/A", "cyan")}
-            ${renderStatCard("CS extérieur", cleanSheetAwayYes !== null ? `${Math.round(cleanSheetAwayYes * 100)}%` : "N/A", "cyan")}
-            ${renderStatCard("DNB domicile", dnbHome !== null ? `${Math.round(dnbHome * 100)}%` : "N/A", "green")}
-            ${renderStatCard("DNB extérieur", dnbAway !== null ? `${Math.round(dnbAway * 100)}%` : "N/A", "green")}
-            ${renderStatCard("Gagne 2 mi-temps", bothHalvesYes !== null ? `${Math.round(bothHalvesYes * 100)}%` : "N/A", "red")}
-            ${renderStatCard("Ne gagne pas 2 mi-temps", bothHalvesNo !== null ? `${Math.round(bothHalvesNo * 100)}%` : "N/A", "amber")}
+            ${renderStatCard("CS domicile", cleanSheetHomeYes !== null ? `${Math.round(cleanSheetHomeYes * 100)}%` : "N/A", "cyan", cleanSheet.confidence)}
+            ${renderStatCard("CS extérieur", cleanSheetAwayYes !== null ? `${Math.round(cleanSheetAwayYes * 100)}%` : "N/A", "cyan", cleanSheet.confidence)}
+            ${renderStatCard("DNB domicile", dnbHome !== null ? `${Math.round(dnbHome * 100)}%` : "N/A", "green", drawNoBet.confidence)}
+            ${renderStatCard("DNB extérieur", dnbAway !== null ? `${Math.round(dnbAway * 100)}%` : "N/A", "green", drawNoBet.confidence)}
+            ${renderStatCard("Gagne 2 mi-temps", bothHalvesYes !== null ? `${Math.round(bothHalvesYes * 100)}%` : "N/A", "red", winBothHalves.confidence)}
+            ${renderStatCard("Ne gagne pas 2 mi-temps", bothHalvesNo !== null ? `${Math.round(bothHalvesNo * 100)}%` : "N/A", "amber", winBothHalves.confidence)}
           </div>
         </div>
       ` : ""}

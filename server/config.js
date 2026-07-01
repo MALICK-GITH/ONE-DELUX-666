@@ -44,7 +44,7 @@ function parseBoolean(value, fallback = false) {
 }
 
 module.exports = {
-  port: parseNumber(process.env.PORT, DEFAULT_PORT),
+  port: parseNumber(process.env.SERVER_PORT || process.env.PORT, DEFAULT_PORT),
   appSignature: "SOLITAIRE HACK",
   predictionApiUrl: process.env.PREDICTION_API_URL || DEFAULT_PREDICTION_API_URL,
   liveFeedUrl: process.env.LIVE_FEED_URL || DEFAULT_LIVE_FEED_URL,

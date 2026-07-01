@@ -9,10 +9,18 @@
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "browser"],
   "background_color": "#0a1628",
-  "theme_color": "#00ff88",
+  "theme_color": "#42f56c",
   "orientation": "portrait-primary",
   "scope": "/",
   "prefer_related_applications": false,
+  "protocol_handlers": [],
+  "related_applications": [],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
   "icons": [
     {
       "src": "/icons/icon-72x72.svg",

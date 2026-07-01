@@ -1,5 +1,5 @@
-const STATIC_CACHE = "fury-x-one-static-v4";
-const RUNTIME_CACHE = "fury-x-one-runtime-v4";
+const STATIC_CACHE = "fury-x-one-static-v5";
+const RUNTIME_CACHE = "fury-x-one-runtime-v5";
 const OFFLINE_URL = "/offline.html";
 const APP_SHELL = [
   "/",
@@ -16,6 +16,10 @@ const APP_SHELL = [
   "/visualGenerator.js",
   "/site-api.js",
   "/888starz-api.js",
+  "/notifications.js",
+  "/loading-indicator.js",
+  "/error-handler.js",
+  "/assistant-widget.js",
   "/manifest.json",
   "/icons/icon-72x72.svg",
   "/icons/icon-96x96.svg",

@@ -1236,8 +1236,10 @@ const server = http.createServer(async (req, res) => {
   serveStaticFile(url.pathname, res);
 });
 
-server.listen(port, () => {
-  console.log(`FURY X ONE 👿 disponible sur http://localhost:${port}`);
+server.listen(port, '0.0.0.0', () => {
+  console.log(`FURY X ONE 👿 disponible sur http://0.0.0.0:${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`SSL Verify: ${config.sslVerify}`);
 });
 
 // Graceful shutdown

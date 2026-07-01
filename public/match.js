@@ -599,7 +599,7 @@ function renderPredictionContent(match, prediction) {
     renderStatCard("Parité pair", parityPair !== null ? `${(parityPair * 100).toFixed(0)}%` : "N/A", "cyan"),
     renderStatCard("Handicap", handicapPredicted !== null ? handicapPredicted.toFixed(1) : normalizeText(handicap?.platform_value, "N/A"), "red"),
     renderStatCard("Double chance", dc1x !== null || dcx2 !== null || dc12 !== null ? `${Math.round(Math.max(dc1x ?? 0, dcx2 ?? 0, dc12 ?? 0) * 100)}%` : "N/A", "green"),
-    renderStatCard("Score range", score3to5 !== null ? `${Math.round(score3to5 * 100)}%` : "N/A", "amber"),
+    renderStatCard("Score range", Object.keys(dynamicScoreRanges).length > 0 ? `${Math.round(Math.max(...Object.values(dynamicScoreRanges)) * 100)}%` : "N/A", "amber"),
   ].join("");
 
   return `

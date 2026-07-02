@@ -9,6 +9,7 @@ const PenaltyClient = require("./services/penaltyClient");
 const AIModelClient = require("./services/aiModelClient");
 const { logVisitor, getVisitorStats, clearOldLogs } = require("./server/ip-logger");
 const { initializeSchema, closePool } = require("./server/database");
+const WebSocketNotificationServer = require("./server/websocket-server");
 
 const REQUIRED_NODE_MAJOR = 18;
 const REQUIRED_NODE_MINOR = 17;
@@ -19,6 +20,7 @@ const liveFeedClient = new LiveFeedClient(config.liveFeedUrl, config.sslVerify);
 const predictionClient = new PredictionClient(config.predictionApiUrl, config.sslVerify);
 const penaltyClient = new PenaltyClient(config.penaltyApiUrl, config.sslVerify);
 const aiModelClient = new AIModelClient(config.aiModelApiUrl, config.aiModelApiKey, config.aiModelName);
+let wsNotificationServer = null;
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -1311,6 +1313,10 @@ initializeSchema().then(() => {
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`SSL Verify: ${config.sslVerify}`);
     console.log(`Database: PostgreSQL (Supabase)`);
+    
+    // Initialize WebSocket notification server
+    wsNotificationServer = new WebSocketNotificationServer(server);
+    console.log(`WebSocket Notification Server initialized on /ws/notifications`);
   });
 }).catch((error) => {
   console.error('Erreur initialisation base de données:', error);
@@ -1320,6 +1326,9 @@ initializeSchema().then(() => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM reçu, arrêt du serveur...');
+  if (wsNotificationServer) {
+    wsNotificationServer.shutdown();
+  }
   server.close(async () => {
     await closePool();
     console.log('Serveur et pool fermés');
@@ -1329,6 +1338,9 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('SIGINT reçu, arrêt du serveur...');
+  if (wsNotificationServer) {
+    wsNotificationServer.shutdown();
+  }
   server.close(async () => {
     await closePool();
     console.log('Serveur et pool fermés');

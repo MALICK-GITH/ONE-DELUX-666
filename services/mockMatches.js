@@ -1,15 +1,24 @@
 // Mock data for FIFA virtual matches when 888starz API is unavailable
+// All matches are set to start in 5-10 minutes from now for prediction generation
+const now = Date.now();
+const fiveMinutes = 5 * 60 * 1000;
+const sixMinutes = 6 * 60 * 1000;
+const sevenMinutes = 7 * 60 * 1000;
+const eightMinutes = 8 * 60 * 1000;
+const nineMinutes = 9 * 60 * 1000;
+const tenMinutes = 10 * 60 * 1000;
+
 const mockMatches = [
   {
     I: "mock-1",
     O1: "Real Madrid",
     O2: "Barcelona",
-    L: "La Liga Virtual",
+    L: "La Liga",
     LI: 123,
     SN: "FIFA Virtuel",
     SI: 85,
     CN: "Espagne",
-    S: Date.now() + 3600000,
+    S: now + fiveMinutes,
     TN: "À venir",
     SC: {
       FS: { S1: 0, S2: 0 },
@@ -33,12 +42,12 @@ const mockMatches = [
     I: "mock-2",
     O1: "Manchester United",
     O2: "Liverpool",
-    L: "Premier League Virtual",
+    L: "Premier League",
     LI: 124,
     SN: "FIFA Virtuel",
     SI: 85,
     CN: "Angleterre",
-    S: Date.now() + 7200000,
+    S: now + sixMinutes,
     TN: "À venir",
     SC: {
       FS: { S1: 0, S2: 0 },
@@ -62,18 +71,17 @@ const mockMatches = [
     I: "mock-3",
     O1: "PSG",
     O2: "Marseille",
-    L: "Ligue 1 Virtual",
+    L: "Ligue 1",
     LI: 125,
     SN: "FIFA Virtuel",
     SI: 85,
     CN: "France",
-    S: Date.now() - 1800000,
-    TN: "En cours",
+    S: now + sevenMinutes,
+    TN: "À venir",
     SC: {
-      FS: { S1: 1, S2: 0 },
-      SLS: "En cours",
-      CPS: "1ère mi-temps",
-      TS: 450
+      FS: { S1: 0, S2: 0 },
+      SLS: "À venir",
+      CPS: "Avant match"
     },
     E: [
       { G: 1, T: 1, C: 1.80 },
@@ -86,24 +94,23 @@ const mockMatches = [
     O2I: 3002,
     CHIMG: "ligue1.png",
     EC: 20,
-    ICY: true
+    GNS: true
   },
   {
     I: "mock-4",
     O1: "Bayern Munich",
     O2: "Dortmund",
-    L: "Bundesliga Virtual",
+    L: "Bundesliga",
     LI: 126,
     SN: "FIFA Virtuel",
     SI: 85,
     CN: "Allemagne",
-    S: Date.now() - 5400000,
-    TN: "En cours",
+    S: now + eightMinutes,
+    TN: "À venir",
     SC: {
-      FS: { S1: 2, S2: 1 },
-      SLS: "En cours",
-      CPS: "2ème mi-temps",
-      TS: 2700
+      FS: { S1: 0, S2: 0 },
+      SLS: "À venir",
+      CPS: "Avant match"
     },
     E: [
       { G: 1, T: 1, C: 1.60 },
@@ -116,23 +123,23 @@ const mockMatches = [
     O2I: 4002,
     CHIMG: "bundesliga.png",
     EC: 22,
-    ICY: true
+    GNS: true
   },
   {
     I: "mock-5",
     O1: "Juventus",
     O2: "AC Milan",
-    L: "Serie A Virtual",
+    L: "Serie A",
     LI: 127,
     SN: "FIFA Virtuel",
     SI: 85,
     CN: "Italie",
-    S: Date.now() - 7200000,
-    TN: "Terminé",
+    S: now + nineMinutes,
+    TN: "À venir",
     SC: {
-      FS: { S1: 3, S2: 1 },
-      SLS: "Terminé",
-      CPS: "Jeu terminé"
+      FS: { S1: 0, S2: 0 },
+      SLS: "À venir",
+      CPS: "Avant match"
     },
     E: [
       { G: 1, T: 1, C: 2.30 },
@@ -144,18 +151,19 @@ const mockMatches = [
     O1I: 5001,
     O2I: 5002,
     CHIMG: "seriea.png",
-    EC: 16
+    EC: 16,
+    GNS: true
   },
   {
     I: "mock-6",
     O1: "Inter Milan",
     O2: "Napoli",
-    L: "Serie A Virtual",
+    L: "Serie A",
     LI: 127,
     SN: "FIFA Virtuel",
     SI: 85,
     CN: "Italie",
-    S: Date.now() + 10800000,
+    S: now + tenMinutes,
     TN: "À venir",
     SC: {
       FS: { S1: 0, S2: 0 },
@@ -179,12 +187,12 @@ const mockMatches = [
     I: "mock-7",
     O1: "Chelsea",
     O2: "Arsenal",
-    L: "Premier League Virtual",
+    L: "Premier League",
     LI: 124,
     SN: "FIFA Virtuel",
     SI: 85,
     CN: "Angleterre",
-    S: Date.now() + 14400000,
+    S: now + fiveMinutes + 30000,
     TN: "À venir",
     SC: {
       FS: { S1: 0, S2: 0 },
@@ -208,18 +216,17 @@ const mockMatches = [
     I: "mock-8",
     O1: "Atletico Madrid",
     O2: "Sevilla",
-    L: "La Liga Virtual",
+    L: "La Liga",
     LI: 123,
     SN: "FIFA Virtuel",
     SI: 85,
     CN: "Espagne",
-    S: Date.now() - 3600000,
-    TN: "En cours",
+    S: now + sixMinutes + 30000,
+    TN: "À venir",
     SC: {
       FS: { S1: 0, S2: 0 },
-      SLS: "En cours",
-      CPS: "1ère mi-temps",
-      TS: 900
+      SLS: "À venir",
+      CPS: "Avant match"
     },
     E: [
       { G: 1, T: 1, C: 2.20 },
@@ -232,7 +239,7 @@ const mockMatches = [
     O2I: 8002,
     CHIMG: "laliga.png",
     EC: 21,
-    ICY: true
+    GNS: true
   }
 ];
 

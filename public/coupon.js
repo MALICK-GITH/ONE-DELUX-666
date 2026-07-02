@@ -21,6 +21,7 @@ const RISK_PRESETS = {
 
 let currentCoupon = null;
 let availableMatches = [];
+let clientTimezoneOffset = new Date().getTimezoneOffset(); // Client timezone in minutes
 
 document.addEventListener("DOMContentLoaded", () => {
   appVersionTag.textContent = `v${APP_VERSION}`;
@@ -47,7 +48,8 @@ function setupEventListeners() {
 
 async function bootstrapCoupon() {
   await loadMatches();
-  generateCoupon();
+  // Auto-generation disabled - user must click to generate
+  renderEmptyCoupon();
 }
 
 async function loadMatches() {
@@ -55,11 +57,26 @@ async function loadMatches() {
     const response = await window.SiteAPI.matches();
     const matches = Array.isArray(response?.matches) ? response.matches : [];
     availableMatches = matches.map(enrichMatch);
+    // Filter matches to only show those starting in 5-10 minutes
+    availableMatches = filterUpcomingMatches(availableMatches);
     syncLeagueOptions();
   } catch (error) {
     console.error("Erreur chargement coupon:", error);
     availableMatches = [];
   }
+}
+
+function filterUpcomingMatches(matches) {
+  const now = Date.now();
+  const fiveMinutesMs = 5 * 60 * 1000;
+  const tenMinutesMs = 10 * 60 * 1000;
+  
+  return matches.filter(match => {
+    const startTime = match.startsAtMs || 0;
+    // Only include matches starting between 5 and 10 minutes from now
+    const timeUntilStart = startTime - now;
+    return timeUntilStart >= fiveMinutesMs && timeUntilStart <= tenMinutesMs;
+  });
 }
 
 function enrichMatch(match) {

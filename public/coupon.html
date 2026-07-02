@@ -5,7 +5,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0, user-scalable=yes" />
-  <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#0a1628" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -15,7 +14,6 @@
   <meta name="msapplication-TileColor" content="#050508" />
   <meta name="format-detection" content="telephone=no" />
   <meta name="robots" content="noindex,nofollow" />
-
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/svg+xml" sizes="192x192" href="/icons/icon-192x192.svg">
   <link rel="icon" type="image/svg+xml" sizes="512x512" href="/icons/icon-512x512.svg">
@@ -40,12 +38,64 @@
   <script src="/pwa.js" defer></script>
 </head>
 
-<body>
+<body class="coupon-portal">
   <div class="bg-grid" aria-hidden="true"></div>
 
+  <nav class="page-link-cloud" aria-label="Navigation coupon">
+    <a class="back" href="/">Retour aux matchs</a>
+    <a class="back" href="/creator.html">Créateur</a>
+  </nav>
+
   <header class="hero coupon-hero">
-    <p class="tag">FIFA Virtuel</p>
+    <p class="tag">FURY X ONE</p>
     <h1>Générateur de coupon</h1>
+    <p>FURY X ONE - Le signal avant le coup d'envoi. Version optimisée avec assistant IA unifié.</p>
+    
+    <div class="coupon-hero-badges">
+      <span class="coupon-chip">Même API IA que details</span>
+      <span class="coupon-chip">Questions libres + recherche</span>
+      <span class="coupon-chip">Mode simple ou avance</span>
+    </div>
+
+    <div class="hero-metric-strip" aria-hidden="true">
+      <article class="hero-metric-card">
+        <span>Vitesse</span>
+        <strong>Generation instant</strong>
+        <em>Creer, valider et exporter dans le meme espace.</em>
+      </article>
+      <article class="hero-metric-card">
+        <span>Controle</span>
+        <strong>Risk Engine</strong>
+        <em>Drift, bankroll, correlation et auto-heal sous une meme surface.</em>
+      </article>
+      <article class="hero-metric-card">
+        <span>Format</span>
+        <strong>Story Ready</strong>
+        <em>PNG, JPG, PDF et Telegram avec rendu plus editorial.</em>
+      </article>
+      <article class="hero-metric-card">
+        <span>Mobile</span>
+        <strong>Thumb First</strong>
+        <em>Barre sticky et zones tactiles plus premium sur smartphone.</em>
+      </article>
+    </div>
+
+    <section class="panel coupon-quickstart-panel">
+      <div class="coupon-quickstart-grid">
+        <article class="coupon-quick-card">
+          <strong>1. Configure</strong>
+          <p>Choisis juste le nombre de matchs, la ligue, le profil de risque et la mise.</p>
+        </article>
+        <article class="coupon-quick-card">
+          <strong>2. Genere puis valide</strong>
+          <p>Lance le coupon, puis verifie le ticket avant tout envoi ou export.</p>
+        </article>
+        <article class="coupon-quick-card">
+          <strong>3. Partage</strong>
+          <p>Une fois le ticket propre, exporte-le sans devoir traverser une page surchargee.</p>
+        </article>
+      </div>
+    </section>
 
     <div class="coupon-builder">
       <label class="league-filter" for="sourceSelect">
@@ -141,6 +191,24 @@
     </div>
   </header>
 
+  <section class="panel coupon-main-actions-panel">
+    <div class="competitive-topbar" aria-label="Barre competitive">
+      <button id="competitiveFocusBtn" type="button">Mode Focus</button>
+      <button id="competitiveDensityBtn" type="button">Ultra Compact</button>
+      <button id="competitivePulseBtn" type="button">Live Pulse</button>
+      <span id="competitiveClock" class="competitive-clock">--:--:--</span>
+    </div>
+    <div class="actions coupon-main-actions">
+      <button id="generateBtn" type="button">Generer Coupon</button>
+      <button id="readyToSendBtn" type="button" disabled>Pret a envoyer</button>
+      <button id="validateBtn" type="button">Valider Ticket Pro</button>
+      <button id="coachAiBtn" type="button" disabled>Coach IA 1-Clic</button>
+      <button id="replaceWeakBtn" type="button" disabled>Remplacer Pick Faible</button>
+      <button id="sendTelegramBtn" type="button" disabled>Envoyer Telegram</button>
+      <button id="downloadImageBtn" type="button" disabled>Image Coupon</button>
+    </div>
+  </section>
+
   <main id="main-content">
     <section class="stats" id="couponStats"></section>
 
@@ -153,7 +221,40 @@
       <button id="multiBtn" type="button" class="action-btn">Générer Multi</button>
       <button id="validateBtn" type="button" class="action-btn">Valider Coupon</button>
     </section>
+
+    <section class="primary-grid">
+      <section class="panel panel-main" id="result">
+        <p>En attente de generation.</p>
+      </section>
+      <section class="panel competitive-stats-panel" id="competitiveStatsPanel">
+        <h3>Vue Competitive</h3>
+        <div class="competitive-stats-grid">
+          <article><span>Selections</span><strong id="compTotalSel">0</strong></article>
+          <article><span>Cote totale</span><strong id="compTotalOdd">-</strong></article>
+          <article><span>Confiance moy.</span><strong id="compAvgConf">0%</strong></article>
+          <article><span>Ligues</span><strong id="compLeagueCount">0</strong></article>
+        </div>
+      </section>
+      <section class="panel panel-main" id="validation">
+        <p>Validation ticket en attente.</p>
+      </section>
+      <section class="panel" id="healthPanel">
+        <h3>Dashboard Sante du Coupon</h3>
+        <p>Genere un coupon pour calculer la sante globale.</p>
+      </section>
+      <section class="panel" id="alertsPanel">
+        <h3>Centre d'Alertes</h3>
+        <p>Aucune alerte pour le moment.</p>
+      </section>
+    </section>
   </main>
+
+  <nav class="sticky-ticket-bar" aria-label="Actions rapides ticket">
+    <button id="generateBtnSticky" type="button">Generer</button>
+    <button id="readyToSendBtnSticky" type="button" disabled>Pret</button>
+    <button id="validateBtnSticky" type="button">Valider</button>
+    <button id="downloadPdfBtnSticky" type="button" disabled>PDF</button>
+  </nav>
 
   <footer>
     <small id="updatedAt"></small>
@@ -171,6 +272,7 @@
   <script src="/coupon-super-ai-chat.js"></script>
   <script src="/push-background.js"></script>
   <script src="/coupon-competitive-ui.js"></script>
+  <script src="/coupon-advanced-engine.js"></script>
 </body>
 
 </html>

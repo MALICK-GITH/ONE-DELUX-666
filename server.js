@@ -8,6 +8,7 @@ const PredictionClient = require("./services/predictionClient");
 const PenaltyClient = require("./services/penaltyClient");
 const AIModelClient = require("./services/aiModelClient");
 const { logVisitor, getVisitorStats, clearOldLogs } = require("./server/ip-logger");
+const { initializeSchema, closePool } = require("./server/database");
 
 const REQUIRED_NODE_MAJOR = 18;
 const REQUIRED_NODE_MINOR = 17;
@@ -964,7 +965,7 @@ async function handleClearCache(req, res) {
 
 async function handleVisitorStats(req, res) {
   try {
-    const stats = getVisitorStats();
+    const stats = await getVisitorStats();
     
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
@@ -1303,25 +1304,34 @@ const server = http.createServer(async (req, res) => {
   serveStaticFile(url.pathname, res);
 });
 
-server.listen(port, '0.0.0.0', () => {
-  console.log(`FURY X ONE 👿 disponible sur http://0.0.0.0:${port}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`SSL Verify: ${config.sslVerify}`);
+// Initialize database schema before starting server
+initializeSchema().then(() => {
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`FURY X ONE 👿 disponible sur http://0.0.0.0:${port}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`SSL Verify: ${config.sslVerify}`);
+    console.log(`Database: PostgreSQL (Supabase)`);
+  });
+}).catch((error) => {
+  console.error('Erreur initialisation base de données:', error);
+  process.exit(1);
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('SIGTERM reçu, arrêt du serveur...');
-  server.close(() => {
-    console.log('Serveur arrêté');
+  server.close(async () => {
+    await closePool();
+    console.log('Serveur et pool fermés');
     process.exit(0);
   });
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('SIGINT reçu, arrêt du serveur...');
-  server.close(() => {
-    console.log('Serveur arrêté');
+  server.close(async () => {
+    await closePool();
+    console.log('Serveur et pool fermés');
     process.exit(0);
   });
 });

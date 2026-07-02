@@ -7,6 +7,7 @@ const LiveFeedClient = require("./services/liveFeedClient");
 const PredictionClient = require("./services/predictionClient");
 const PenaltyClient = require("./services/penaltyClient");
 const AIModelClient = require("./services/aiModelClient");
+const { logVisitor, getVisitorStats, clearOldLogs } = require("./server/ip-logger");
 
 const REQUIRED_NODE_MAJOR = 18;
 const REQUIRED_NODE_MINOR = 17;
@@ -961,6 +962,58 @@ async function handleClearCache(req, res) {
   }
 }
 
+async function handleVisitorStats(req, res) {
+  try {
+    const stats = getVisitorStats();
+    
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      stats: stats
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération des stats visiteurs:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handleClearVisitorLogs(req, res) {
+  try {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const { daysToKeep = 30 } = JSON.parse(body || "{}");
+        const result = clearOldLogs(daysToKeep);
+        
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          deleted: result.deleted
+        }));
+      } catch (error) {
+        console.error("Erreur lors du nettoyage des logs visiteurs:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur serveur:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
 async function handle888starzProxy(req, res, url) {
   try {
     // Extraire le chemin de l'endpoint 888starz
@@ -1115,6 +1168,9 @@ async function handleImageProxy(req, res) {
 }
 
 const server = http.createServer(async (req, res) => {
+  // Log visitor IP and information
+  logVisitor(req, res, () => {});
+  
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   // API endpoints
@@ -1223,6 +1279,17 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === "/api/prediction/clear-cache") {
     await handleClearCache(req, res);
+    return;
+  }
+
+  // Visitor tracking endpoints
+  if (url.pathname === "/api/visitors/stats") {
+    await handleVisitorStats(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/visitors/clear") {
+    await handleClearVisitorLogs(req, res);
     return;
   }
 

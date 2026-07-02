@@ -29,7 +29,14 @@ async function initializeSchema() {
         method VARCHAR(10) NOT NULL,
         path TEXT NOT NULL,
         protocol VARCHAR(10),
-        host TEXT
+        host TEXT,
+        browser_name VARCHAR(100),
+        browser_version VARCHAR(50),
+        os_name VARCHAR(100),
+        os_version VARCHAR(50),
+        device_type VARCHAR(50),
+        device_model VARCHAR(100),
+        device_vendor VARCHAR(100)
       )
     `);
 
@@ -45,6 +52,14 @@ async function initializeSchema() {
       CREATE INDEX IF NOT EXISTS idx_visitors_path ON visitors(path)
     `);
 
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_visitors_device_type ON visitors(device_type)
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_visitors_os_name ON visitors(os_name)
+    `);
+
     console.log('✅ Schema PostgreSQL initialisé');
   } catch (error) {
     console.error('❌ Erreur initialisation schema:', error);
@@ -55,8 +70,8 @@ async function initializeSchema() {
 async function logVisitor(visitorData) {
   try {
     const query = `
-      INSERT INTO visitors (ip, user_agent, referer, method, path, protocol, host)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO visitors (ip, user_agent, referer, method, path, protocol, host, browser_name, browser_version, os_name, os_version, device_type, device_model, device_vendor)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     `;
     
     const values = [
@@ -66,7 +81,14 @@ async function logVisitor(visitorData) {
       visitorData.method,
       visitorData.path,
       visitorData.protocol,
-      visitorData.host
+      visitorData.host,
+      visitorData.browserName,
+      visitorData.browserVersion,
+      visitorData.osName,
+      visitorData.osVersion,
+      visitorData.deviceType,
+      visitorData.deviceModel,
+      visitorData.deviceVendor
     ];
 
     await pool.query(query, values);

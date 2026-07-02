@@ -57,10 +57,11 @@
     .logs-table {
       width: 100%;
       border-collapse: collapse;
+      font-size: 13px;
     }
     .logs-table th,
     .logs-table td {
-      padding: 12px;
+      padding: 10px;
       text-align: left;
       border-bottom: 1px solid rgba(122, 170, 255, 0.2);
     }
@@ -68,6 +69,7 @@
       background: rgba(31, 58, 103, 0.5);
       font-weight: 600;
       color: #9ac4ff;
+      font-size: 12px;
     }
     .logs-table tr:hover {
       background: rgba(122, 170, 255, 0.1);
@@ -75,18 +77,58 @@
     .ip-address {
       font-family: monospace;
       color: #8cffc1;
+      font-size: 12px;
     }
     .timestamp {
       color: #9ac4ff;
-      font-size: 14px;
+      font-size: 12px;
     }
-    .user-agent {
-      max-width: 300px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .device-info {
       font-size: 12px;
       color: #7a9bd6;
+    }
+    .device-type {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .device-type.mobile {
+      background: rgba(37, 180, 255, 0.2);
+      color: #25b4ff;
+    }
+    .device-type.tablet {
+      background: rgba(217, 44, 44, 0.2);
+      color: #d92c2c;
+    }
+    .device-type.desktop {
+      background: rgba(44, 103, 217, 0.2);
+      color: #2c67d9;
+    }
+    .device-type.unknown {
+      background: rgba(122, 170, 255, 0.2);
+      color: #9ac4ff;
+    }
+    .os-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(122, 170, 255, 0.1);
+      font-size: 11px;
+    }
+    .browser-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(140, 255, 193, 0.1);
+      font-size: 11px;
+      color: #8cffc1;
     }
     .btn {
       background: linear-gradient(135deg, #2c67d9, #25b4ff);
@@ -187,10 +229,11 @@
           <tr>
             <th>Timestamp</th>
             <th>IP</th>
+            <th>Appareil</th>
+            <th>OS</th>
+            <th>Browser</th>
             <th>Méthode</th>
             <th>Path</th>
-            <th>User Agent</th>
-            <th>Referer</th>
           </tr>
         </thead>
         <tbody>
@@ -198,10 +241,18 @@
             <tr>
               <td class="timestamp">${new Date(log.timestamp).toLocaleString('fr-FR')}</td>
               <td class="ip-address">${log.ip}</td>
+              <td class="device-info">
+                <span class="device-type ${log.device_type || 'unknown'}">${log.device_type || 'unknown'}</span>
+                ${log.device_model && log.device_model !== 'unknown' ? `<br><small>${log.device_vendor || ''} ${log.device_model}</small>` : ''}
+              </td>
+              <td class="device-info">
+                <span class="os-badge">${log.os_name || 'unknown'} ${log.os_version || ''}</span>
+              </td>
+              <td class="device-info">
+                <span class="browser-badge">${log.browser_name || 'unknown'} ${log.browser_version || ''}</span>
+              </td>
               <td>${log.method}</td>
               <td>${log.path}</td>
-              <td class="user-agent" title="${log.userAgent}">${log.userAgent}</td>
-              <td>${log.referer}</td>
             </tr>
           `).join('')}
         </tbody>

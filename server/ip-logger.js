@@ -1,4 +1,5 @@
 const { logVisitor: dbLogVisitor, getVisitorStats: dbGetVisitorStats, clearOldLogs: dbClearOldLogs } = require('./database');
+const UAParser = require('ua-parser-js');
 
 function getIpAddress(req) {
   // Check various headers for IP (behind proxy, load balancer, etc.)
@@ -31,11 +32,29 @@ function getReferer(req) {
   return req.headers['referer'] || req.headers['referrer'] || 'direct';
 }
 
+function parseUserAgent(userAgentString) {
+  const parser = new UAParser(userAgentString);
+  const result = parser.getResult();
+  
+  return {
+    browserName: result.browser.name || 'unknown',
+    browserVersion: result.browser.version || 'unknown',
+    osName: result.os.name || 'unknown',
+    osVersion: result.os.version || 'unknown',
+    deviceType: result.device.type || 'desktop',
+    deviceModel: result.device.model || 'unknown',
+    deviceVendor: result.device.vendor || 'unknown'
+  };
+}
+
 async function logVisitor(req, res, next) {
   const ip = getIpAddress(req);
   const userAgent = getUserAgent(req);
   const referer = getReferer(req);
   const timestamp = new Date().toISOString();
+  
+  // Parse user agent for device information
+  const deviceInfo = parseUserAgent(userAgent);
   
   const visitorData = {
     ip,
@@ -44,11 +63,18 @@ async function logVisitor(req, res, next) {
     method: req.method,
     path: req.url,
     protocol: req.protocol,
-    host: req.headers.host
+    host: req.headers.host,
+    browserName: deviceInfo.browserName,
+    browserVersion: deviceInfo.browserVersion,
+    osName: deviceInfo.osName,
+    osVersion: deviceInfo.osVersion,
+    deviceType: deviceInfo.deviceType,
+    deviceModel: deviceInfo.deviceModel,
+    deviceVendor: deviceInfo.deviceVendor
   };
   
   // Log to console
-  console.log(`[${timestamp}] ${ip} - ${req.method} ${req.url} - ${referer}`);
+  console.log(`[${timestamp}] ${ip} - ${req.method} ${req.url} - ${referer} - ${deviceInfo.osName} ${deviceInfo.deviceType}`);
   
   // Log to PostgreSQL database
   try {

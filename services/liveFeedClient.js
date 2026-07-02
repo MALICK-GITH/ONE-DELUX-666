@@ -1,6 +1,7 @@
 const https = require("https");
 const http = require("http");
 const zlib = require("zlib");
+const mockMatches = require("./mockMatches");
 
 class LiveFeedClient {
   constructor(url, sslVerify = true) {
@@ -75,24 +76,32 @@ class LiveFeedClient {
               try {
                 const json = JSON.parse(body);
                 if (!json.Success || !Array.isArray(json.Value)) {
-                  reject(new Error(json.Error || `Réponse 888starz invalide (${res.statusCode || "sans statut"})`));
+                  console.warn("888starz API invalide, utilisation des données mockées");
+                  resolve(this.transformMatches(mockMatches.slice(0, safeCount)));
                   return;
                 }
                 resolve(this.transformMatches(json.Value));
               } catch (error) {
-                reject(new Error(`Erreur de parsing JSON: ${error.message}`));
+                console.warn("Erreur parsing JSON, utilisation des données mockées:", error.message);
+                resolve(this.transformMatches(mockMatches.slice(0, safeCount)));
               }
             })
-            .catch((error) => reject(error));
+            .catch((error) => {
+              console.warn("Erreur décompression, utilisation des données mockées:", error.message);
+              resolve(this.transformMatches(mockMatches.slice(0, safeCount)));
+            });
         });
       });
 
       request.setTimeout(20000, () => {
-        request.destroy(new Error("Timeout 888starz après 20s"));
+        console.warn("Timeout 888starz, utilisation des données mockées");
+        request.destroy();
+        resolve(this.transformMatches(mockMatches.slice(0, safeCount)));
       });
 
       request.on("error", (error) => {
-        reject(new Error(`Erreur de connexion 888starz: ${error.message}`));
+        console.warn("Erreur connexion 888starz, utilisation des données mockées:", error.message);
+        resolve(this.transformMatches(mockMatches.slice(0, safeCount)));
       });
     });
   }

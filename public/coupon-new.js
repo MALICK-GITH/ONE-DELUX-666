@@ -54,15 +54,27 @@ class CouponGenerator {
     this.generateCouponBtn.disabled = true;
     this.generateCouponBtn.textContent = 'Génération en cours...';
     
-    this.couponSection.innerHTML = '<div class="loading-card">Génération du coupon avec API de prédiction...</div>';
+    this.couponSection.innerHTML = '<div class="loading-card">Chargement des matchs depuis 888starz...</div>';
     this.resultSection.innerHTML = '<p>Analyse en cours...</p>';
 
     try {
-      // Generate mock matches for the selected league family
-      const matches = this.generateMockMatches(this.league, this.matchCount);
+      // Fetch real matches from 888starz API via proxy
+      const matches = await this.fetchRealMatches();
+      
+      // Filter matches by selected league/family
+      const filteredMatches = this.filterMatchesByLeague(matches, this.league);
+      
+      // Select requested number of matches
+      const selectedMatches = this.selectMatches(filteredMatches, this.matchCount);
+      
+      if (selectedMatches.length === 0) {
+        throw new Error('Aucun match disponible pour cette ligue');
+      }
+      
+      this.couponSection.innerHTML = '<div class="loading-card">Génération des prédictions...</div>';
       
       // Get predictions from API for each match
-      const predictions = await this.getPredictionsForMatches(matches);
+      const predictions = await this.getPredictionsForMatches(selectedMatches);
       
       // Build coupon with predictions
       this.generatedCoupon = this.buildCoupon(predictions);
@@ -88,54 +100,54 @@ class CouponGenerator {
     }
   }
 
-  generateMockMatches(league, count) {
-    const teamNames = {
-      'PENALTY': ['Real Madrid', 'Barcelona', 'Chelsea', 'Liverpool', 'PSG', 'Bayern Munich', 'Juventus', 'Inter Milan'],
-      'HIGHSCORE': ['Manchester City', 'Arsenal', 'Tottenham', 'Dortmund', 'Atletico Madrid', 'Napoli', 'RB Leipzig', 'Ajax'],
-      'RUSH': ['Leicester', 'Everton', 'West Ham', 'Southampton', 'Wolves', 'Crystal Palace', 'Brighton', 'Newcastle'],
-      'CLASSIC': ['Real Madrid', 'Barcelona', 'Liverpool', 'Manchester City', 'Bayern Munich', 'PSG', 'Juventus', 'Chelsea'],
-      'ENGLAND': ['Manchester United', 'Arsenal', 'Chelsea', 'Liverpool', 'Manchester City', 'Tottenham', 'Everton', 'Newcastle'],
-      'CHAMPIONS': ['Real Madrid', 'Barcelona', 'Bayern Munich', 'PSG', 'Liverpool', 'Manchester City', 'Juventus', 'Inter Milan'],
-      'WORLD': ['Brazil', 'Argentina', 'France', 'Germany', 'Spain', 'England', 'Italy', 'Netherlands']
+  async fetchRealMatches() {
+    try {
+      const response = await fetch('/api/matches');
+      const data = await response.json();
+      
+      if (data.success && Array.isArray(data.matches)) {
+        return data.matches;
+      } else {
+        throw new Error('Invalid response from matches API');
+      }
+    } catch (error) {
+      console.error('Error fetching real matches:', error);
+      throw new Error('Impossible de charger les matchs depuis 888starz');
+    }
+  }
+
+  filterMatchesByLeague(matches, selectedLeague) {
+    // Map league family to keywords in league names
+    const leagueKeywords = {
+      'PENALTY': ['penalty', 'shootout', 'tirs'],
+      'HIGHSCORE': ['highscore', '3x3', 'high score'],
+      'RUSH': ['rush', '5x5'],
+      'CLASSIC': ['classic', 'champions', 'ligue'],
+      'ENGLAND': ['england', 'premier', 'angleterre'],
+      'CHAMPIONS': ['champions', 'ligue des champions'],
+      'WORLD': ['world', 'world cup', 'coupe du monde']
     };
 
-    const leagueNames = {
-      'PENALTY': 'FC 25. Penalty Shootout League',
-      'HIGHSCORE': 'FC 25. 3x3 Highscore League',
-      'RUSH': 'FC 26. 5x5 Rush League',
-      'CLASSIC': 'FC 25. Champions League',
-      'ENGLAND': 'FC 25. Premier League',
-      'CHAMPIONS': 'FC 25. Champions League',
-      'WORLD': 'FC 25. World Cup'
-    };
-
-    const teams = teamNames[league] || teamNames['CLASSIC'];
-    const leagueName = leagueNames[league] || 'FC 25. Champions League';
-
-    const matches = [];
-    const usedPairs = new Set();
-
-    for (let i = 0; i < count; i++) {
-      let home, away;
-      let pairKey;
-      
-      // Generate unique team pairs
-      do {
-        home = teams[Math.floor(Math.random() * teams.length)];
-        away = teams[Math.floor(Math.random() * teams.length)];
-        pairKey = `${home}-${away}`;
-      } while (home === away || usedPairs.has(pairKey));
-      
-      usedPairs.add(pairKey);
-      
-      matches.push({
-        team_home: home,
-        team_away: away,
-        league: leagueName
-      });
+    const keywords = leagueKeywords[selectedLeague] || [];
+    
+    if (selectedLeague === 'all' || keywords.length === 0) {
+      return matches;
     }
 
-    return matches;
+    return matches.filter(match => {
+      const leagueName = (match.league || match.L || '').toLowerCase();
+      return keywords.some(keyword => leagueName.includes(keyword));
+    });
+  }
+
+  selectMatches(matches, count) {
+    if (matches.length <= count) {
+      return matches;
+    }
+
+    // Randomly select matches
+    const shuffled = [...matches].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
   }
 
   async getPredictionsForMatches(matches) {
@@ -143,13 +155,23 @@ class CouponGenerator {
 
     for (const match of matches) {
       try {
+        // Extract team names and league from 888starz format
+        const team_home = match.O1 || match.team1 || match.home;
+        const team_away = match.O2 || match.team2 || match.away;
+        const league = match.L || match.league || match.leagueName;
+
+        if (!team_home || !team_away || !league) {
+          console.warn('Invalid match format:', match);
+          continue;
+        }
+
         const response = await fetch('/api/prediction', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            team_home: match.team_home,
-            team_away: match.team_away,
-            league: match.league
+            team_home,
+            team_away,
+            league
           })
         });
 
@@ -157,7 +179,12 @@ class CouponGenerator {
         
         if (data.success && data.prediction) {
           predictions.push({
-            match: match,
+            match: {
+              team_home,
+              team_away,
+              league,
+              original: match
+            },
             prediction: data.prediction
           });
         } else {

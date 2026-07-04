@@ -10,6 +10,7 @@ const AIModelClient = require("./services/aiModelClient");
 const { logVisitor, getVisitorStats, clearOldLogs } = require("./server/ip-logger");
 const { initializeSchema, closePool } = require("./server/database");
 const WebSocketNotificationServer = require("./server/websocket-server");
+const pushNotificationService = require("./server/push-notification-service");
 
 const REQUIRED_NODE_MAJOR = 18;
 const REQUIRED_NODE_MINOR = 17;
@@ -316,6 +317,9 @@ async function handlePrediction(req, res) {
           };
           
           wsNotificationServer.broadcastPredictionUpdate(notification);
+          
+          // Also send via Web Push for offline/closed browser support
+          pushNotificationService.broadcast(notification);
         }
         
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
@@ -720,6 +724,9 @@ async function handlePredictionBatch(req, res) {
               };
               
               wsNotificationServer.broadcastPredictionUpdate(notification);
+              
+              // Also send via Web Push for offline/closed browser support
+              pushNotificationService.broadcast(notification);
             }
           });
         }
@@ -1076,6 +1083,123 @@ async function handleClearVisitorLogs(req, res) {
   }
 }
 
+// Push notification handlers
+async function handlePushVapidKey(req, res) {
+  try {
+    const vapidKey = pushNotificationService.getVapidPublicKey();
+    
+    if (!vapidKey) {
+      res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({
+        success: false,
+        error: "VAPID keys not configured"
+      }));
+      return;
+    }
+    
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      vapidKey: vapidKey
+    }));
+  } catch (error) {
+    console.error("Erreur VAPID key:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handlePushSubscribe(req, res) {
+  try {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const subscription = JSON.parse(body);
+        
+        if (!pushNotificationService.isValidSubscription(subscription)) {
+          res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({
+            success: false,
+            error: "Invalid subscription object"
+          }));
+          return;
+        }
+        
+        const result = pushNotificationService.subscribe(subscription);
+        
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          message: result.message,
+          subscriptionCount: pushNotificationService.getSubscriptionCount()
+        }));
+      } catch (error) {
+        console.error("Erreur subscription push:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur traitement subscription:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handlePushUnsubscribe(req, res) {
+  try {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const subscription = JSON.parse(body);
+        
+        if (!pushNotificationService.isValidSubscription(subscription)) {
+          res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({
+            success: false,
+            error: "Invalid subscription object"
+          }));
+          return;
+        }
+        
+        const result = pushNotificationService.unsubscribe(subscription);
+        
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          message: result.message,
+          subscriptionCount: pushNotificationService.getSubscriptionCount()
+        }));
+      } catch (error) {
+        console.error("Erreur unsubscription push:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur traitement unsubscription:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
 async function handle888starzProxy(req, res, url) {
   try {
     // Extraire le chemin de l'endpoint 888starz
@@ -1352,6 +1476,22 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === "/api/visitors/clear") {
     await handleClearVisitorLogs(req, res);
+    return;
+  }
+
+  // Push notification endpoints
+  if (url.pathname === "/api/push/vapid-key") {
+    await handlePushVapidKey(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/push/subscribe") {
+    await handlePushSubscribe(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/push/unsubscribe") {
+    await handlePushUnsubscribe(req, res);
     return;
   }
 

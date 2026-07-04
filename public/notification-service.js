@@ -34,6 +34,7 @@ class NotificationService {
       await this.loadNotifications();
       this.connectWebSocket();
       this.setupVisibilityHandler();
+      await this.setupWebPush();
       console.log('🔔 Notification Service initialized');
     } catch (error) {
       console.error('❌ Notification Service init error:', error);
@@ -449,6 +450,101 @@ class NotificationService {
         this.connectWebSocket();
       }
     });
+  }
+
+  // Web Push Setup
+  async setupWebPush() {
+    try {
+      // Check if Service Worker is supported
+      if (!('serviceWorker' in navigator)) {
+        console.log('ℹ️  Service Worker not supported, Web Push unavailable');
+        return;
+      }
+
+      // Register Service Worker
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('✅ Service Worker registered');
+
+      // Get VAPID public key from server
+      const vapidResponse = await fetch('/api/push/vapid-key');
+      const vapidData = await vapidResponse.json();
+
+      if (!vapidData.success || !vapidData.vapidKey) {
+        console.log('ℹ️  Web Push not configured on server');
+        return;
+      }
+
+      // Check existing subscription
+      const existingSubscription = await registration.pushManager.getSubscription();
+      
+      if (existingSubscription) {
+        console.log('✅ Web Push already subscribed');
+        return;
+      }
+
+      // Request permission and subscribe
+      const permission = await Notification.requestPermission();
+      
+      if (permission !== 'granted') {
+        console.log('ℹ️  Notification permission denied');
+        return;
+      }
+
+      // Subscribe to push
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this.urlBase64ToUint8Array(vapidData.vapidKey)
+      });
+
+      // Send subscription to server
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription)
+      });
+
+      console.log('✅ Web Push subscribed successfully');
+
+    } catch (error) {
+      console.error('❌ Web Push setup error:', error);
+    }
+  }
+
+  // Convert base64 to Uint8Array for VAPID key
+  urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    
+    return outputArray;
+  }
+
+  // Unsubscribe from Web Push
+  async unsubscribeWebPush() {
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) return;
+
+      const subscription = await registration.pushManager.getSubscription();
+      if (!subscription) return;
+
+      await subscription.unsubscribe();
+      
+      await fetch('/api/push/unsubscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription)
+      });
+
+      console.log('✅ Web Push unsubscribed');
+    } catch (error) {
+      console.error('❌ Web Push unsubscribe error:', error);
+    }
   }
 
   // Getters

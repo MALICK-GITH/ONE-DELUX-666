@@ -20,6 +20,9 @@ const APP_SHELL = [
   "/loading-indicator.js",
   "/error-handler.js",
   "/assistant-widget.js",
+  "/notification-service.js",
+  "/notification-panel.js",
+  "/notification-panel.css",
   "/manifest.json",
   "/icons/icon-72x72.svg",
   "/icons/icon-96x96.svg",
@@ -83,6 +86,77 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
+});
+
+// Web Push notification handling
+self.addEventListener('push', (event) => {
+  const options = {
+    body: event.data?.text() || 'Nouvelle notification FURY X ONE',
+    icon: '/icons/icon-192x192.svg',
+    badge: '/icons/icon-96x96.svg',
+    vibrate: [200, 100, 200],
+    data: {
+      url: '/',
+      timestamp: Date.now()
+    },
+    actions: [
+      {
+        action: 'open',
+        title: 'Ouvrir',
+        icon: '/icons/icon-96x96.svg'
+      },
+      {
+        action: 'close',
+        title: 'Fermer',
+        icon: '/icons/icon-96x96.svg'
+      }
+    ],
+    requireInteraction: true,
+    tag: 'fury-x-one-notification'
+  };
+
+  // Try to parse JSON data if available
+  try {
+    const data = event.data?.text() ? JSON.parse(event.data.text()) : null;
+    if (data) {
+      options.title = data.title || 'FURY X ONE';
+      options.body = data.message || options.body;
+      options.data = { ...options.data, ...data };
+      if (data.priority === 'high') {
+        options.requireInteraction = true;
+      }
+    }
+  } catch (e) {
+    // If not JSON, use text as body
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(options.title || 'FURY X ONE', options)
+  );
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'close') {
+    return;
+  }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      // If a window is already open, focus it
+      for (const client of clientList) {
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise, open a new window
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
 });
 
 async function handleNavigationRequest(request) {

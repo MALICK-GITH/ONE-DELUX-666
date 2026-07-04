@@ -292,6 +292,32 @@ async function handlePrediction(req, res) {
 
         const prediction = await predictionClient.predictMatch(team_home, team_away, league, market_data);
         
+        // Broadcast prediction notification via WebSocket
+        if (wsNotificationServer) {
+          const highestConfidence = Math.max(
+            prediction.predictions['1x2']?.confidence || 0,
+            prediction.predictions['btts']?.confidence || 0,
+            prediction.predictions['over_under']?.confidence || 0,
+            prediction.predictions['score_range']?.confidence || 0
+          );
+          
+          const notification = {
+            type: 'prediction',
+            title: `🎯 Prédiction: ${team_home} vs ${team_away}`,
+            message: `Confiance: ${(highestConfidence * 100).toFixed(0)}% | ${prediction.family}`,
+            data: {
+              match: prediction.match,
+              league: prediction.league,
+              family: prediction.family,
+              predictions: prediction.predictions,
+              confidence: highestConfidence
+            },
+            priority: highestConfidence > 0.8 ? 'high' : 'normal'
+          };
+          
+          wsNotificationServer.broadcastPredictionUpdate(notification);
+        }
+        
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({
           success: true,
@@ -665,6 +691,39 @@ async function handlePredictionBatch(req, res) {
         const payload = JSON.parse(body || "{}");
         const matches = Array.isArray(payload.matches) ? payload.matches : [];
         const batch = await predictionClient.batchPredict(matches);
+        
+        // Broadcast batch prediction notifications via WebSocket
+        if (wsNotificationServer && batch.predictions) {
+          batch.predictions.forEach((prediction, index) => {
+            if (prediction.predictions) {
+              const highestConfidence = Math.max(
+                prediction.predictions['1x2']?.confidence || 0,
+                prediction.predictions['btts']?.confidence || 0,
+                prediction.predictions['over_under']?.confidence || 0,
+                prediction.predictions['score_range']?.confidence || 0
+              );
+              
+              const notification = {
+                type: 'prediction',
+                title: `🎯 Prédiction Batch: ${prediction.match}`,
+                message: `Confiance: ${(highestConfidence * 100).toFixed(0)}% | ${prediction.family}`,
+                data: {
+                  match: prediction.match,
+                  league: prediction.league,
+                  family: prediction.family,
+                  predictions: prediction.predictions,
+                  confidence: highestConfidence,
+                  batchIndex: index,
+                  totalInBatch: batch.predictions.length
+                },
+                priority: highestConfidence > 0.8 ? 'high' : 'normal'
+              };
+              
+              wsNotificationServer.broadcastPredictionUpdate(notification);
+            }
+          });
+        }
+        
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ success: true, batch }));
       } catch (error) {

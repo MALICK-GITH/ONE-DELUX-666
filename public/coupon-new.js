@@ -44,7 +44,51 @@ class CouponGenerator {
     this.generateImageBtn.addEventListener('click', () => this.generateImage());
     this.validateCouponBtn.addEventListener('click', () => this.validateCoupon());
 
+    // Load available families from API
+    this.loadFamilies();
+
     console.log('🎯 Coupon Generator initialized');
+  }
+
+  async loadFamilies() {
+    try {
+      const response = await fetch('/api/prediction/families');
+      const data = await response.json();
+
+      if (data.success && data.families) {
+        this.updateLeagueSelect(data.families);
+      }
+    } catch (error) {
+      console.error('Error loading families:', error);
+      // Keep default options if API fails
+    }
+  }
+
+  updateLeagueSelect(families) {
+    // Clear current options except "all"
+    const currentValue = this.leagueSelect.value;
+    this.leagueSelect.innerHTML = '';
+
+    // Add family options
+    Object.keys(families).forEach(family => {
+      const option = document.createElement('option');
+      option.value = family;
+      option.textContent = `${family} (${families[family].description || family})`;
+      this.leagueSelect.appendChild(option);
+    });
+
+    // Add "all" option at the end
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = 'Toutes les ligues';
+    this.leagueSelect.appendChild(allOption);
+
+    // Restore previous selection if still valid
+    if (currentValue && families[currentValue]) {
+      this.leagueSelect.value = currentValue;
+    } else {
+      this.leagueSelect.value = 'all';
+    }
   }
 
   async generateCoupon() {
@@ -165,14 +209,34 @@ class CouponGenerator {
           continue;
         }
 
+        // Build prediction request with optional market_data
+        const requestBody = {
+          team_home,
+          team_away,
+          league
+        };
+
+        // Include market_data if available from 888starz
+        if (match.E || match.AE) {
+          requestBody.market_data = {
+            O1: team_home,
+            O2: team_away,
+            L: league
+          };
+
+          if (match.E) {
+            requestBody.market_data.E = match.E;
+          }
+
+          if (match.AE) {
+            requestBody.market_data.AE = match.AE;
+          }
+        }
+
         const response = await fetch('/api/prediction', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            team_home,
-            team_away,
-            league
-          })
+          body: JSON.stringify(requestBody)
         });
 
         const data = await response.json();

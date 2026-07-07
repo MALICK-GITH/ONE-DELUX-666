@@ -50,10 +50,15 @@
     matchById(id) {
       return requestJson(`/matches/${encodeURIComponent(id)}`);
     },
-    prediction(teamHome, teamAway, league) {
+    prediction(teamHome, teamAway, league, stats = null) {
       return requestJson("/prediction", {
         method: "POST",
-        body: { team_home: teamHome, team_away: teamAway, league },
+        body: {
+          team_home: teamHome,
+          team_away: teamAway,
+          league,
+          ...(stats || {}),
+        },
       });
     },
     predictionHealth() {
@@ -65,11 +70,13 @@
     predictionModels() {
       return requestJson("/prediction/models");
     },
-    predictionModelInfo() {
-      return requestJson("/prediction/model-info");
+    predictionModelInfo(league = "") {
+      return league
+        ? requestJson(`/prediction/model/${encodeURIComponent(league)}`)
+        : requestJson("/prediction/model-info");
     },
     predictionBatch(matches) {
-      return requestJson("/prediction/batch", { method: "POST", body: { matches } });
+      return requestJson("/prediction/batch", { method: "POST", body: Array.isArray(matches) ? matches : [] });
     },
     predictionTeamStats(teamName) {
       return requestJson(`/prediction/team-stats/${encodeURIComponent(teamName)}`);
@@ -81,10 +88,12 @@
       return requestJson("/assistant/chat", { method: "POST", body });
     },
     predictionFamilies() {
-      return requestJson("/prediction/families");
+      return requestJson("/prediction/leagues");
     },
     predictionLeagues(family) {
-      return requestJson(`/prediction/leagues/${encodeURIComponent(family)}`);
+      return family
+        ? requestJson(`/prediction/leagues/${encodeURIComponent(family)}`)
+        : requestJson("/prediction/leagues");
     },
     predictionUpdateHistory(body) {
       return requestJson("/prediction/update-history", { method: "POST", body });
@@ -93,8 +102,11 @@
       const query = family ? `?family=${encodeURIComponent(family)}` : "";
       return requestJson(`/prediction/save-history${query}`, { method: "POST" });
     },
+    predictionCacheStats() {
+      return requestJson("/prediction/cache/stats");
+    },
     predictionClearCache() {
-      return requestJson("/prediction/clear-cache", { method: "POST" });
+      return requestJson("/prediction/cache/clear", { method: "POST" });
     },
     coupon(params = {}) {
       const query = new URLSearchParams(params).toString();

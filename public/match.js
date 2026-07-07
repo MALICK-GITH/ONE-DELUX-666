@@ -28,6 +28,7 @@ const DEFAULT_TEAM_LOGO = "/icons/icon-192x192.svg";
 
 let currentMatchData = null;
 let currentPredictionData = null;
+let cachedPredictionLeagues = null;
 
 window.currentMatchData = currentMatchData;
 window.currentPredictionData = currentPredictionData;
@@ -366,6 +367,25 @@ function getScoreRangeLabels(family, scoreRangeData) {
   return labels;
 }
 
+async function resolveExactPredictionLeagueName(league) {
+  const requestedLeague = String(league || "").trim();
+  if (!requestedLeague) return requestedLeague;
+
+  try {
+    if (!cachedPredictionLeagues) {
+      cachedPredictionLeagues = window.SiteAPI.predictionLeagues()
+        .then((response) => Array.isArray(response?.leagues) ? response.leagues : [])
+        .catch(() => []);
+    }
+
+    const leagues = await cachedPredictionLeagues;
+    const exact = leagues.find((item) => String(item?.name || "").toLowerCase() === requestedLeague.toLowerCase());
+    return exact?.name || requestedLeague;
+  } catch {
+    return requestedLeague;
+  }
+}
+
 function renderBarRow(label, value, colorClass, emoji, confidence = null) {
   const ratio = Math.max(0, Math.min(100, (safeNumber(value) ?? 0) * 100));
   const confidenceDisplay = confidence !== null ? `<span class="premium-bar-confidence">Confiance: ${(confidence * 100).toFixed(0)}%</span>` : '';
@@ -503,6 +523,9 @@ function renderPredictionContent(match, prediction) {
   const drawNoBet = prediction?.predictions?.draw_no_bet || {};
   const winBothHalves = prediction?.predictions?.win_both_halves || {};
   const family = normalizeText(prediction?.family, "HIGHSCORE");
+  const rawResult = prediction?.result ? normalizeText(prediction.result) : null;
+  const rawResultProba = safeNumber(prediction?.result_proba);
+  const topScores = Array.isArray(prediction?.top_scores) ? prediction.top_scores.slice(0, 5) : [];
   const mainPrediction = getMainPrediction(x2, match);
   const predictedGoals = safeNumber(totalGoals.predicted);
   const handicapPredicted = safeNumber(handicap.predicted);
@@ -611,6 +634,34 @@ function renderPredictionContent(match, prediction) {
         <div class="prediction-family-badge">Famille ${family}</div>
       </div>
 
+      ${rawResult ? `
+        <div class="premium-section-card fade-in-up">
+          <div class="section-title-wrap compact">
+            <h4>🧾 Sortie brute du modèle</h4>
+            <p>Valeur retournée par prediction.result et son score associé.</p>
+          </div>
+          <div class="stats-grid-premium">
+            ${renderStatCard("Classe", rawResult, "cyan")}
+            ${renderStatCard("Confiance", rawResultProba !== null ? formatPercent(rawResultProba) : "N/A", "green")}
+          </div>
+          ${topScores.length ? `
+            <div class="prediction-history">
+              <h4>Top scores</h4>
+              <div class="history-grid">
+                ${topScores.map((item) => `
+                  <div class="history-item">
+                    <div class="history-item-top">
+                      <span>${normalizeText(item.score)}</span>
+                      <strong>${formatPercent(item.proba)}</strong>
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          ` : ""}
+        </div>
+      ` : ""}
+
       <div class="premium-section-card fade-in-up">
         <div class="section-title-wrap compact">
           <h4>📊 Analyse 1X2</h4>
@@ -716,10 +767,11 @@ async function loadMatchPrediction() {
   resultDiv.innerHTML = '<div class="loading-card premium-loading-card"><div class="loading-spinner"></div><p>Analyse IA en cours...</p></div>';
 
   try {
+    const exactLeague = await resolveExactPredictionLeagueName(currentMatchData.league);
     const data = await window.SiteAPI.prediction(
       currentMatchData.team1,
       currentMatchData.team2,
-      currentMatchData.league,
+      exactLeague,
     );
 
     if (!data.success) {
@@ -764,4 +816,3 @@ function attachPredictionToolEvents() {
     });
   }
 }
-

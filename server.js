@@ -7,6 +7,16 @@ const LiveFeedClient = require("./services/liveFeedClient");
 const PredictionClient = require("./services/predictionClient");
 const PenaltyClient = require("./services/penaltyClient");
 const AIModelClient = require("./services/aiModelClient");
+const {
+  DEFAULT_PREDICTION_STATS,
+  buildPredictionRequest,
+  normalizePredictionResponse,
+} = require("./server/utils/prediction");
+const {
+  buildHistoricalStats,
+  getLeagueStats,
+  getTeamStats,
+} = require("./server/utils/historicalStats");
 const { logVisitor, getVisitorStats, clearOldLogs } = require("./server/ip-logger");
 const { initializeSchema, closePool } = require("./server/database");
 const WebSocketNotificationServer = require("./server/websocket-server");
@@ -33,6 +43,33 @@ const mimeTypes = {
   ".jpeg": "image/jpeg",
   ".svg": "image/svg+xml"
 };
+
+function createPredictionFallbackContext(match = {}) {
+  return {
+    league: match.league || "",
+    team_home: match.team1 || match.team_home || match.homeTeam || "",
+    team_away: match.team2 || match.team_away || match.awayTeam || "",
+    rolling_home: DEFAULT_PREDICTION_STATS.rolling_home,
+    rolling_away: DEFAULT_PREDICTION_STATS.rolling_away,
+    h2h: DEFAULT_PREDICTION_STATS.h2h,
+  };
+}
+
+function extractPredictionContext(body = {}, fallback = {}) {
+  return buildPredictionRequest(body, fallback);
+}
+
+function buildHistoricalPredictionContext(teamHome, teamAway, league) {
+  const historical = buildHistoricalStats(teamHome, teamAway, league);
+  return {
+    league,
+    team_home: teamHome,
+    team_away: teamAway,
+    rolling_home: historical.rolling_home,
+    rolling_away: historical.rolling_away,
+    h2h: historical.h2h,
+  };
+}
 
 
 function assertNodeVersion() {
@@ -276,60 +313,72 @@ async function handleMatchById(req, res, matchId) {
 
 async function handlePrediction(req, res) {
   try {
-    let body = "";
-    req.on("data", chunk => { body += chunk; });
-    req.on("end", async () => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', async () => {
       try {
-        const { team_home, team_away, league, market_data } = JSON.parse(body);
-        
-        if (!team_home || !team_away || !league) {
-          res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+        const parsedBody = JSON.parse(body || '{}');
+        const teamHome = parsedBody.team_home ?? parsedBody.home_team ?? parsedBody.teamHome ?? "";
+        const teamAway = parsedBody.team_away ?? parsedBody.away_team ?? parsedBody.teamAway ?? "";
+        const league = parsedBody.league ?? "";
+        const historicalFallback = buildHistoricalPredictionContext(teamHome, teamAway, league);
+        const requestPayload = extractPredictionContext(parsedBody, historicalFallback);
+
+        if (!requestPayload.team_home || !requestPayload.team_away || !requestPayload.league) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
           res.end(JSON.stringify({
             success: false,
-            error: "Paramètres manquants: team_home, team_away, league requis"
+            error: 'Param�tres manquants: team_home, team_away, league requis'
           }));
           return;
         }
 
-        const prediction = await predictionClient.predictMatch(team_home, team_away, league, market_data);
-        
-        // Broadcast prediction notification via WebSocket
-        if (wsNotificationServer) {
-          const highestConfidence = Math.max(
-            prediction.predictions['1x2']?.confidence || 0,
-            prediction.predictions['btts']?.confidence || 0,
-            prediction.predictions['over_under']?.confidence || 0,
-            prediction.predictions['score_range']?.confidence || 0
-          );
-          
+        const prediction = await predictionClient.predictMatch(
+          requestPayload.team_home,
+          requestPayload.team_away,
+          requestPayload.league,
+          requestPayload.rolling_home,
+          requestPayload.rolling_away,
+          requestPayload.h2h
+        );
+        const normalizedPrediction = normalizePredictionResponse(prediction, requestPayload);
+
+        if (wsNotificationServer && normalizedPrediction?.success && normalizedPrediction.prediction) {
+          const x2 = normalizedPrediction.prediction.predictions?.['1x2'] || {};
+          const topScore = Array.isArray(normalizedPrediction.prediction.top_scores)
+            ? normalizedPrediction.prediction.top_scores[0]
+            : null;
+          const highestConfidence = Math.max(x2.home || 0, x2.draw || 0, x2.away || 0);
+
           const notification = {
             type: 'prediction',
-            title: `🎯 Prédiction: ${team_home} vs ${team_away}`,
-            message: `Confiance: ${(highestConfidence * 100).toFixed(0)}% | ${prediction.family}`,
+            title: 'Pr�diction: ' + requestPayload.team_home + ' vs ' + requestPayload.team_away,
+            message: topScore
+              ? 'R�sultat ' + normalizedPrediction.prediction.result + ' | Score ' + topScore.score
+              : 'R�sultat ' + normalizedPrediction.prediction.result,
             data: {
-              match: prediction.match,
-              league: prediction.league,
-              family: prediction.family,
-              predictions: prediction.predictions,
+              match: normalizedPrediction.prediction.match,
+              league: normalizedPrediction.prediction.league,
+              result: normalizedPrediction.prediction.result,
+              resultProba: normalizedPrediction.prediction.result_proba,
+              topScores: normalizedPrediction.prediction.top_scores,
               confidence: highestConfidence
             },
             priority: highestConfidence > 0.8 ? 'high' : 'normal'
           };
-          
+
           wsNotificationServer.broadcastPredictionUpdate(notification);
-          
-          // Also send via Web Push for offline/closed browser support
           pushNotificationService.broadcast(notification);
         }
-        
-        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({
           success: true,
-          prediction: prediction
+          prediction: normalizedPrediction.prediction || null
         }));
       } catch (error) {
-        console.error("Erreur lors de la prédiction:", error);
-        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        console.error('Erreur lors de la pr�diction:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({
           success: false,
           error: error.message
@@ -337,8 +386,8 @@ async function handlePrediction(req, res) {
       }
     });
   } catch (error) {
-    console.error("Erreur lors du traitement de la requête:", error);
-    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    console.error('Erreur lors du traitement de la requ�te:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({
       success: false,
       error: error.message
@@ -606,7 +655,15 @@ async function buildCompareMode(compareRequest) {
     const match = matches.find((item) => String(item.id) === String(compareRequest.matchId));
     if (!match) return null;
 
-    const systemPrediction = await predictionClient.predictMatch(match.team1, match.team2, match.league, match.raw);
+    const fallbackContext = buildHistoricalPredictionContext(match.team1, match.team2, match.league);
+    const systemPrediction = await predictionClient.predictMatch(
+      match.team1,
+      match.team2,
+      match.league,
+      fallbackContext.rolling_home,
+      fallbackContext.rolling_away,
+      fallbackContext.h2h
+    );
     return {
       match: {
         id: match.id,
@@ -625,11 +682,14 @@ async function buildCompareMode(compareRequest) {
 
 async function handlePredictionFamilies(req, res) {
   try {
+    const leaguesResponse = await predictionClient.getLeagues();
+    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
     const families = await predictionClient.getFamilies();
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: true,
-      families: families
+      leagues,
+      families
     }));
   } catch (error) {
     console.error("Erreur lors de la récupération des familles:", error);
@@ -643,23 +703,11 @@ async function handlePredictionFamilies(req, res) {
 
 async function handlePredictionLeagues(req, res) {
   try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const family = url.pathname.split("/").pop();
-    
-    if (!family) {
-      res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
-      res.end(JSON.stringify({
-        success: false,
-        error: "Paramètre 'family' requis"
-      }));
-      return;
-    }
-
-    const leagues = await predictionClient.getLeagues(family);
+    const leaguesResponse = await predictionClient.getLeagues();
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: true,
-      leagues: leagues
+      leagues: Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : []
     }));
   } catch (error) {
     console.error("Erreur lors de la récupération des ligues:", error);
@@ -673,75 +721,107 @@ async function handlePredictionLeagues(req, res) {
 
 async function handlePredictionModelInfo(req, res) {
   try {
-    const info = await predictionClient.getModelInfo();
-    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-    res.end(JSON.stringify({
-      success: true,
-      info
-    }));
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const league = url.searchParams.get('league') || decodeURIComponent(url.pathname.split("/").pop() || "");
+
+    if (league) {
+      const info = await predictionClient.getModelInfo(league);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, info }));
+      return;
+    }
+
+    const stats = await predictionClient.getCacheStats();
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ success: true, info: stats }));
   } catch (error) {
-    console.error("Erreur model-info:", error);
-    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    console.error('Erreur model-info:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ success: false, error: error.message }));
   }
 }
 
+async function handlePredictionCacheStats(req, res) {
+  try {
+    const stats = await predictionClient.getCacheStats();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      info: stats
+    }));
+  } catch (error) {
+    console.error("Erreur cache-stats:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message
+    }));
+  }
+}
+
+async function handlePredictionClearCache(req, res) {
+  return handleClearCache(req, res);
+}
+
 async function handlePredictionBatch(req, res) {
   try {
-    let body = "";
-    req.on("data", (chunk) => { body += chunk; });
-    req.on("end", async () => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', async () => {
       try {
-        const payload = JSON.parse(body || "{}");
-        const matches = Array.isArray(payload.matches) ? payload.matches : [];
-        const batch = await predictionClient.batchPredict(matches);
-        
-        // Broadcast batch prediction notifications via WebSocket
-        if (wsNotificationServer && batch.predictions) {
-          batch.predictions.forEach((prediction, index) => {
-            if (prediction.predictions) {
-              const highestConfidence = Math.max(
-                prediction.predictions['1x2']?.confidence || 0,
-                prediction.predictions['btts']?.confidence || 0,
-                prediction.predictions['over_under']?.confidence || 0,
-                prediction.predictions['score_range']?.confidence || 0
-              );
-              
-              const notification = {
-                type: 'prediction',
-                title: `🎯 Prédiction Batch: ${prediction.match}`,
-                message: `Confiance: ${(highestConfidence * 100).toFixed(0)}% | ${prediction.family}`,
-                data: {
-                  match: prediction.match,
-                  league: prediction.league,
-                  family: prediction.family,
-                  predictions: prediction.predictions,
-                  confidence: highestConfidence,
-                  batchIndex: index,
-                  totalInBatch: batch.predictions.length
-                },
-                priority: highestConfidence > 0.8 ? 'high' : 'normal'
-              };
-              
-              wsNotificationServer.broadcastPredictionUpdate(notification);
-              
-              // Also send via Web Push for offline/closed browser support
-              pushNotificationService.broadcast(notification);
-            }
+        const payload = JSON.parse(body || '{}');
+        const matches = Array.isArray(payload) ? payload : Array.isArray(payload.matches) ? payload.matches : [];
+        const requests = matches.map((item) => {
+          const teamHome = item.team_home ?? item.home_team ?? item.teamHome ?? item.team1 ?? item.home ?? "";
+          const teamAway = item.team_away ?? item.away_team ?? item.teamAway ?? item.team2 ?? item.away ?? "";
+          const league = item.league ?? item.L ?? "";
+          const historicalFallback = buildHistoricalPredictionContext(teamHome, teamAway, league);
+          return extractPredictionContext(item, historicalFallback);
+        });
+        const batch = await predictionClient.batchPredict(requests);
+
+        if (wsNotificationServer && Array.isArray(batch.predictions)) {
+          batch.predictions.forEach((predictionItem, index) => {
+            if (!predictionItem?.success || !predictionItem.prediction) return;
+            const x2 = predictionItem.prediction.predictions?.['1x2'] || {};
+            const highestConfidence = Math.max(x2.home || 0, x2.draw || 0, x2.away || 0);
+            const topScore = Array.isArray(predictionItem.prediction.top_scores) ? predictionItem.prediction.top_scores[0] : null;
+
+            const notification = {
+              type: 'prediction',
+              title: 'Pr�diction Batch: ' + (predictionItem.prediction.match || 'Match'),
+              message: topScore
+                ? 'R�sultat ' + predictionItem.prediction.result + ' | Score ' + topScore.score
+                : 'R�sultat ' + predictionItem.prediction.result,
+              data: {
+                match: predictionItem.prediction.match,
+                league: predictionItem.prediction.league,
+                result: predictionItem.prediction.result,
+                resultProba: predictionItem.prediction.result_proba,
+                topScores: predictionItem.prediction.top_scores,
+                confidence: highestConfidence,
+                batchIndex: index,
+                totalInBatch: batch.predictions.length
+              },
+              priority: highestConfidence > 0.8 ? 'high' : 'normal'
+            };
+
+            wsNotificationServer.broadcastPredictionUpdate(notification);
+            pushNotificationService.broadcast(notification);
           });
         }
-        
-        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ success: true, batch }));
       } catch (error) {
-        console.error("Erreur batch-predict:", error);
-        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        console.error('Erreur batch-predict:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ success: false, error: error.message }));
       }
     });
   } catch (error) {
-    console.error("Erreur traitement batch-predict:", error);
-    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    console.error('Erreur traitement batch-predict:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ success: false, error: error.message }));
   }
 }
@@ -749,7 +829,7 @@ async function handlePredictionBatch(req, res) {
 async function handlePredictionTeamStats(req, res) {
   try {
     const team = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname.split("/").pop() || "");
-    const stats = await predictionClient.getTeamStats(team);
+    const stats = getTeamStats(team);
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ success: true, stats }));
   } catch (error) {
@@ -762,7 +842,7 @@ async function handlePredictionTeamStats(req, res) {
 async function handlePredictionLeagueStats(req, res) {
   try {
     const league = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname.split("/").pop() || "");
-    const stats = await predictionClient.getLeagueStats(league);
+    const stats = getLeagueStats(league);
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ success: true, stats }));
   } catch (error) {
@@ -1381,6 +1461,26 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (url.pathname === "/api/prediction/leagues") {
+    await handlePredictionLeagues(req, res);
+    return;
+  }
+
+  if (url.pathname.startsWith("/api/prediction/model/")) {
+    await handlePredictionModelInfo(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/cache/stats") {
+    await handlePredictionCacheStats(req, res);
+    return;
+  }
+
+  if (url.pathname === "/api/prediction/cache/clear") {
+    await handlePredictionClearCache(req, res);
+    return;
+  }
+
   if (url.pathname === "/api/prediction/insight") {
     await handleAiInsight(req, res);
     return;
@@ -1546,3 +1646,5 @@ process.on('SIGINT', async () => {
     process.exit(0);
   });
 });
+
+

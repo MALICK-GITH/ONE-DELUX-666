@@ -7,7 +7,7 @@ class CouponGenerator {
   constructor() {
     this.matchCount = 3;
     this.market = '1x2';
-    this.league = 'CLASSIC';
+    this.league = 'all';
     this.generatedCoupon = null;
     this.isGenerating = false;
     
@@ -44,36 +44,36 @@ class CouponGenerator {
     this.generateImageBtn.addEventListener('click', () => this.generateImage());
     this.validateCouponBtn.addEventListener('click', () => this.validateCoupon());
 
-    // Load available families from API
-    this.loadFamilies();
+    // Load available leagues from API
+    this.loadLeagues();
 
     console.log('🎯 Coupon Generator initialized');
   }
 
-  async loadFamilies() {
+  async loadLeagues() {
     try {
-      const response = await fetch('/api/prediction/families');
+      const response = await fetch('/api/prediction/leagues');
       const data = await response.json();
 
-      if (data.success && data.families) {
-        this.updateLeagueSelect(data.families);
+      if (data.success && Array.isArray(data.leagues)) {
+        this.updateLeagueSelect(data.leagues);
       }
     } catch (error) {
-      console.error('Error loading families:', error);
+      console.error('Error loading leagues:', error);
       // Keep default options if API fails
     }
   }
 
-  updateLeagueSelect(families) {
+  updateLeagueSelect(leagues) {
     // Clear current options except "all"
     const currentValue = this.leagueSelect.value;
     this.leagueSelect.innerHTML = '';
 
-    // Add family options
-    Object.keys(families).forEach(family => {
+    // Add league options
+    leagues.forEach((league) => {
       const option = document.createElement('option');
-      option.value = family;
-      option.textContent = `${family} (${families[family].description || family})`;
+      option.value = league.name;
+      option.textContent = league.name;
       this.leagueSelect.appendChild(option);
     });
 
@@ -84,7 +84,7 @@ class CouponGenerator {
     this.leagueSelect.appendChild(allOption);
 
     // Restore previous selection if still valid
-    if (currentValue && families[currentValue]) {
+    if (currentValue && leagues.some((league) => league.name === currentValue)) {
       this.leagueSelect.value = currentValue;
     } else {
       this.leagueSelect.value = 'all';
@@ -105,7 +105,7 @@ class CouponGenerator {
       // Fetch real matches from 888starz API via proxy
       const matches = await this.fetchRealMatches();
       
-      // Filter matches by selected league/family
+      // Filter matches by selected league
       const filteredMatches = this.filterMatchesByLeague(matches, this.league);
       
       // Select requested number of matches
@@ -161,26 +161,13 @@ class CouponGenerator {
   }
 
   filterMatchesByLeague(matches, selectedLeague) {
-    // Map league family to keywords in league names
-    const leagueKeywords = {
-      'PENALTY': ['penalty', 'shootout', 'tirs'],
-      'HIGHSCORE': ['highscore', '3x3', 'high score'],
-      'RUSH': ['rush', '5x5'],
-      'CLASSIC': ['classic', 'champions', 'ligue'],
-      'ENGLAND': ['england', 'premier', 'angleterre'],
-      'CHAMPIONS': ['champions', 'ligue des champions'],
-      'WORLD': ['world', 'world cup', 'coupe du monde']
-    };
-
-    const keywords = leagueKeywords[selectedLeague] || [];
-    
-    if (selectedLeague === 'all' || keywords.length === 0) {
+    if (selectedLeague === 'all' || !selectedLeague) {
       return matches;
     }
 
     return matches.filter(match => {
       const leagueName = (match.league || match.L || '').toLowerCase();
-      return keywords.some(keyword => leagueName.includes(keyword));
+      return leagueName === String(selectedLeague).toLowerCase();
     });
   }
 

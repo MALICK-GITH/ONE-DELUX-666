@@ -11,46 +11,81 @@ class PredictionClient {
     return this.getJson("/health");
   }
 
-  async predictMatch(teamHome, teamAway, league, marketData = null) {
+  async getLeagues() {
+    return this.getJson("/leagues");
+  }
+
+  async predictMatch(teamHome, teamAway, league, rollingHome = null, rollingAway = null, h2h = null) {
     const payload = {
+      league,
       team_home: teamHome,
       team_away: teamAway,
-      league
     };
-    
-    if (marketData) {
-      payload.market_data = marketData;
-    }
-    
+
+    if (rollingHome) payload.rolling_home = rollingHome;
+    if (rollingAway) payload.rolling_away = rollingAway;
+    if (h2h) payload.h2h = h2h;
+
     return this.postJson("/predict", payload);
   }
 
-  async batchPredict(matches) {
-    return this.postJson("/batch-predict", { matches });
+  async batchPredict(requests) {
+    const payload = Array.isArray(requests) ? requests : [];
+    return this.postJson("/predict/batch", payload);
   }
 
-  async getFamilies() {
-    return this.getJson("/families");
+  async getModelInfo(league) {
+    if (!league) {
+      throw new Error("La ligue est requise pour l'information du modèle");
+    }
+    return this.getJson(`/model/${encodeURIComponent(league)}`);
   }
 
-  async getLeagues(family) {
-    return this.getJson(`/leagues/${encodeURIComponent(family)}`);
-  }
-
-  async getModelInfo() {
-    return this.getJson("/model-info");
-  }
-
-  async getTeamStats(teamName) {
-    return this.getJson(`/team-stats/${encodeURIComponent(teamName)}`);
-  }
-
-  async getLeagueStats(leagueName) {
-    return this.getJson(`/league-stats/${encodeURIComponent(leagueName)}`);
+  async getCacheStats() {
+    return this.getJson("/cache/stats");
   }
 
   async clearCache() {
-    return this.postJson("/clear-cache", {});
+    return this.postJson("/cache/clear", {});
+  }
+
+  async getFamilies() {
+    const leaguesResponse = await this.getLeagues();
+    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+
+    const families = [
+      {
+        name: "all",
+        leagues: leagues.map((league) => league.name).filter(Boolean),
+      },
+    ];
+
+    return {
+      success: true,
+      families,
+      total: families.length,
+      timestamp: leaguesResponse?.timestamp || new Date().toISOString(),
+    };
+  }
+
+  async getLeagueStats(leagueName) {
+    const leaguesResponse = await this.getLeagues();
+    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const league = leagues.find((entry) => entry.name === leagueName || entry.model_file === leagueName);
+
+    if (!league) {
+      throw new Error(`Ligue introuvable: ${leagueName}`);
+    }
+
+    return league;
+  }
+
+  async getTeamStats(teamName) {
+    return {
+      team: teamName,
+      available: false,
+      message: "Les statistiques d'équipe ne sont pas exposées par l'API de prédiction actuelle",
+    };
   }
 
   getJson(path) {
@@ -65,14 +100,14 @@ class PredictionClient {
     return new Promise((resolve, reject) => {
       const base = new URL(this.url);
       const protocol = base.protocol === "https:" ? https : http;
-      const payload = method === "POST" ? JSON.stringify(body || {}) : null;
+      const payload = method === "POST" ? JSON.stringify(body ?? {}) : null;
       const options = {
         hostname: base.hostname,
         port: base.port || (base.protocol === "https:" ? 443 : 80),
         path,
         method,
         headers: {},
-        rejectUnauthorized: this.sslVerify
+        rejectUnauthorized: this.sslVerify,
       };
 
       if (payload) {

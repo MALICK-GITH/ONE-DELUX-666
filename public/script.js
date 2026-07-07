@@ -25,6 +25,7 @@ const DEFAULT_TEAM_LOGO = "/icons/icon-192x192.svg";
 
 let allMatches = [];
 let currentMode = "live";
+let cachedPredictionLeagues = null;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -53,6 +54,25 @@ function formatPercent(value) {
 function formatOdd(value) {
   const numeric = safeNumber(value);
   return numeric === null ? "-" : numeric.toFixed(2);
+}
+
+async function resolveExactPredictionLeagueName(league) {
+  const requestedLeague = String(league || "").trim();
+  if (!requestedLeague) return requestedLeague;
+
+  try {
+    if (!cachedPredictionLeagues) {
+      cachedPredictionLeagues = window.SiteAPI.predictionLeagues()
+        .then((response) => Array.isArray(response?.leagues) ? response.leagues : [])
+        .catch(() => []);
+    }
+
+    const leagues = await cachedPredictionLeagues;
+    const exact = leagues.find((item) => String(item?.name || "").toLowerCase() === requestedLeague.toLowerCase());
+    return exact?.name || requestedLeague;
+  } catch {
+    return requestedLeague;
+  }
 }
 
 function getMatchStatusKey(match) {
@@ -303,7 +323,8 @@ function renderPredictionRow(label, value) {
 
 async function loadPrediction(matchId, team1, team2, league) {
   try {
-    const data = await window.SiteAPI.prediction(team1, team2, league);
+    const exactLeague = await resolveExactPredictionLeagueName(league);
+    const data = await window.SiteAPI.prediction(team1, team2, exactLeague);
     if (!data.success) {
       throw new Error(data.error || "Erreur inconnue");
     }
@@ -318,6 +339,27 @@ async function loadPrediction(matchId, team1, team2, league) {
     const btts = prediction.predictions.btts || {};
     const parity = prediction.predictions.parity || {};
     const handicap = prediction.predictions.handicap || {};
+    const topScores = Array.isArray(prediction.top_scores) ? prediction.top_scores.slice(0, 5) : [];
+    const resultLine = prediction.result
+      ? `<span class="prediction-total">Résultat IA: ${escapeHtml(prediction.result)}${safeNumber(prediction.result_proba) !== null ? ` (${formatPercent(prediction.result_proba)})` : ""}</span>`
+      : "";
+    const topScoresMarkup = topScores.length
+      ? `
+        <div class="prediction-history">
+          <strong>Top scores</strong>
+          <div class="history-grid">
+            ${topScores.map((item) => `
+              <div class="history-item">
+                <div class="history-item-top">
+                  <span>${escapeHtml(item.score)}</span>
+                  <strong>${formatPercent(item.proba)}</strong>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `
+      : "";
 
     predictionSection.innerHTML = `
       <div class="prediction-result">
@@ -328,11 +370,13 @@ async function loadPrediction(matchId, team1, team2, league) {
           ${renderPredictionRow("2", x2.away)}
         </div>
         <div class="prediction-details">
+          ${resultLine}
           ${safeNumber(totalGoals.predicted) !== null ? `<span class="prediction-total">Total buts: ${safeNumber(totalGoals.predicted).toFixed(1)}${totalGoals.platform_value !== undefined ? ` (Plateforme: ${escapeHtml(totalGoals.platform_value)})` : ""}</span>` : ""}
           ${safeNumber(btts.yes) !== null ? `<span class="prediction-btts">BTTS: OUI ${formatPercent(btts.yes)} / NON ${formatPercent(btts.no)}</span>` : ""}
           ${safeNumber(parity.pair) !== null ? `<span class="prediction-btts">Parité: Pair ${formatPercent(parity.pair)} / Impair ${formatPercent(parity.impair)}</span>` : ""}
           ${handicap.platform_value !== undefined ? `<span class="prediction-total">Handicap: ${escapeHtml(handicap.platform_value)}</span>` : ""}
         </div>
+        ${topScoresMarkup}
       </div>
       <a class="detail-link" href="/match.html?id=${encodeURIComponent(matchId)}">Voir les détails →</a>
     `;

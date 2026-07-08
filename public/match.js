@@ -647,9 +647,9 @@ function renderPredictionContent(match, prediction, modelInfo = null) {
           <p>Valeurs brutes retournées par l'API.</p>
         </div>
         <div class="stats-grid-premium">
-          ${renderStatCard("1", platformOdds.main.home_win ? formatOdd(platformOdds.main.home_win.value) : "N/A", "green")}
-          ${renderStatCard("X", platformOdds.main.draw ? formatOdd(platformOdds.main.draw.value) : "N/A", "amber")}
-          ${renderStatCard("2", platformOdds.main.away_win ? formatOdd(platformOdds.main.away_win.value) : "N/A", "red")}
+          ${renderStatCard("1", platformOdds.main.home_win ? formatOdds(platformOdds.main.home_win.value) : "N/A", "green")}
+          ${renderStatCard("X", platformOdds.main.draw ? formatOdds(platformOdds.main.draw.value) : "N/A", "amber")}
+          ${renderStatCard("2", platformOdds.main.away_win ? formatOdds(platformOdds.main.away_win.value) : "N/A", "red")}
         </div>
       </div>
     `

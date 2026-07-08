@@ -13,10 +13,13 @@ from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
 import pickle
 import logging
+import re
+import unicodedata
 from pathlib import Path
 from datetime import datetime
 import json
 import numpy as np
+from numbers import Integral
 
 # ─────────────────────────────────────────
 # CONFIGURATION
@@ -113,21 +116,62 @@ class AvailableLeaguesResponse(BaseModel):
 
 def get_model_filename(league: str) -> str:
     """Génère le nom de fichier modèle à partir du nom de la ligue"""
-    # Nettoyage du nom
-    safe_name = league.replace(" ", "_").replace(".", "_").replace("'", "_")
+    safe_name = normalize_key(league)
     return f"{safe_name}.pkl"
+
+def normalize_key(value: str) -> str:
+    """Normalise un nom de ligue ou de fichier pour comparaison."""
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    text = re.sub(r"[^a-zA-Z0-9]+", "", text).lower()
+    return text
+
+def normalize_result_label(value: str) -> str:
+    """Convertit un label de résultat modèle en libellé métier."""
+    key = normalize_key(value)
+    if key in {"n", "draw", "nul", "matchnul", "tie"}:
+        return "draw"
+    if key in {"v1", "home", "homewin", "homevictory", "victoiredomicile", "domicile", "1"}:
+        return "home_win"
+    if key in {"v2", "away", "awaywin", "awayvictory", "victoireexterieur", "exterieur", "2"}:
+        return "away_win"
+    return str(value)
+
+def find_model_path(league: str) -> Optional[Path]:
+    """Cherche le fichier modèle le plus proche du nom de ligue demandé."""
+    expected_file = MODELS_DIR / get_model_filename(league)
+    if expected_file.exists():
+        return expected_file
+
+    target_key = normalize_key(league)
+    if not target_key:
+        return None
+
+    candidates = [path for path in MODELS_DIR.glob("*.pkl") if not path.name.startswith("training_summary")]
+    exact_matches = [path for path in candidates if normalize_key(path.stem) == target_key]
+    if exact_matches:
+        return exact_matches[0]
+
+    contains_matches = [path for path in candidates if target_key in normalize_key(path.stem) or normalize_key(path.stem) in target_key]
+    if contains_matches:
+        return contains_matches[0]
+
+    return None
 
 def load_model(league: str) -> Optional[Dict]:
     """Charge un modèle depuis le cache ou le disque"""
-    model_file = get_model_filename(league)
-    
-    if model_file in models_cache:
-        return models_cache[model_file]
-    
-    model_path = MODELS_DIR / model_file
+    model_path = find_model_path(league)
+    if not model_path:
+        logger.warning(f"Modèle introuvable pour la ligue: {league}")
+        return None
+
     if not model_path.exists():
         logger.warning(f"Modèle introuvable: {model_path}")
         return None
+
+    model_file = model_path.name
+    if model_file in models_cache:
+        return models_cache[model_file]
     
     try:
         with open(model_path, "rb") as f:
@@ -145,12 +189,13 @@ def make_prediction(model_data: Dict, rolling_home: Dict, rolling_away: Dict, h2
     try:
         result_model = model_data.get("result_model")
         score_model = model_data.get("score_model")
+        result_encoder = model_data.get("result_encoder")
         
         if not result_model:
             return {"error": "Modèle résultat non disponible"}
         
         # Construction des features
-        features = np.array([
+        base_features = np.array([
             rolling_home["avg_scored"],
             rolling_home["avg_conceded"],
             rolling_home["win_rate"],
@@ -160,24 +205,41 @@ def make_prediction(model_data: Dict, rolling_home: Dict, rolling_away: Dict, h2
             h2h["h2h_home_wins"],
             h2h["h2h_avg_goals"],
             h2h["h2h_n"]
-        ]).reshape(1, -1)
-        
+        ], dtype=float)
+
+        def adapt_features(model, vector):
+            expected = getattr(model, "n_features_in_", None)
+            if not isinstance(expected, Integral) or expected <= 0:
+                return vector.reshape(1, -1)
+            if expected <= vector.shape[0]:
+                return vector[:expected].reshape(1, -1)
+            padding = np.zeros(expected - vector.shape[0], dtype=float)
+            return np.concatenate([vector, padding]).reshape(1, -1)
+
         # Prédiction du résultat
-        result_proba = result_model.predict_proba(features)[0]
+        result_features = adapt_features(result_model, base_features)
+        result_proba = result_model.predict_proba(result_features)[0]
         result_classes = result_model.classes_
         result_idx = np.argmax(result_proba)
-        result = result_classes[result_idx]
+        decoded_result = result_classes[result_idx]
+        if result_encoder and hasattr(result_encoder, "inverse_transform"):
+            try:
+                decoded_result = result_encoder.inverse_transform([decoded_result])[0]
+            except Exception:
+                pass
+        result = normalize_result_label(decoded_result)
         
         # Prédiction du score exact
         top_scores = []
         if score_model:
-            score_proba = score_model.predict_proba(features)[0]
+            score_features = adapt_features(score_model, base_features)
+            score_proba = score_model.predict_proba(score_features)[0]
             score_classes = score_model.classes_
             top_indices = np.argsort(score_proba)[-5:][::-1]
             
             for idx in top_indices:
                 top_scores.append({
-                    "score": score_classes[idx],
+                    "score": str(score_classes[idx]),
                     "proba": float(score_proba[idx])
                 })
         
@@ -185,7 +247,11 @@ def make_prediction(model_data: Dict, rolling_home: Dict, rolling_away: Dict, h2
             "result": str(result),
             "result_proba": float(result_proba[result_idx]),
             "result_probas": {
-                str(cls): float(prob) 
+                normalize_result_label(
+                    result_encoder.inverse_transform([cls])[0]
+                    if result_encoder and hasattr(result_encoder, "inverse_transform")
+                    else cls
+                ): float(prob)
                 for cls, prob in zip(result_classes, result_proba)
             },
             "top_scores": top_scores
@@ -258,9 +324,9 @@ async def predict_match(request: PredictionRequest):
             )
         
         # Conversion en dict
-        rolling_home = request.rolling_home.dict()
-        rolling_away = request.rolling_away.dict()
-        h2h = request.h2h.dict()
+        rolling_home = request.rolling_home.model_dump() if hasattr(request.rolling_home, "model_dump") else request.rolling_home.dict()
+        rolling_away = request.rolling_away.model_dump() if hasattr(request.rolling_away, "model_dump") else request.rolling_away.dict()
+        h2h = request.h2h.model_dump() if hasattr(request.h2h, "model_dump") else request.h2h.dict()
         
         # Prédiction
         prediction = make_prediction(model_data, rolling_home, rolling_away, h2h)

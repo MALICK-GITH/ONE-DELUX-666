@@ -64,6 +64,10 @@ function extractPredictionContext(body = {}, fallback = {}) {
   return buildPredictionRequest(body, fallback);
 }
 
+function buildHistoricalPredictionContext(teamHome, teamAway, league) {
+  return buildHistoricalStats(teamHome, teamAway, league);
+}
+
 
 function assertNodeVersion() {
   const [majorString, minorString] = process.versions.node.split(".");
@@ -326,15 +330,26 @@ async function handlePrediction(req, res) {
           return;
         }
 
-        const prediction = await predictionClient.predictMatch(
-          requestPayload.team_home,
-          requestPayload.team_away,
-          requestPayload.league,
-          requestPayload.rolling_home,
-          requestPayload.rolling_away,
-          requestPayload.h2h
-        );
-        const normalizedPrediction = normalizePredictionResponse(prediction, requestPayload);
+        const prediction = await predictionClient.predictMatch({
+          ...requestPayload,
+          team_home: requestPayload.team_home,
+          team_away: requestPayload.team_away,
+          league: requestPayload.league,
+          historical: historicalFallback,
+          rolling_home: historicalFallback.rolling_home,
+          rolling_away: historicalFallback.rolling_away,
+          h2h: historicalFallback.h2h,
+        });
+        const normalizedPrediction = normalizePredictionResponse(prediction, {
+          ...requestPayload,
+          team_home: requestPayload.team_home,
+          team_away: requestPayload.team_away,
+          league: requestPayload.league,
+          historical: historicalFallback,
+          rolling_home: historicalFallback.rolling_home,
+          rolling_away: historicalFallback.rolling_away,
+          h2h: historicalFallback.h2h,
+        });
 
         if (wsNotificationServer && normalizedPrediction?.success && normalizedPrediction.prediction) {
           const x2 = normalizedPrediction.prediction.predictions?.['1x2'] || {};
@@ -649,14 +664,22 @@ async function buildCompareMode(compareRequest) {
     if (!match) return null;
 
     const fallbackContext = buildHistoricalPredictionContext(match.team1, match.team2, match.league);
-    const systemPrediction = await predictionClient.predictMatch(
-      match.team1,
-      match.team2,
-      match.league,
-      fallbackContext.rolling_home,
-      fallbackContext.rolling_away,
-      fallbackContext.h2h
-    );
+    const systemPrediction = await predictionClient.predictMatch({
+      I: match.id,
+      O1: match.team1,
+      O2: match.team2,
+      L: match.league,
+      team_home: match.team1,
+      team_away: match.team2,
+      league: match.league,
+      rolling_home: fallbackContext.rolling_home,
+      rolling_away: fallbackContext.rolling_away,
+      h2h: fallbackContext.h2h,
+      historical: fallbackContext,
+      E: Array.isArray(match.E) ? match.E : [],
+      AE: Array.isArray(match.AE) ? match.AE : [],
+      SC: match.SC || undefined,
+    });
     return {
       match: {
         id: match.id,
@@ -1399,6 +1422,15 @@ async function handlePredictionV2(req, res) {
       try {
         const parsedBody = JSON.parse(body || "{}");
         const requestPayload = extractPredictionContext(parsedBody, createPredictionFallbackContext(parsedBody));
+        const historicalContext = buildHistoricalPredictionContext(requestPayload.O1, requestPayload.O2, requestPayload.L);
+        const enrichedRequestPayload = {
+          ...requestPayload,
+          ...historicalContext,
+          team_home: requestPayload.O1,
+          team_away: requestPayload.O2,
+          league: requestPayload.L,
+          historical: historicalContext,
+        };
 
         if (!requestPayload.O1 || !requestPayload.O2 || !requestPayload.L) {
           res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
@@ -1409,8 +1441,8 @@ async function handlePredictionV2(req, res) {
           return;
         }
 
-        const prediction = await predictionClient.predictMatch(requestPayload);
-        const normalizedPrediction = normalizePredictionResponse(prediction, requestPayload);
+        const prediction = await predictionClient.predictMatch(enrichedRequestPayload);
+        const normalizedPrediction = normalizePredictionResponse(prediction, enrichedRequestPayload);
 
         if (wsNotificationServer && normalizedPrediction?.success && normalizedPrediction.predictions) {
           const matchResult = normalizedPrediction.predictions.match_result || {};

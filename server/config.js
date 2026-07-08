@@ -48,6 +48,8 @@ const DEFAULT_AI_MODEL_API_URL = "https://aimodelapi.onrender.com/v1";
 const DEFAULT_AI_MODEL = "grok-4";
 const DEFAULT_SSL_VERIFY = false;
 const DEFAULT_PREDICTION_REQUEST_TIMEOUT_MS = 60000;
+const DEFAULT_LOCAL_PREDICTION_API_URL = "http://127.0.0.1:8000";
+const DEFAULT_PREDICTION_PROBE_TIMEOUT_MS = 3500;
 
 module.exports = {
   port,
@@ -61,5 +63,7 @@ module.exports = {
   aiModelName: process.env.AI_MODEL_NAME || DEFAULT_AI_MODEL,
   sslVerify: parseBoolean(process.env.SSL_VERIFY, DEFAULT_SSL_VERIFY),
   predictionRequestTimeoutMs: parseNumber(process.env.PREDICTION_REQUEST_TIMEOUT_MS, DEFAULT_PREDICTION_REQUEST_TIMEOUT_MS),
+  localPredictionApiUrl: process.env.LOCAL_PREDICTION_API_URL || DEFAULT_LOCAL_PREDICTION_API_URL,
+  predictionProbeTimeoutMs: parseNumber(process.env.PREDICTION_PROBE_TIMEOUT_MS, DEFAULT_PREDICTION_PROBE_TIMEOUT_MS),
   databaseUrl: process.env.DATABASE_URL || "postgresql://postgres.btnohofkrnojbqtsuhto:66240702Mkings@aws-0-eu-west-1.pooler.supabase.com:5432/postgres",
 };

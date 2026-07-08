@@ -199,7 +199,26 @@ class PredictionClient {
 
   async getLeagues() {
     const baseUrl = await this.resolveBaseUrl();
-    return this.getJson("/leagues", baseUrl, this.probeTimeoutMs);
+    const response = await this.getJson("/leagues", baseUrl, this.probeTimeoutMs);
+    const leagues = Array.isArray(response?.leagues) ? response.leagues : [];
+    if (leagues.length || baseUrl === this.localUrl) {
+      return response;
+    }
+
+    try {
+      await this.ensureLocalApiRunning();
+      const localResponse = await this.getJson("/leagues", this.localUrl, this.probeTimeoutMs);
+      const localLeagues = Array.isArray(localResponse?.leagues) ? localResponse.leagues : [];
+      if (localLeagues.length) {
+        this.activeBaseUrl = this.localUrl;
+        this.activeSource = "local";
+        return localResponse;
+      }
+    } catch {
+      // keep remote response if local fallback fails
+    }
+
+    return response;
   }
 
   async getFamilies() {

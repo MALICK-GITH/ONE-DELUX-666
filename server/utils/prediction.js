@@ -1,152 +1,142 @@
-const DEFAULT_PREDICTION_STATS = {
-  rolling_home: {
-    avg_scored: 1.5,
-    avg_conceded: 1.2,
-    win_rate: 0.5,
-  },
-  rolling_away: {
-    avg_scored: 1.5,
-    avg_conceded: 1.2,
-    win_rate: 0.5,
-  },
-  h2h: {
-    h2h_home_wins: 0.5,
-    h2h_avg_goals: 2.5,
-    h2h_n: 0,
-  },
-};
-
-function toNumber(value, fallback) {
+function toNumber(value, fallback = null) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function normalizeRollingStats(input = {}, fallback = {}) {
-  return {
-    avg_scored: toNumber(input.avg_scored, fallback.avg_scored ?? 1.5),
-    avg_conceded: toNumber(input.avg_conceded, fallback.avg_conceded ?? 1.2),
-    win_rate: toNumber(input.win_rate, fallback.win_rate ?? 0.5),
-  };
+function toString(value, fallback = "") {
+  if (value === undefined || value === null || value === "") return fallback;
+  return String(value);
 }
 
-function normalizeH2HStats(input = {}, fallback = {}) {
+function normalizeMarketList(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const normalized = {};
+      if (entry.T !== undefined) normalized.T = toNumber(entry.T, entry.T);
+      if (entry.C !== undefined) normalized.C = toNumber(entry.C, entry.C);
+      if (entry.P !== undefined) normalized.P = toNumber(entry.P, entry.P);
+      if (entry.B !== undefined) normalized.B = entry.B;
+      if (entry.G !== undefined) normalized.G = toNumber(entry.G, entry.G);
+
+      const nestedMarkets = Array.isArray(entry.ME) ? normalizeMarketList(entry.ME) : undefined;
+      if (nestedMarkets) normalized.ME = nestedMarkets;
+
+      return normalized;
+    })
+    .filter(Boolean);
+}
+
+function resolveMatchId(body = {}, fallback = {}) {
+  return toString(
+    body.I ??
+      body.match_id ??
+      body.matchId ??
+      body.id ??
+      fallback.I ??
+      fallback.match_id ??
+      fallback.matchId ??
+      fallback.id,
+    ""
+  );
+}
+
+function resolveHomeTeam(body = {}, fallback = {}) {
+  return toString(
+    body.O1 ??
+      body.team_home ??
+      body.teamHome ??
+      body.home_team ??
+      body.team1 ??
+      fallback.O1 ??
+      fallback.team_home ??
+      fallback.teamHome ??
+      fallback.home_team ??
+      fallback.team1,
+    ""
+  );
+}
+
+function resolveAwayTeam(body = {}, fallback = {}) {
+  return toString(
+    body.O2 ??
+      body.team_away ??
+      body.teamAway ??
+      body.away_team ??
+      body.team2 ??
+      fallback.O2 ??
+      fallback.team_away ??
+      fallback.teamAway ??
+      fallback.away_team ??
+      fallback.team2,
+    ""
+  );
+}
+
+function resolveLeague(body = {}, fallback = {}) {
+  return toString(body.L ?? body.league ?? fallback.L ?? fallback.league, "");
+}
+
+function resolveTimestamp(body = {}, fallback = {}) {
+  const value =
+    body.S ??
+    body.timestamp ??
+    body.startTimeTimestamp ??
+    body.start_time_timestamp ??
+    fallback.S ??
+    fallback.timestamp ??
+    fallback.startTimeTimestamp ??
+    fallback.start_time_timestamp ??
+    null;
+
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : value;
+}
+
+function resolveMarkets(body = {}, fallback = {}) {
+  const marketData = body.market_data && typeof body.market_data === "object" ? body.market_data : {};
+  const baseMarkets = body.E ?? body.e ?? marketData.E ?? fallback.E ?? [];
+  const extraMarkets = body.AE ?? body.ae ?? marketData.AE ?? fallback.AE ?? [];
+
   return {
-    h2h_home_wins: toNumber(input.h2h_home_wins, fallback.h2h_home_wins ?? 0.5),
-    h2h_avg_goals: toNumber(input.h2h_avg_goals, fallback.h2h_avg_goals ?? 2.5),
-    h2h_n: Math.max(0, Math.round(toNumber(input.h2h_n, fallback.h2h_n ?? 0))),
+    E: normalizeMarketList(baseMarkets),
+    AE: normalizeMarketList(extraMarkets),
   };
 }
 
 function buildPredictionRequest(body = {}, fallback = {}) {
-  const teamHome = body.team_home ?? body.home_team ?? body.teamHome ?? fallback.team_home ?? fallback.home_team ?? "";
-  const teamAway = body.team_away ?? body.away_team ?? body.teamAway ?? fallback.team_away ?? fallback.away_team ?? "";
-  const league = body.league ?? fallback.league ?? "";
-
-  const rollingHome = normalizeRollingStats(
-    body.rolling_home || body.rollingHome || {},
-    fallback.rolling_home || DEFAULT_PREDICTION_STATS.rolling_home
-  );
-  const rollingAway = normalizeRollingStats(
-    body.rolling_away || body.rollingAway || {},
-    fallback.rolling_away || DEFAULT_PREDICTION_STATS.rolling_away
-  );
-  const h2h = normalizeH2HStats(
-    body.h2h || {},
-    fallback.h2h || DEFAULT_PREDICTION_STATS.h2h
-  );
-
+  const markets = resolveMarkets(body, fallback);
   return {
-    league,
-    team_home: teamHome,
-    team_away: teamAway,
-    rolling_home: rollingHome,
-    rolling_away: rollingAway,
-    h2h,
-  };
-}
-
-function infer1x2Probabilities(resultProbas = {}) {
-  let home = null;
-  let draw = null;
-  let away = null;
-
-  for (const [key, value] of Object.entries(resultProbas || {})) {
-    const normalizedKey = String(key).trim().toUpperCase();
-    const numericValue = toNumber(value, 0);
-
-    if (["V1", "1", "HOME", "HOME_WIN", "H"].includes(normalizedKey)) {
-      home = numericValue;
-      continue;
-    }
-
-    if (["N", "X", "DRAW", "D", "0"].includes(normalizedKey)) {
-      draw = numericValue;
-      continue;
-    }
-
-    if (["V2", "2", "AWAY", "AWAY_WIN", "A"].includes(normalizedKey)) {
-      away = numericValue;
-    }
-  }
-
-  const safeHome = home ?? 0;
-  const safeDraw = draw ?? 0;
-  const safeAway = away ?? 0;
-  const confidence = Math.max(safeHome, safeDraw, safeAway);
-
-  return {
-    home: safeHome,
-    draw: safeDraw,
-    away: safeAway,
-    confidence,
-  };
-}
-
-function normalizeTopScores(topScores = []) {
-  return Array.isArray(topScores)
-    ? topScores
-        .map((entry) => ({
-          score: String(entry?.score ?? ""),
-          proba: toNumber(entry?.proba, 0),
-        }))
-        .filter((entry) => entry.score)
-    : [];
-}
-
-function buildCompatibilityPredictions(prediction = {}) {
-  return {
-    "1x2": infer1x2Probabilities(prediction.result_probas || {}),
-    top_scores: normalizeTopScores(prediction.top_scores || []),
+    I: resolveMatchId(body, fallback),
+    O1: resolveHomeTeam(body, fallback),
+    O2: resolveAwayTeam(body, fallback),
+    L: resolveLeague(body, fallback),
+    S: resolveTimestamp(body, fallback),
+    SC: body.SC ?? fallback.SC ?? undefined,
+    E: markets.E,
+    AE: markets.AE,
   };
 }
 
 function normalizePredictionResponse(response, context = {}) {
-  if (!response || response.success === false || !response.prediction) {
+  if (!response || response.success === false) {
     return response;
   }
 
-  const prediction = response.prediction || {};
-  const compatibility = buildCompatibilityPredictions(prediction);
-  const matchLabel = context.team_home && context.team_away
-    ? `${context.team_home} vs ${context.team_away}`
-    : prediction.match || null;
-
   return {
     ...response,
-    prediction: {
-      ...prediction,
-      match: matchLabel,
-      league: response.league || context.league || prediction.league,
-      predictions: {
-        ...compatibility,
-      },
-    },
+    match_id: toString(response.match_id ?? context.I ?? context.match_id, ""),
+    team_home: toString(response.team_home ?? context.O1 ?? context.team_home, ""),
+    team_away: toString(response.team_away ?? context.O2 ?? context.team_away, ""),
+    league: toString(response.league ?? context.L ?? context.league, ""),
+    timestamp: response.timestamp ?? context.S ?? context.timestamp ?? null,
   };
 }
 
 module.exports = {
-  DEFAULT_PREDICTION_STATS,
   buildPredictionRequest,
-  buildCompatibilityPredictions,
   normalizePredictionResponse,
+  normalizeMarketList,
 };

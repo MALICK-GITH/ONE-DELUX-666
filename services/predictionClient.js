@@ -15,77 +15,21 @@ class PredictionClient {
     return this.getJson("/leagues");
   }
 
-  async predictMatch(teamHome, teamAway, league, rollingHome = null, rollingAway = null, h2h = null) {
-    const payload = {
-      league,
-      team_home: teamHome,
-      team_away: teamAway,
-    };
-
-    if (rollingHome) payload.rolling_home = rollingHome;
-    if (rollingAway) payload.rolling_away = rollingAway;
-    if (h2h) payload.h2h = h2h;
-
-    return this.postJson("/predict", payload);
+  async predictMatch(payload) {
+    return this.postJson("/predict", payload || {});
   }
 
-  async batchPredict(requests) {
-    const payload = Array.isArray(requests) ? requests : [];
-    return this.postJson("/predict/batch", payload);
+  async batchPredict(matches) {
+    return this.postJson("/predict/batch", {
+      matches: Array.isArray(matches) ? matches : [],
+    });
   }
 
   async getModelInfo(league) {
     if (!league) {
-      throw new Error("La ligue est requise pour l'information du modèle");
+      throw new Error("La ligue est requise pour l'information du modele");
     }
     return this.getJson(`/model/${encodeURIComponent(league)}`);
-  }
-
-  async getCacheStats() {
-    return this.getJson("/cache/stats");
-  }
-
-  async clearCache() {
-    return this.postJson("/cache/clear", {});
-  }
-
-  async getFamilies() {
-    const leaguesResponse = await this.getLeagues();
-    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
-
-    const families = [
-      {
-        name: "all",
-        leagues: leagues.map((league) => league.name).filter(Boolean),
-      },
-    ];
-
-    return {
-      success: true,
-      families,
-      total: families.length,
-      timestamp: leaguesResponse?.timestamp || new Date().toISOString(),
-    };
-  }
-
-  async getLeagueStats(leagueName) {
-    const leaguesResponse = await this.getLeagues();
-    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
-    const league = leagues.find((entry) => entry.name === leagueName || entry.model_file === leagueName);
-
-    if (!league) {
-      throw new Error(`Ligue introuvable: ${leagueName}`);
-    }
-
-    return league;
-  }
-
-  async getTeamStats(teamName) {
-    return {
-      team: teamName,
-      available: false,
-      message: "Les statistiques d'équipe ne sont pas exposées par l'API de prédiction actuelle",
-    };
   }
 
   getJson(path) {

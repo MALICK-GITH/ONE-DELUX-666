@@ -303,7 +303,7 @@ function createMatchCard(match) {
 
   const predictionBtn = article.querySelector('[data-action="prediction"]');
   if (predictionBtn) {
-    predictionBtn.addEventListener("click", () => loadPrediction(match.id, match.team1, match.team2, match.league));
+    predictionBtn.addEventListener("click", () => loadPrediction(match));
   }
 
   return article;
@@ -321,62 +321,48 @@ function renderPredictionRow(label, value) {
   `;
 }
 
-async function loadPrediction(matchId, team1, team2, league) {
+async function loadPrediction(match) {
   try {
-    const exactLeague = await resolveExactPredictionLeagueName(league);
-    const data = await window.SiteAPI.prediction(team1, team2, exactLeague);
+    const exactLeague = await resolveExactPredictionLeagueName(match.league);
+    const data = await window.SiteAPI.prediction(match.team1, match.team2, exactLeague, match);
     if (!data.success) {
       throw new Error(data.error || "Erreur inconnue");
     }
 
     const prediction = data.prediction;
+    const matchId = match.id;
     const matchCard = document.querySelector(`[data-match-id="${CSS.escape(String(matchId))}"]`);
     if (!matchCard || !prediction?.predictions) return;
 
     const predictionSection = matchCard.querySelector(".prediction-section");
-    const x2 = prediction.predictions["1x2"] || {};
+    const matchResult = prediction.predictions.match_result || {};
     const totalGoals = prediction.predictions.total_goals || {};
-    const btts = prediction.predictions.btts || {};
-    const parity = prediction.predictions.parity || {};
-    const handicap = prediction.predictions.handicap || {};
-    const topScores = Array.isArray(prediction.top_scores) ? prediction.top_scores.slice(0, 5) : [];
-    const resultLine = prediction.result
-      ? `<span class="prediction-total">Résultat IA: ${escapeHtml(prediction.result)}${safeNumber(prediction.result_proba) !== null ? ` (${formatPercent(prediction.result_proba)})` : ""}</span>`
+    const parity = prediction.predictions.total_parity || {};
+    const overUnder = prediction.predictions.over_under || {};
+    const platformMapping = prediction.platform_mapping || {};
+    const probabilities = matchResult.probabilities || {};
+    const resultLine = matchResult.prediction
+      ? `<span class="prediction-total">Résultat IA: ${escapeHtml(matchResult.prediction)}${safeNumber(matchResult.confidence) !== null ? ` (${formatPercent(matchResult.confidence)})` : ""}</span>`
       : "";
-    const topScoresMarkup = topScores.length
-      ? `
-        <div class="prediction-history">
-          <strong>Top scores</strong>
-          <div class="history-grid">
-            ${topScores.map((item) => `
-              <div class="history-item">
-                <div class="history-item-top">
-                  <span>${escapeHtml(item.score)}</span>
-                  <strong>${formatPercent(item.proba)}</strong>
-                </div>
-              </div>
-            `).join("")}
-          </div>
-        </div>
-      `
+    const mappingLine = platformMapping.total_goals
+      ? `<span class="prediction-total">Total buts plateforme: ${escapeHtml(platformMapping.total_goals.platform_value)}</span>`
       : "";
 
     predictionSection.innerHTML = `
       <div class="prediction-result">
         <span class="prediction-label">🔮 IA Prediction</span>
         <div class="prediction-bars">
-          ${renderPredictionRow("1", x2.home)}
-          ${renderPredictionRow("X", x2.draw)}
-          ${renderPredictionRow("2", x2.away)}
+          ${renderPredictionRow("1", probabilities.home_win)}
+          ${renderPredictionRow("X", probabilities.draw)}
+          ${renderPredictionRow("2", probabilities.away_win)}
         </div>
         <div class="prediction-details">
           ${resultLine}
           ${safeNumber(totalGoals.predicted) !== null ? `<span class="prediction-total">Total buts: ${safeNumber(totalGoals.predicted).toFixed(1)}${totalGoals.platform_value !== undefined ? ` (Plateforme: ${escapeHtml(totalGoals.platform_value)})` : ""}</span>` : ""}
-          ${safeNumber(btts.yes) !== null ? `<span class="prediction-btts">BTTS: OUI ${formatPercent(btts.yes)} / NON ${formatPercent(btts.no)}</span>` : ""}
-          ${safeNumber(parity.pair) !== null ? `<span class="prediction-btts">Parité: Pair ${formatPercent(parity.pair)} / Impair ${formatPercent(parity.impair)}</span>` : ""}
-          ${handicap.platform_value !== undefined ? `<span class="prediction-total">Handicap: ${escapeHtml(handicap.platform_value)}</span>` : ""}
+          ${parity.prediction ? `<span class="prediction-btts">Parité: ${escapeHtml(parity.prediction)} (${formatPercent(parity.confidence)})</span>` : ""}
+          ${overUnder.prediction ? `<span class="prediction-btts">Over/Under: ${escapeHtml(overUnder.prediction)} ${overUnder.threshold !== undefined ? `(${escapeHtml(overUnder.threshold)})` : ""}</span>` : ""}
+          ${mappingLine}
         </div>
-        ${topScoresMarkup}
       </div>
       <a class="detail-link" href="/match.html?id=${encodeURIComponent(matchId)}">Voir les détails →</a>
     `;

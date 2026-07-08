@@ -512,29 +512,53 @@ function renderMatchDetail(match) {
 }
 
 function renderPredictionContent(match, prediction) {
-  const x2 = prediction?.predictions?.["1x2"] || {};
+  const matchResult = prediction?.predictions?.match_result || {};
+  const x2 = {
+    home: Number(matchResult.probabilities?.home_win) || 0,
+    draw: Number(matchResult.probabilities?.draw) || 0,
+    away: Number(matchResult.probabilities?.away_win) || 0,
+    confidence: Number(matchResult.confidence) || 0,
+  };
   const totalGoals = prediction?.predictions?.total_goals || {};
-  const handicap = prediction?.predictions?.handicap || {};
-  const parity = prediction?.predictions?.parity || {};
-  const btts = prediction?.predictions?.btts || {};
+  const handicap = prediction?.platform_mapping?.handicap || {};
+  const parity = prediction?.predictions?.total_parity || {};
+  const overUnder = prediction?.predictions?.over_under || {};
+  const btts = {};
   const scoreRange = prediction?.predictions?.score_range || {};
   const doubleChance = prediction?.predictions?.double_chance || {};
   const cleanSheet = prediction?.predictions?.clean_sheet || {};
   const drawNoBet = prediction?.predictions?.draw_no_bet || {};
   const winBothHalves = prediction?.predictions?.win_both_halves || {};
   const family = normalizeText(prediction?.family, "HIGHSCORE");
-  const rawResult = prediction?.result ? normalizeText(prediction.result) : null;
-  const rawResultProba = safeNumber(prediction?.result_proba);
-  const topScores = Array.isArray(prediction?.top_scores) ? prediction.top_scores.slice(0, 5) : [];
+  const rawResult = matchResult.prediction ? normalizeText(matchResult.prediction) : null;
+  const rawResultProba = safeNumber(matchResult.confidence);
+  const topScores = [];
   const mainPrediction = getMainPrediction(x2, match);
   const predictedGoals = safeNumber(totalGoals.predicted);
   const handicapPredicted = safeNumber(handicap.predicted);
-  const parityPair = safeNumber(parity.pair);
-  const parityImpair = safeNumber(parity.impair);
-  const overValue = safeNumber(totalGoals?.over_under?.over);
-  const underValue = safeNumber(totalGoals?.over_under?.under);
-  const bttsYes = safeNumber(btts.yes);
-  const bttsNo = safeNumber(btts.no);
+  const parityConfidence = safeNumber(parity.confidence);
+  const parityPair = parity.prediction === "even"
+    ? parityConfidence
+    : parity.prediction === "odd"
+      ? Math.max(0, 1 - (parityConfidence ?? 0))
+      : null;
+  const parityImpair = parity.prediction === "odd"
+    ? parityConfidence
+    : parity.prediction === "even"
+      ? Math.max(0, 1 - (parityConfidence ?? 0))
+      : null;
+  const overValue = overUnder.prediction === "over"
+    ? safeNumber(overUnder.confidence)
+    : overUnder.prediction === "under"
+      ? Math.max(0, 1 - (safeNumber(overUnder.confidence) ?? 0))
+      : safeNumber(totalGoals?.over_under?.over);
+  const underValue = overUnder.prediction === "under"
+    ? safeNumber(overUnder.confidence)
+    : overUnder.prediction === "over"
+      ? Math.max(0, 1 - (safeNumber(overUnder.confidence) ?? 0))
+      : safeNumber(totalGoals?.over_under?.under);
+  const bttsYes = null;
+  const bttsNo = null;
   
   // Dynamic score ranges based on family
   const dynamicScoreRanges = getScoreRangeLabels(family, scoreRange);
@@ -772,6 +796,7 @@ async function loadMatchPrediction() {
       currentMatchData.team1,
       currentMatchData.team2,
       exactLeague,
+      currentMatchData,
     );
 
     if (!data.success) {

@@ -198,26 +198,25 @@ class CouponGenerator {
 
         // Build prediction request with optional market_data
         const requestBody = {
-          team_home,
-          team_away,
-          league
+          I: match.id || match.I || "",
+          O1: team_home,
+          O2: team_away,
+          L: league,
+          S: match.S || match.startTimeTimestamp || match.timestamp || null
         };
 
         // Include market_data if available from 888starz
-        if (match.E || match.AE) {
-          requestBody.market_data = {
-            O1: team_home,
-            O2: team_away,
-            L: league
-          };
-
-          if (match.E) {
-            requestBody.market_data.E = match.E;
-          }
-
-          if (match.AE) {
-            requestBody.market_data.AE = match.AE;
-          }
+        if (match.E || match.AE || match.markets || match.advancedMarkets) {
+          requestBody.E = Array.isArray(match.E)
+            ? match.E
+            : Array.isArray(match.markets)
+              ? match.markets
+              : [];
+          requestBody.AE = Array.isArray(match.AE)
+            ? match.AE
+            : Array.isArray(match.advancedMarkets?.advancedMarkets)
+              ? match.advancedMarkets.advancedMarkets
+              : [];
         }
 
         const response = await fetch('/api/prediction', {
@@ -281,85 +280,109 @@ class CouponGenerator {
 
   extractMarketPrediction(prediction, market) {
     const predictions = prediction.predictions || {};
+    const matchResult = predictions.match_result || {};
+    const totalGoals = predictions.total_goals || {};
+    const parity = predictions.total_parity || {};
+    const overUnder = predictions.over_under || {};
+    const probabilities = matchResult.probabilities || {};
     
     switch (market) {
       case '1x2':
         return {
           type: '1x2',
-          home: predictions['1x2']?.home || 0,
-          draw: predictions['1x2']?.draw || 0,
-          away: predictions['1x2']?.away || 0,
-          confidence: predictions['1x2']?.confidence || 0,
-          recommendation: this.get1x2Recommendation(predictions['1x2'])
+          home: probabilities.home_win || 0,
+          draw: probabilities.draw || 0,
+          away: probabilities.away_win || 0,
+          confidence: matchResult.confidence || 0,
+          recommendation: this.get1x2Recommendation({
+            home: probabilities.home_win || 0,
+            draw: probabilities.draw || 0,
+            away: probabilities.away_win || 0
+          })
         };
       case 'btts':
         return {
           type: 'btts',
-          yes: predictions['btts']?.yes || 0,
-          no: predictions['btts']?.no || 0,
-          confidence: predictions['btts']?.confidence || 0,
-          recommendation: predictions['btts']?.yes > predictions['btts']?.no ? 'YES' : 'NO'
+          yes: 0,
+          no: 0,
+          confidence: 0,
+          recommendation: 'N/A'
         };
       case 'over_under':
         return {
           type: 'over_under',
-          over: predictions['over_under']?.over || 0,
-          under: predictions['over_under']?.under || 0,
-          confidence: predictions['over_under']?.confidence || 0,
-          recommendation: predictions['over_under']?.over > predictions['over_under']?.under ? 'OVER' : 'UNDER'
+          over: overUnder.prediction === 'over' ? (overUnder.confidence || 0) : Math.max(0, 1 - (overUnder.confidence || 0)),
+          under: overUnder.prediction === 'under' ? (overUnder.confidence || 0) : Math.max(0, 1 - (overUnder.confidence || 0)),
+          confidence: overUnder.confidence || 0,
+          recommendation: overUnder.prediction ? overUnder.prediction.toUpperCase() : 'N/A'
         };
       case 'score_range':
         return {
           type: 'score_range',
-          ranges: predictions['score_range'] || {},
-          confidence: predictions['score_range']?.confidence || 0,
-          recommendation: this.getScoreRangeRecommendation(predictions['score_range'])
+          ranges: {},
+          confidence: totalGoals.confidence || 0,
+          recommendation: totalGoals.predicted !== undefined ? `${Number(totalGoals.predicted).toFixed(1)} buts` : 'N/A'
         };
       case 'double_chance':
         return {
           type: 'double_chance',
-          '1x': predictions['double_chance']?.['1x'] || 0,
-          x2: predictions['double_chance']?.x2 || 0,
-          '12': predictions['double_chance']?.['12'] || 0,
-          confidence: predictions['double_chance']?.confidence || 0,
-          recommendation: this.getDoubleChanceRecommendation(predictions['double_chance'])
+          '1x': probabilities.home_win || 0,
+          x2: probabilities.draw || 0,
+          '12': probabilities.away_win || 0,
+          confidence: matchResult.confidence || 0,
+          recommendation: this.getDoubleChanceRecommendation({
+            '1x': probabilities.home_win || 0,
+            x2: probabilities.draw || 0,
+            '12': probabilities.away_win || 0
+          })
         };
       case 'clean_sheet':
         return {
           type: 'clean_sheet',
-          home_yes: predictions['clean_sheet']?.home_yes || 0,
-          home_no: predictions['clean_sheet']?.home_no || 0,
-          away_yes: predictions['clean_sheet']?.away_yes || 0,
-          away_no: predictions['clean_sheet']?.away_no || 0,
-          confidence: predictions['clean_sheet']?.confidence || 0,
-          recommendation: this.getCleanSheetRecommendation(predictions['clean_sheet'])
+          home_yes: 0,
+          home_no: 0,
+          away_yes: 0,
+          away_no: 0,
+          confidence: 0,
+          recommendation: 'N/A'
         };
       case 'draw_no_bet':
         return {
           type: 'draw_no_bet',
-          home: predictions['draw_no_bet']?.home || 0,
-          away: predictions['draw_no_bet']?.away || 0,
-          confidence: predictions['draw_no_bet']?.confidence || 0,
-          recommendation: predictions['draw_no_bet']?.home > predictions['draw_no_bet']?.away ? 'HOME' : 'AWAY'
+          home: probabilities.home_win || 0,
+          away: probabilities.away_win || 0,
+          confidence: matchResult.confidence || 0,
+          recommendation: matchResult.prediction === 'home_win' ? 'HOME' : matchResult.prediction === 'away_win' ? 'AWAY' : 'DRAW'
         };
       case 'win_both_halves':
         return {
           type: 'win_both_halves',
-          yes: predictions['win_both_halves']?.yes || 0,
-          no: predictions['win_both_halves']?.no || 0,
-          confidence: predictions['win_both_halves']?.confidence || 0,
-          recommendation: predictions['win_both_halves']?.yes > predictions['win_both_halves']?.no ? 'YES' : 'NO'
+          yes: 0,
+          no: 0,
+          confidence: 0,
+          recommendation: 'N/A'
         };
       case 'parity':
         return {
           type: 'parity',
-          pair: predictions['parity']?.pair || 0,
-          impair: predictions['parity']?.impair || 0,
-          confidence: predictions['parity']?.confidence || 0,
-          recommendation: predictions['parity']?.pair > predictions['parity']?.impair ? 'PAIR' : 'IMPAIR'
+          pair: parity.prediction === 'even' ? (parity.confidence || 0) : Math.max(0, 1 - (parity.confidence || 0)),
+          impair: parity.prediction === 'odd' ? (parity.confidence || 0) : Math.max(0, 1 - (parity.confidence || 0)),
+          confidence: parity.confidence || 0,
+          recommendation: parity.prediction ? parity.prediction.toUpperCase() : 'N/A'
         };
       default:
-        return predictions['1x2'] || {};
+        return {
+          type: '1x2',
+          home: probabilities.home_win || 0,
+          draw: probabilities.draw || 0,
+          away: probabilities.away_win || 0,
+          confidence: matchResult.confidence || 0,
+          recommendation: this.get1x2Recommendation({
+            home: probabilities.home_win || 0,
+            draw: probabilities.draw || 0,
+            away: probabilities.away_win || 0
+          })
+        };
     }
   }
 

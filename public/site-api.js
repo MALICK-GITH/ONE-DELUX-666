@@ -51,14 +51,30 @@
       return requestJson(`/matches/${encodeURIComponent(id)}`);
     },
     prediction(teamHome, teamAway, league, stats = null) {
+      const matchData = stats && typeof stats === "object" ? stats : {};
+      const requestBody = {
+        I: matchData.id || matchData.I || matchData.match_id || "",
+        O1: teamHome,
+        O2: teamAway,
+        L: league,
+        S: matchData.startTimeTimestamp || matchData.S || matchData.timestamp || null,
+        E: Array.isArray(matchData.E)
+          ? matchData.E
+          : Array.isArray(matchData.markets)
+            ? matchData.markets
+            : Array.isArray(matchData.odds?.markets)
+              ? matchData.odds.markets
+              : [],
+        AE: Array.isArray(matchData.AE)
+          ? matchData.AE
+          : Array.isArray(matchData.advancedMarkets?.advancedMarkets)
+            ? matchData.advancedMarkets.advancedMarkets
+            : [],
+      };
+
       return requestJson("/prediction", {
         method: "POST",
-        body: {
-          team_home: teamHome,
-          team_away: teamAway,
-          league,
-          ...(stats || {}),
-        },
+        body: requestBody,
       });
     },
     predictionHealth() {
@@ -76,7 +92,10 @@
         : requestJson("/prediction/model-info");
     },
     predictionBatch(matches) {
-      return requestJson("/prediction/batch", { method: "POST", body: Array.isArray(matches) ? matches : [] });
+      return requestJson("/prediction/batch", {
+        method: "POST",
+        body: { matches: Array.isArray(matches) ? matches : [] },
+      });
     },
     predictionTeamStats(teamName) {
       return requestJson(`/prediction/team-stats/${encodeURIComponent(teamName)}`);

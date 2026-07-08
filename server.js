@@ -8,7 +8,6 @@ const PredictionClient = require("./services/predictionClient");
 const PenaltyClient = require("./services/penaltyClient");
 const AIModelClient = require("./services/aiModelClient");
 const {
-  DEFAULT_PREDICTION_STATS,
   buildPredictionRequest,
   normalizePredictionResponse,
 } = require("./server/utils/prediction");
@@ -46,29 +45,19 @@ const mimeTypes = {
 
 function createPredictionFallbackContext(match = {}) {
   return {
-    league: match.league || "",
-    team_home: match.team1 || match.team_home || match.homeTeam || "",
-    team_away: match.team2 || match.team_away || match.awayTeam || "",
-    rolling_home: DEFAULT_PREDICTION_STATS.rolling_home,
-    rolling_away: DEFAULT_PREDICTION_STATS.rolling_away,
-    h2h: DEFAULT_PREDICTION_STATS.h2h,
+    I: match.id || match.match_id || match.I || "",
+    O1: match.team1 || match.team_home || match.homeTeam || match.O1 || "",
+    O2: match.team2 || match.team_away || match.awayTeam || match.O2 || "",
+    L: match.league || match.L || "",
+    S: match.startTimeTimestamp || match.S || null,
+    E: Array.isArray(match.E) ? match.E : [],
+    AE: Array.isArray(match.AE) ? match.AE : [],
+    SC: match.SC || undefined,
   };
 }
 
 function extractPredictionContext(body = {}, fallback = {}) {
   return buildPredictionRequest(body, fallback);
-}
-
-function buildHistoricalPredictionContext(teamHome, teamAway, league) {
-  const historical = buildHistoricalStats(teamHome, teamAway, league);
-  return {
-    league,
-    team_home: teamHome,
-    team_away: teamAway,
-    rolling_home: historical.rolling_home,
-    rolling_away: historical.rolling_away,
-    h2h: historical.h2h,
-  };
 }
 
 
@@ -1372,6 +1361,229 @@ async function handle888starzProxy(req, res, url) {
 }
 
 
+
+async function handlePrediction(req, res) {
+  try {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", async () => {
+      try {
+        const parsedBody = JSON.parse(body || "{}");
+        const requestPayload = extractPredictionContext(parsedBody, createPredictionFallbackContext(parsedBody));
+
+        if (!requestPayload.O1 || !requestPayload.O2 || !requestPayload.L) {
+          res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({
+            success: false,
+            error: "Parametres manquants: O1, O2, L requis",
+          }));
+          return;
+        }
+
+        const prediction = await predictionClient.predictMatch(requestPayload);
+        const normalizedPrediction = normalizePredictionResponse(prediction, requestPayload);
+
+        if (wsNotificationServer && normalizedPrediction?.success && normalizedPrediction.predictions) {
+          const matchResult = normalizedPrediction.predictions.match_result || {};
+          const totalGoals = normalizedPrediction.predictions.total_goals || {};
+          const probabilities = matchResult.probabilities || {};
+          const highestConfidence = Math.max(
+            Number(probabilities.home_win) || 0,
+            Number(probabilities.draw) || 0,
+            Number(probabilities.away_win) || 0
+          );
+
+          const notification = {
+            type: "prediction",
+            title: `Prediction: ${requestPayload.O1} vs ${requestPayload.O2}`,
+            message: `Resultat ${matchResult.prediction || "n/a"} | Buts ${
+              Number.isFinite(Number(totalGoals.predicted)) ? Number(totalGoals.predicted).toFixed(1) : "n/a"
+            }`,
+            data: {
+              match_id: normalizedPrediction.match_id,
+              league: normalizedPrediction.league,
+              team_home: normalizedPrediction.team_home,
+              team_away: normalizedPrediction.team_away,
+              match_result: matchResult,
+              total_goals: totalGoals,
+              total_parity: normalizedPrediction.predictions.total_parity || {},
+              over_under: normalizedPrediction.predictions.over_under || {},
+              confidence: highestConfidence,
+            },
+            priority: highestConfidence > 0.8 ? "high" : "normal",
+          };
+
+          wsNotificationServer.broadcastPredictionUpdate(notification);
+          pushNotificationService.broadcast(notification);
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          prediction: normalizedPrediction || null,
+        }));
+      } catch (error) {
+        console.error("Erreur lors de la prediction:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message,
+        }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur lors du traitement de la requete:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message,
+    }));
+  }
+}
+
+async function handlePredictionFamilies(req, res) {
+  try {
+    const leaguesResponse = await predictionClient.getLeagues();
+    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const families = [
+      {
+        name: "all",
+        leagues: leagues.map((entry) => entry?.name).filter(Boolean),
+      },
+    ];
+
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      leagues,
+      families,
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la recuperation des familles:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message,
+    }));
+  }
+}
+
+async function handlePredictionModelInfo(req, res) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const league = url.searchParams.get("league") || decodeURIComponent(url.pathname.split("/").pop() || "");
+
+    if (league) {
+      const info = await predictionClient.getModelInfo(league);
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ success: true, info }));
+      return;
+    }
+
+    const leaguesResponse = await predictionClient.getLeagues();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      info: {
+        leagues: Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [],
+        total: Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues.length : 0,
+      },
+    }));
+  } catch (error) {
+    console.error("Erreur model-info:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message,
+    }));
+  }
+}
+
+async function handlePredictionCacheStats(req, res) {
+  res.writeHead(410, { "Content-Type": "application/json; charset=utf-8" });
+  res.end(JSON.stringify({
+    success: false,
+    error: "Cache not supported by the new prediction API",
+  }));
+}
+
+async function handlePredictionClearCache(req, res) {
+  res.writeHead(410, { "Content-Type": "application/json; charset=utf-8" });
+  res.end(JSON.stringify({
+    success: false,
+    error: "Cache not supported by the new prediction API",
+  }));
+}
+
+async function handlePredictionBatch(req, res) {
+  try {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", async () => {
+      try {
+        const payload = JSON.parse(body || "{}");
+        const matches = Array.isArray(payload) ? payload : Array.isArray(payload.matches) ? payload.matches : [];
+        const requests = matches.map((item) => extractPredictionContext(item, createPredictionFallbackContext(item)));
+        const batch = await predictionClient.batchPredict(requests);
+
+        if (wsNotificationServer && Array.isArray(batch.predictions)) {
+          batch.predictions.forEach((predictionItem, index) => {
+            if (!predictionItem?.success || !predictionItem.predictions) return;
+
+            const matchResult = predictionItem.predictions.match_result || {};
+            const probabilities = matchResult.probabilities || {};
+            const totalGoals = predictionItem.predictions.total_goals || {};
+            const highestConfidence = Math.max(
+              Number(probabilities.home_win) || 0,
+              Number(probabilities.draw) || 0,
+              Number(probabilities.away_win) || 0
+            );
+
+            const notification = {
+              type: "prediction",
+              title: `Prediction Batch: ${predictionItem.match_id || "Match"}`,
+              message: `Resultat ${matchResult.prediction || "n/a"} | Buts ${
+                Number.isFinite(Number(totalGoals.predicted)) ? Number(totalGoals.predicted).toFixed(1) : "n/a"
+              }`,
+              data: {
+                match_id: predictionItem.match_id,
+                league: predictionItem.league,
+                team_home: predictionItem.team_home,
+                team_away: predictionItem.team_away,
+                match_result: matchResult,
+                total_goals: totalGoals,
+                total_parity: predictionItem.predictions.total_parity || {},
+                over_under: predictionItem.predictions.over_under || {},
+                confidence: highestConfidence,
+                batchIndex: index,
+                totalInBatch: batch.predictions.length,
+              },
+              priority: highestConfidence > 0.8 ? "high" : "normal",
+            };
+
+            wsNotificationServer.broadcastPredictionUpdate(notification);
+            pushNotificationService.broadcast(notification);
+          });
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ success: true, batch }));
+      } catch (error) {
+        console.error("Erreur batch-predict:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur lors du traitement de la requete:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ success: false, error: error.message }));
+  }
+}
 
 function serveStaticFile(requestPath, res) {
   const normalizedPath = requestPath === "/" ? "/index.html" : requestPath;

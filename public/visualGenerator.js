@@ -265,7 +265,13 @@
     `;
 
     if (predictionData && predictionData.predictions) {
-      const x2 = predictionData.predictions['1x2'] || {};
+      const matchResult = predictionData.predictions.match_result || {};
+      const probabilities = matchResult.probabilities || {};
+      const x2 = {
+        home: probabilities.home_win || 0,
+        draw: probabilities.draw || 0,
+        away: probabilities.away_win || 0
+      };
       const maxProb = Math.max(x2.home || 0, x2.draw || 0, x2.away || 0);
       let mainPrediction = "N/A";
       let mainPredictionColor = "#666";

@@ -27,7 +27,11 @@ const port = config.port;
 
 const publicDir = path.join(__dirname, "public");
 const liveFeedClient = new LiveFeedClient(config.liveFeedUrl, config.sslVerify);
-const predictionClient = new PredictionClient(config.predictionApiUrl, config.sslVerify);
+const predictionClient = new PredictionClient(
+  config.predictionApiUrl,
+  config.sslVerify,
+  config.predictionRequestTimeoutMs
+);
 const penaltyClient = new PenaltyClient(config.penaltyApiUrl, config.sslVerify);
 const aiModelClient = new AIModelClient(config.aiModelApiUrl, config.aiModelApiKey, config.aiModelName);
 let wsNotificationServer = null;
@@ -692,11 +696,18 @@ async function handlePredictionFamilies(req, res) {
 
 async function handlePredictionLeagues(req, res) {
   try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const familyFilter = String(url.pathname.split("/").pop() || url.searchParams.get("family") || "").trim().toUpperCase();
     const leaguesResponse = await predictionClient.getLeagues();
+    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const filteredLeagues = familyFilter
+      ? leagues.filter((league) => String(league?.family || "").toUpperCase() === familyFilter)
+      : leagues;
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: true,
-      leagues: Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : []
+      total: filteredLeagues.length,
+      leagues: filteredLeagues
     }));
   } catch (error) {
     console.error("Erreur lors de la récupération des ligues:", error);
@@ -720,9 +731,19 @@ async function handlePredictionModelInfo(req, res) {
       return;
     }
 
-    const stats = await predictionClient.getCacheStats();
+    const leaguesResponse = await predictionClient.getLeagues();
+    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const families = await predictionClient.getFamilies();
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ success: true, info: stats }));
+    res.end(JSON.stringify({
+      success: true,
+      info: {
+        leagues,
+        families: families.families || [],
+        total_leagues: leagues.length,
+        total_families: families.total || 0,
+      }
+    }));
   } catch (error) {
     console.error('Erreur model-info:', error);
     res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -1278,10 +1299,16 @@ async function handle888starzProxy(req, res, url) {
     
     // Paramètres par défaut obligatoires
     const defaultParams = {
+      sports: "85",
+      count: "40",
       lng: "fr",
       gr: "789",
+      mode: "4",
       country: "96",
-      partner: "233"
+      partner: "233",
+      getEmpty: "true",
+      virtualSports: "true",
+      noFilterBlockEvent: "true"
     };
     
     // Fusionner les paramètres de la requête avec les paramètres par défaut
@@ -1362,7 +1389,7 @@ async function handle888starzProxy(req, res, url) {
 
 
 
-async function handlePrediction(req, res) {
+async function handlePredictionV2(req, res) {
   try {
     let body = "";
     req.on("data", (chunk) => {
@@ -1440,6 +1467,170 @@ async function handlePrediction(req, res) {
       success: false,
       error: error.message,
     }));
+  }
+}
+
+async function handlePredictionFamiliesV2(req, res) {
+  try {
+    const leaguesResponse = await predictionClient.getLeagues();
+    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const families = await predictionClient.getFamilies();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      leagues,
+      families: families.families || [],
+      total_families: families.total || 0,
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la recuperation des familles:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message,
+    }));
+  }
+}
+
+async function handlePredictionLeaguesV2(req, res) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const familyFilter = String(url.pathname.split("/").pop() || url.searchParams.get("family") || "").trim().toUpperCase();
+    const leaguesResponse = await predictionClient.getLeagues();
+    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const filteredLeagues = familyFilter
+      ? leagues.filter((league) => String(league?.family || "").toUpperCase() === familyFilter)
+      : leagues;
+
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      total: filteredLeagues.length,
+      leagues: filteredLeagues,
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la recuperation des ligues:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message,
+    }));
+  }
+}
+
+async function handlePredictionModelInfoV2(req, res) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const league = url.searchParams.get("league") || decodeURIComponent(url.pathname.split("/").pop() || "");
+
+    if (league) {
+      const [info, leaguesResponse] = await Promise.all([
+        predictionClient.getModelInfo(league),
+        predictionClient.getLeagues(),
+      ]);
+      const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+      const matchedLeague = leagues.find((entry) => String(entry?.name || "").toLowerCase() === String(info?.league || league).toLowerCase());
+      const enrichedInfo = {
+        ...info,
+        family: matchedLeague?.family || info?.family || "N/A",
+        models_available: matchedLeague?.models_available || Object.keys(info?.models || {}).filter((key) => info?.models?.[key]),
+      };
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ success: true, info: enrichedInfo }));
+      return;
+    }
+
+    const leaguesResponse = await predictionClient.getLeagues();
+    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const families = await predictionClient.getFamilies();
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: true,
+      info: {
+        leagues,
+        families: families.families || [],
+        total_leagues: leagues.length,
+        total_families: families.total || 0,
+      },
+    }));
+  } catch (error) {
+    console.error("Erreur model-info:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message,
+    }));
+  }
+}
+
+async function handlePredictionBatchV2(req, res) {
+  try {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", async () => {
+      try {
+        const payload = JSON.parse(body || "{}");
+        const matches = Array.isArray(payload) ? payload : Array.isArray(payload.matches) ? payload.matches : [];
+        const requests = matches.map((item) => extractPredictionContext(item, createPredictionFallbackContext(item)));
+        const batch = await predictionClient.batchPredict(requests);
+
+        if (wsNotificationServer && Array.isArray(batch.predictions)) {
+          batch.predictions.forEach((predictionItem, index) => {
+            if (!predictionItem?.success || !predictionItem.predictions) return;
+            const matchResult = predictionItem.predictions.match_result || {};
+            const probabilities = matchResult.probabilities || {};
+            const totalGoals = predictionItem.predictions.total_goals || {};
+            const highestConfidence = Math.max(
+              Number(probabilities.home_win) || 0,
+              Number(probabilities.draw) || 0,
+              Number(probabilities.away_win) || 0
+            );
+
+            const notification = {
+              type: "prediction",
+              title: `Prediction Batch: ${predictionItem.match_id || "Match"}`,
+              message: `Resultat ${matchResult.prediction || "n/a"} | Buts ${
+                Number.isFinite(Number(totalGoals.predicted)) ? Number(totalGoals.predicted).toFixed(1) : "n/a"
+              }`,
+              data: {
+                match_id: predictionItem.match_id,
+                league: predictionItem.league,
+                team_home: predictionItem.team_home,
+                team_away: predictionItem.team_away,
+                match_result: matchResult,
+                total_goals: totalGoals,
+                total_parity: predictionItem.predictions.total_parity || {},
+                over_under: predictionItem.predictions.over_under || {},
+                confidence: highestConfidence,
+                batchIndex: index,
+                totalInBatch: batch.predictions.length,
+              },
+              priority: highestConfidence > 0.8 ? "high" : "normal",
+            };
+
+            wsNotificationServer.broadcastPredictionUpdate(notification);
+            pushNotificationService.broadcast(notification);
+          });
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({
+          success: true,
+          total_matches: matches.length,
+          batch,
+        }));
+      } catch (error) {
+        console.error("Erreur batch-predict:", error);
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+  } catch (error) {
+    console.error("Erreur lors du traitement de la requete:", error);
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ success: false, error: error.message }));
   }
 }
 
@@ -1664,7 +1855,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/prediction") {
-    await handlePrediction(req, res);
+    await handlePredictionV2(req, res);
     return;
   }
 
@@ -1674,12 +1865,12 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/prediction/leagues") {
-    await handlePredictionLeagues(req, res);
+    await handlePredictionLeaguesV2(req, res);
     return;
   }
 
   if (url.pathname.startsWith("/api/prediction/model/")) {
-    await handlePredictionModelInfo(req, res);
+    await handlePredictionModelInfoV2(req, res);
     return;
   }
 
@@ -1709,22 +1900,22 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (url.pathname === "/api/prediction/families") {
-    await handlePredictionFamilies(req, res);
+    await handlePredictionFamiliesV2(req, res);
     return;
   }
 
   if (url.pathname.startsWith("/api/prediction/leagues/")) {
-    await handlePredictionLeagues(req, res);
+    await handlePredictionLeaguesV2(req, res);
     return;
   }
 
   if (url.pathname === "/api/prediction/model-info") {
-    await handlePredictionModelInfo(req, res);
+    await handlePredictionModelInfoV2(req, res);
     return;
   }
 
   if (url.pathname === "/api/prediction/batch") {
-    await handlePredictionBatch(req, res);
+    await handlePredictionBatchV2(req, res);
     return;
   }
 

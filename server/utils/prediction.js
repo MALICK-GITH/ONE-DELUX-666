@@ -28,6 +28,49 @@ function normalizeMarketList(value) {
     .filter(Boolean);
 }
 
+function buildPlatformOdds(markets = [], advancedMarkets = []) {
+  const main = {};
+  const overUnder = [];
+  const handicap = [];
+
+  const pushMarket = (market, groupOverride = null) => {
+    if (!market || typeof market !== "object") return;
+    const group = Number(groupOverride ?? market.G);
+    const type = Number(market.T);
+    const line = market.P !== undefined ? Number(market.P) : null;
+    const value = Number(market.C);
+    if (!Number.isFinite(value)) return;
+
+    if (group === 1) {
+      if (type === 1) main.home_win = { value };
+      if (type === 2) main.draw = { value };
+      if (type === 3) main.away_win = { value };
+    }
+
+    if (group === 17 && Number.isFinite(line)) {
+      if (type === 9) overUnder.push({ type: "over", threshold: line, value });
+      if (type === 10) overUnder.push({ type: "under", threshold: line, value });
+    }
+
+    if (group === 2 && Number.isFinite(line)) {
+      if (type === 7) handicap.push({ type: "home", handicap: line, value });
+      if (type === 8) handicap.push({ type: "away", handicap: line, value });
+    }
+  };
+
+  (Array.isArray(markets) ? markets : []).forEach((market) => pushMarket(market));
+  (Array.isArray(advancedMarkets) ? advancedMarkets : []).forEach((groupItem) => {
+    const group = groupItem?.G;
+    (Array.isArray(groupItem?.ME) ? groupItem.ME : []).forEach((market) => pushMarket(market, group));
+  });
+
+  return {
+    main,
+    over_under: overUnder,
+    handicap,
+  };
+}
+
 function resolveMatchId(body = {}, fallback = {}) {
   return toString(
     body.I ??
@@ -125,8 +168,11 @@ function normalizePredictionResponse(response, context = {}) {
     return response;
   }
 
+  const platformOdds = response.platform_odds || buildPlatformOdds(context.E || [], context.AE || []);
+
   return {
     ...response,
+    platform_odds: platformOdds,
     match_id: toString(response.match_id ?? context.I ?? context.match_id, ""),
     team_home: toString(response.team_home ?? context.O1 ?? context.team_home, ""),
     team_away: toString(response.team_away ?? context.O2 ?? context.team_away, ""),
@@ -137,6 +183,7 @@ function normalizePredictionResponse(response, context = {}) {
 
 module.exports = {
   buildPredictionRequest,
+  buildPlatformOdds,
   normalizePredictionResponse,
   normalizeMarketList,
 };

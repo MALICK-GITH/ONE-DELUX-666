@@ -2,9 +2,10 @@ const https = require("https");
 const http = require("http");
 
 class PredictionClient {
-  constructor(url, sslVerify = true) {
+  constructor(url, sslVerify = true, timeoutMs = 60000) {
     this.url = url;
     this.sslVerify = sslVerify;
+    this.timeoutMs = Number.isFinite(Number(timeoutMs)) ? Number(timeoutMs) : 60000;
   }
 
   async healthCheck() {
@@ -13,6 +14,30 @@ class PredictionClient {
 
   async getLeagues() {
     return this.getJson("/leagues");
+  }
+
+  async getFamilies() {
+    const leaguesResponse = await this.getLeagues();
+    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const familiesMap = new Map();
+
+    for (const league of leagues) {
+      const family = String(league?.family || "ALL").trim() || "ALL";
+      if (!familiesMap.has(family)) {
+        familiesMap.set(family, []);
+      }
+      const leagueName = league?.name || league?.key;
+      if (leagueName) {
+        familiesMap.get(family).push(leagueName);
+      }
+    }
+
+    return {
+      success: true,
+      total: familiesMap.size,
+      families: [...familiesMap.entries()].map(([name, leaguesList]) => ({ name, leagues: leaguesList })),
+      timestamp: leaguesResponse?.timestamp || new Date().toISOString(),
+    };
   }
 
   async predictMatch(payload) {
@@ -78,7 +103,15 @@ class PredictionClient {
         });
       });
 
+      req.setTimeout(this.timeoutMs, () => {
+        req.destroy(new Error(`Délai dépassé après ${this.timeoutMs} ms`));
+      });
+
       req.on("error", (error) => {
+        if (error?.message?.includes("Délai dépassé")) {
+          reject(new Error(`Erreur de connexion: ${error.message}`));
+          return;
+        }
         reject(new Error(`Erreur de connexion: ${error.message}`));
       });
 

@@ -511,7 +511,7 @@ function renderMatchDetail(match) {
   loadMatchPrediction();
 }
 
-function renderPredictionContent(match, prediction) {
+function renderPredictionContent(match, prediction, modelInfo = null) {
   const matchResult = prediction?.predictions?.match_result || {};
   const x2 = {
     home: Number(matchResult.probabilities?.home_win) || 0,
@@ -521,6 +521,7 @@ function renderPredictionContent(match, prediction) {
   };
   const totalGoals = prediction?.predictions?.total_goals || {};
   const handicap = prediction?.platform_mapping?.handicap || {};
+  const platformOdds = prediction?.platform_odds || {};
   const parity = prediction?.predictions?.total_parity || {};
   const overUnder = prediction?.predictions?.over_under || {};
   const btts = {};
@@ -638,6 +639,49 @@ function renderPredictionContent(match, prediction) {
       </div>
     `;
 
+  const platformOddsCard = platformOdds?.main
+    ? `
+      <div class="premium-section-card fade-in-up">
+        <div class="section-title-wrap compact">
+          <h4>💹 Cotes plateforme</h4>
+          <p>Valeurs brutes retournées par l'API.</p>
+        </div>
+        <div class="stats-grid-premium">
+          ${renderStatCard("1", platformOdds.main.home_win ? formatOdd(platformOdds.main.home_win.value) : "N/A", "green")}
+          ${renderStatCard("X", platformOdds.main.draw ? formatOdd(platformOdds.main.draw.value) : "N/A", "amber")}
+          ${renderStatCard("2", platformOdds.main.away_win ? formatOdd(platformOdds.main.away_win.value) : "N/A", "red")}
+        </div>
+      </div>
+    `
+    : "";
+
+  const modelInfoCard = modelInfo?.models
+    ? `
+      <div class="premium-section-card fade-in-up">
+        <div class="section-title-wrap compact">
+          <h4>🧠 Modèle de ligue</h4>
+          <p>${normalizeText(modelInfo.league || match.league)} · ${normalizeText(modelInfo.family || "N/A")}</p>
+        </div>
+        <div class="stats-grid-premium">
+          ${Object.entries(modelInfo.models).map(([key, value]) => {
+            const available = typeof value === "boolean" ? value : Boolean(value);
+            const label = available ? "Disponible" : "Absent";
+            const detail = typeof value === "object" && value
+              ? [value.type, value.accuracy !== undefined ? `${Math.round(Number(value.accuracy) * 100)}%` : null, value.features !== undefined ? `${value.features} features` : null].filter(Boolean).join(" · ")
+              : "Modèle de ligue";
+            return `
+              <article class="premium-stat-card">
+                <span>${escapeHtml(key)}</span>
+                <strong>${escapeHtml(label)}</strong>
+                <small>${escapeHtml(detail)}</small>
+              </article>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `
+    : "";
+
   const statsCards = [
     renderStatCard("Confiance IA", formatPercent(mainPrediction.confidence), "red"),
     renderStatCard("Famille", family, "cyan"),
@@ -685,6 +729,9 @@ function renderPredictionContent(match, prediction) {
           ` : ""}
         </div>
       ` : ""}
+
+      ${platformOddsCard}
+      ${modelInfoCard}
 
       <div class="premium-section-card fade-in-up">
         <div class="section-title-wrap compact">
@@ -798,6 +845,7 @@ async function loadMatchPrediction() {
       exactLeague,
       currentMatchData,
     );
+    const modelInfoResponse = await window.SiteAPI.predictionModelInfo(exactLeague).catch(() => null);
 
     if (!data.success) {
       throw new Error(data.error || "Erreur inconnue");
@@ -807,7 +855,7 @@ async function loadMatchPrediction() {
     window.currentPredictionData = currentPredictionData;
 
     if (data.prediction?.predictions) {
-      resultDiv.innerHTML = renderPredictionContent(currentMatchData, data.prediction);
+      resultDiv.innerHTML = renderPredictionContent(currentMatchData, data.prediction, modelInfoResponse?.info || null);
       attachPredictionToolEvents();
       updatePredictionStatus(true, "Analyse terminée");
       const nowText = `Mis à jour: ${new Date().toLocaleTimeString("fr-FR")}`;

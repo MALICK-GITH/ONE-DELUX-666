@@ -23,16 +23,6 @@ function loadDotEnvFile(filePath) {
 loadDotEnvFile(path.join(process.cwd(), ".env"));
 
 const DEFAULT_PORT = 3000;
-const DEFAULT_LIVE_FEED_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
-const DEFAULT_PREDICTION_API_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://api-fast-qnvg.onrender.com"
-    : "http://localhost:8000";
-const DEFAULT_PENALTY_API_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
-const DEFAULT_AI_MODEL_API_URL = "https://aimodelapi.onrender.com/v1";
-const DEFAULT_AI_MODEL = "grok-4";
-const DEFAULT_SSL_VERIFY = false;
-
 function parseNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -46,8 +36,22 @@ function parseBoolean(value, fallback = false) {
   return fallback;
 }
 
+const port = parseNumber(process.env.SERVER_PORT || process.env.PORT, DEFAULT_PORT);
+const internalProxyBaseUrl = process.env.INTERNAL_PROXY_BASE_URL || `http://127.0.0.1:${port}`;
+const DEFAULT_LIVE_FEED_URL = `${internalProxyBaseUrl}/api/888starz/LiveFeed/Get1x2_VZip`;
+const DEFAULT_PREDICTION_API_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://api-fast-qnvg.onrender.com"
+    : "http://localhost:8000";
+const DEFAULT_PENALTY_API_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
+const DEFAULT_AI_MODEL_API_URL = "https://aimodelapi.onrender.com/v1";
+const DEFAULT_AI_MODEL = "grok-4";
+const DEFAULT_SSL_VERIFY = false;
+const DEFAULT_PREDICTION_REQUEST_TIMEOUT_MS = 60000;
+
 module.exports = {
-  port: parseNumber(process.env.SERVER_PORT || process.env.PORT, DEFAULT_PORT),
+  port,
+  internalProxyBaseUrl,
   appSignature: "SOLITAIRE HACK",
   predictionApiUrl: process.env.PREDICTION_API_URL || DEFAULT_PREDICTION_API_URL,
   liveFeedUrl: process.env.LIVE_FEED_URL || DEFAULT_LIVE_FEED_URL,
@@ -56,5 +60,6 @@ module.exports = {
   aiModelApiKey: process.env.AI_MODEL_API_KEY || "devx-s3lkpld19bvhbsv2ex5omi1b2vjet5a5",
   aiModelName: process.env.AI_MODEL_NAME || DEFAULT_AI_MODEL,
   sslVerify: parseBoolean(process.env.SSL_VERIFY, DEFAULT_SSL_VERIFY),
+  predictionRequestTimeoutMs: parseNumber(process.env.PREDICTION_REQUEST_TIMEOUT_MS, DEFAULT_PREDICTION_REQUEST_TIMEOUT_MS),
   databaseUrl: process.env.DATABASE_URL || "postgresql://postgres.btnohofkrnojbqtsuhto:66240702Mkings@aws-0-eu-west-1.pooler.supabase.com:5432/postgres",
 };

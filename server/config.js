@@ -41,8 +41,8 @@ const internalProxyBaseUrl = process.env.INTERNAL_PROXY_BASE_URL || `http://127.
 const DEFAULT_LIVE_FEED_URL = `${internalProxyBaseUrl}/api/888starz/LiveFeed/Get1x2_VZip`;
 const DEFAULT_PREDICTION_API_URL =
   process.env.NODE_ENV === "production"
-    ? "http://127.0.0.1:8000"
-    : "http://localhost:8000";
+    ? "https://api-fast-82wa.onrender.com"
+    : "https://api-fast-82wa.onrender.com";
 const DEFAULT_PENALTY_API_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
 const DEFAULT_AI_MODEL_API_URL = "https://aimodelapi.onrender.com/v1";
 const DEFAULT_AI_MODEL = "grok-4";

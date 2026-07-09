@@ -76,28 +76,78 @@ Récupère les détails d'un match spécifique.
 ### Get Prediction
 `POST /api/prediction`
 
-Génère une prédiction pour un match.
+Génère une prédiction pour un match en utilisant l'API FIFA Prediction (54 modèles ML entraînés sur 36 019 matchs).
 
-**Request Body:**
+**Request Body (Format Plateforme):**
 ```json
 {
-  "team_home": "string",
-  "team_away": "string",
-  "league": "string",
-  "market_data": { } // Optionnel
+  "I": "match_id_unique",
+  "O1": "Équipe Domicile",
+  "O2": "Équipe Extérieur",
+  "L": "Nom de la Ligue",
+  "S": 1783516200,
+  "SC": null,
+  "E": [
+    {"T": 1, "C": 1.096, "P": null, "B": "bookmaker", "G": 1},
+    {"T": 2, "C": 6.14, "P": null, "B": "bookmaker", "G": 1},
+    {"T": 3, "C": 30, "P": null, "B": "bookmaker", "G": 1}
+  ],
+  "AE": [
+    {
+      "G": 2,
+      "ME": [
+        {"T": 7, "C": 1.95, "P": -1.0, "B": "bookmaker"},
+        {"T": 8, "C": 1.95, "P": 1.0, "B": "bookmaker"}
+      ]
+    }
+  ]
 }
 ```
+
+**Champs:**
+- `I`: Identifiant unique du match (string)
+- `O1`: Nom de l'équipe domicile (string)
+- `O2`: Nom de l'équipe extérieur (string)
+- `L`: Nom de la ligue (doit être dans les 18 ligues supportées)
+- `S`: Timestamp du match (integer)
+- `SC`: Score actuel (optionnel, null si match non commencé)
+- `E`: Array des cotes principales (optionnel)
+- `AE`: Array des cotes additionnelles (optionnel)
 
 **Response:**
 ```json
 {
   "success": true,
-  "prediction": {
-    "home_win": number,
-    "draw": number,
-    "away_win": number,
-    "confidence": number,
-    "recommended_bet": "string"
+  "match_id": "match_001",
+  "team_home": "Barcelone",
+  "team_away": "Galatasaray",
+  "league": "FC 26. 5x5 Rush. Superligue",
+  "predictions": {
+    "match_result": {
+      "prediction": "home",
+      "confidence": 0.65,
+      "probabilities": {
+        "home": 0.65,
+        "draw": 0.20,
+        "away": 0.15
+      }
+    },
+    "total_goals": {
+      "predicted": 5.2,
+      "over_2_5": true,
+      "over_3_5": true
+    },
+    "total_parity": {
+      "prediction": "odd",
+      "confidence": 0.52
+    }
+  },
+  "platform_odds": {
+    "main": {
+      "home_win": {"value": 1.096},
+      "draw": {"value": 6.14},
+      "away_win": {"value": 30}
+    }
   }
 }
 ```

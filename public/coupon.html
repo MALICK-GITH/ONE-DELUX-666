@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
 
 <head>
@@ -29,6 +29,7 @@
     rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/coupon.css" />
+  <link rel="stylesheet" href="/coupon-competitive-ui.css" />
   <link rel="stylesheet" href="/notification-panel.css" />
   <script src="/pwa.js" defer></script>
 </head>
@@ -37,8 +38,36 @@
   <div class="bg-grid" aria-hidden="true"></div>
 
   <nav class="page-link-cloud" aria-label="Navigation coupon">
-    <a class="back" href="/">Retour accueil</a>
+    <a class="back" href/">Retour accueil</a>
   </nav>
+
+  <div class="competitive-topbar">
+    <button id="competitiveFocusBtn" type="button">Focus</button>
+    <button id="competitiveDensityBtn" type="button">Dense</button>
+    <button id="competitivePulseBtn" type="button">Pulse</button>
+    <div id="competitiveClock" class="competitive-clock">00:00:00</div>
+  </div>
+
+  <div class="competitive-stats-panel">
+    <div class="competitive-stats-grid">
+      <article>
+        <span>Sélections</span>
+        <strong id="compTotalSel">0</strong>
+      </article>
+      <article>
+        <span>Cote totale</span>
+        <strong id="compTotalOdd">-</strong>
+      </article>
+      <article>
+        <span>Confiance moy.</span>
+        <strong id="compAvgConf">0.0%</strong>
+      </article>
+      <article>
+        <span>Ligues</span>
+        <strong id="compLeagueCount">0</strong>
+      </article>
+    </div>
+  </div>
 
   <header class="hero coupon-hero">
     <p class="tag">FURY X ONE</p>
@@ -127,6 +156,7 @@
   <script src="/notification-service.js"></script>
   <script src="/notification-panel.js"></script>
   <script src="/coupon-new.js"></script>
+  <script src="/coupon-competitive-ui.js"></script>
 </body>
 
 </html>

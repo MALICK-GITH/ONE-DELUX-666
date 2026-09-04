@@ -1,0 +1,7 @@
+node_modules/
+.qodo/
+.env
+logs/
+models/*.pkl
+models/*.json
+finished_matches_dataset.csv

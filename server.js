@@ -4,7 +4,6 @@ const fs = require("fs");
 const path = require("path");
 const config = require("./server/config");
 const LiveFeedClient = require("./services/liveFeedClient");
-const PredictionClient = require("./services/predictionClient");
 const PenaltyClient = require("./services/penaltyClient");
 const AIModelClient = require("./services/aiModelClient");
 const ParityAIClient = require("./services/parityAIClient");
@@ -28,14 +27,9 @@ const port = config.port;
 
 const publicDir = path.join(__dirname, "public");
 const liveFeedClient = new LiveFeedClient(config.liveFeedUrl, config.sslVerify);
-const predictionClient = new PredictionClient(
-  config.predictionApiUrl,
-  config.sslVerify,
-  config.predictionRequestTimeoutMs
-);
+const parityAiClient = new ParityAIClient(config.parityAiApiUrl, config.sslVerify, config.predictionRequestTimeoutMs);
 const penaltyClient = new PenaltyClient(config.penaltyApiUrl, config.sslVerify);
 const aiModelClient = new AIModelClient(config.aiModelApiUrl, config.aiModelApiKey, config.aiModelName);
-const parityAiClient = new ParityAIClient(config.parityAiApiUrl, config.sslVerify, config.predictionRequestTimeoutMs);
 let wsNotificationServer = null;
 
 const mimeTypes = {
@@ -317,7 +311,6 @@ async function handlePrediction(req, res) {
     req.on('end', async () => {
       try {
         const parsedBody = JSON.parse(body || '{}');
-        const source = parsedBody.source || 'default';
         const teamHome = parsedBody.team_home ?? parsedBody.home_team ?? parsedBody.teamHome ?? "";
         const teamAway = parsedBody.team_away ?? parsedBody.away_team ?? parsedBody.teamAway ?? "";
         const league = parsedBody.league ?? "";
@@ -333,32 +326,18 @@ async function handlePrediction(req, res) {
           return;
         }
 
-        let prediction;
-        if (source === 'parityai') {
-          prediction = await parityAiClient.predictMatch({
-            ...requestPayload,
-            team_home: requestPayload.team_home,
-            team_away: requestPayload.team_away,
-            league: requestPayload.league,
-            historical: historicalFallback,
-            rolling_home: historicalFallback.rolling_home,
-            rolling_away: historicalFallback.rolling_away,
-            h2h: historicalFallback.h2h,
-            E: parsedBody.E || [],
-            AE: parsedBody.AE || [],
-          });
-        } else {
-          prediction = await predictionClient.predictMatch({
-            ...requestPayload,
-            team_home: requestPayload.team_home,
-            team_away: requestPayload.team_away,
-            league: requestPayload.league,
-            historical: historicalFallback,
-            rolling_home: historicalFallback.rolling_home,
-            rolling_away: historicalFallback.rolling_away,
-            h2h: historicalFallback.h2h,
-          });
-        }
+        const prediction = await parityAiClient.predictMatch({
+          ...requestPayload,
+          team_home: requestPayload.team_home,
+          team_away: requestPayload.team_away,
+          league: requestPayload.league,
+          historical: historicalFallback,
+          rolling_home: historicalFallback.rolling_home,
+          rolling_away: historicalFallback.rolling_away,
+          h2h: historicalFallback.h2h,
+          E: parsedBody.E || [],
+          AE: parsedBody.AE || [],
+        });
 
         const normalizedPrediction = normalizePredictionResponse(prediction, {
           ...requestPayload,
@@ -372,26 +351,31 @@ async function handlePrediction(req, res) {
         });
 
         if (wsNotificationServer && normalizedPrediction?.success && normalizedPrediction.prediction) {
-          const x2 = normalizedPrediction.prediction.predictions?.['1x2'] || {};
-          const topScore = Array.isArray(normalizedPrediction.prediction.top_scores)
-            ? normalizedPrediction.prediction.top_scores[0]
+          const matchResult = normalizedPrediction.prediction.predictions?.match_result || {};
+          const probabilities = matchResult.probabilities || {};
+          const highestConfidence = Math.max(
+            Number(probabilities.home_win) || 0,
+            Number(probabilities.draw) || 0,
+            Number(probabilities.away_win) || 0
+          );
+          const topScore = Array.isArray(normalizedPrediction.prediction.predictions?.correct_score?.top_scores)
+            ? normalizedPrediction.prediction.predictions.correct_score.top_scores[0]
             : null;
-          const highestConfidence = Math.max(x2.home || 0, x2.draw || 0, x2.away || 0);
 
           const notification = {
             type: 'prediction',
             title: 'Prédiction: ' + requestPayload.team_home + ' vs ' + requestPayload.team_away,
             message: topScore
-              ? 'Résultat ' + normalizedPrediction.prediction.result + ' | Score ' + topScore.score
-              : 'Résultat ' + normalizedPrediction.prediction.result,
+              ? 'Résultat ' + matchResult.prediction + ' | Score ' + topScore.score
+              : 'Résultat ' + matchResult.prediction,
             data: {
-              match: normalizedPrediction.prediction.match,
+              match: normalizedPrediction.prediction.match_id,
               league: normalizedPrediction.prediction.league,
-              result: normalizedPrediction.prediction.result,
-              resultProba: normalizedPrediction.prediction.result_proba,
-              topScores: normalizedPrediction.prediction.top_scores,
+              result: matchResult.prediction,
+              resultProba: matchResult.probabilities,
+              topScores: normalizedPrediction.prediction.predictions.correct_score?.top_scores,
               confidence: highestConfidence,
-              source: source
+              source: "parityai"
             },
             priority: highestConfidence > 0.8 ? 'high' : 'normal'
           };
@@ -404,7 +388,7 @@ async function handlePrediction(req, res) {
         res.end(JSON.stringify({
           success: true,
           prediction: normalizedPrediction.prediction || null,
-          source: source
+          source: "parityai"
         }));
       } catch (error) {
         console.error('Erreur lors de la prédiction:', error);
@@ -427,11 +411,13 @@ async function handlePrediction(req, res) {
 
 async function handlePredictionHealth(req, res) {
   try {
-    const health = await predictionClient.healthCheck();
+    const health = await parityAiClient.healthCheck();
+    const modelInfo = await parityAiClient.getModelInfo();
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: true,
-      health: health
+      health: health,
+      model: modelInfo
     }));
   } catch (error) {
     console.error("Erreur lors du health check:", error);
@@ -443,25 +429,6 @@ async function handlePredictionHealth(req, res) {
   }
 }
 
-async function handleParityAIHealth(req, res) {
-  try {
-    const health = await parityAiClient.healthCheck();
-    const modelInfo = await parityAiClient.getModelInfo();
-    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-    res.end(JSON.stringify({
-      success: true,
-      health: health,
-      model: modelInfo
-    }));
-  } catch (error) {
-    console.error("Erreur lors du health check ParityAI:", error);
-    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
-    res.end(JSON.stringify({
-      success: false,
-      error: error.message
-    }));
-  }
-}
 
 async function handleAiInsight(req, res) {
   try {
@@ -586,7 +553,8 @@ async function handleAiAssistantChat(req, res) {
           userTime: buildUserTimeContext(userTime),
           predictionSource: {
             endpoint: "/api/prediction",
-            upstream: config.predictionApiUrl
+            upstream: config.parityAiApiUrl,
+            provider: "ParityAI"
           },
           quickActions: [
             "Analyser les matchs live",
@@ -706,7 +674,7 @@ async function buildCompareMode(compareRequest) {
     if (!match) return null;
 
     const fallbackContext = buildHistoricalPredictionContext(match.team1, match.team2, match.league);
-    const systemPrediction = await predictionClient.predictMatch({
+    const systemPrediction = await parityAiClient.predictMatch({
       I: match.id,
       O1: match.team1,
       O2: match.team2,
@@ -740,9 +708,14 @@ async function buildCompareMode(compareRequest) {
 
 async function handlePredictionFamilies(req, res) {
   try {
-    const leaguesResponse = await predictionClient.getLeagues();
-    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
-    const families = await predictionClient.getFamilies();
+    const modelInfo = await parityAiClient.getModelInfo();
+    const leagues = Array.isArray(modelInfo?.leagues) ? modelInfo.leagues : [];
+    const families = [
+      {
+        name: "all",
+        leagues: leagues.map((entry) => entry?.name).filter(Boolean),
+      },
+    ];
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: true,
@@ -763,8 +736,8 @@ async function handlePredictionLeagues(req, res) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const familyFilter = String(url.pathname.split("/").pop() || url.searchParams.get("family") || "").trim().toUpperCase();
-    const leaguesResponse = await predictionClient.getLeagues();
-    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const modelInfo = await parityAiClient.getModelInfo();
+    const leagues = Array.isArray(modelInfo?.leagues) ? modelInfo.leagues : [];
     const filteredLeagues = familyFilter
       ? leagues.filter((league) => String(league?.family || "").toUpperCase() === familyFilter)
       : leagues;
@@ -784,58 +757,20 @@ async function handlePredictionLeagues(req, res) {
   }
 }
 
-async function handlePredictionModelInfo(req, res) {
-  try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const league = url.searchParams.get('league') || decodeURIComponent(url.pathname.split("/").pop() || "");
-
-    if (league) {
-      const info = await predictionClient.getModelInfo(league);
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ success: true, info }));
-      return;
-    }
-
-    const leaguesResponse = await predictionClient.getLeagues();
-    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
-    const families = await predictionClient.getFamilies();
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({
-      success: true,
-      info: {
-        leagues,
-        families: families.families || [],
-        total_leagues: leagues.length,
-        total_families: families.total || 0,
-      }
-    }));
-  } catch (error) {
-    console.error('Erreur model-info:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ success: false, error: error.message }));
-  }
-}
-
 async function handlePredictionCacheStats(req, res) {
-  try {
-    const stats = await predictionClient.getCacheStats();
-    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-    res.end(JSON.stringify({
-      success: true,
-      info: stats
-    }));
-  } catch (error) {
-    console.error("Erreur cache-stats:", error);
-    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
-    res.end(JSON.stringify({
-      success: false,
-      error: error.message
-    }));
-  }
+  res.writeHead(410, { "Content-Type": "application/json; charset=utf-8" });
+  res.end(JSON.stringify({
+    success: false,
+    error: "Cache not supported by ParityAI"
+  }));
 }
 
 async function handlePredictionClearCache(req, res) {
-  return handleClearCache(req, res);
+  res.writeHead(410, { "Content-Type": "application/json; charset=utf-8" });
+  res.end(JSON.stringify({
+    success: false,
+    error: "Cache not supported by ParityAI"
+  }));
 }
 
 async function handlePredictionBatch(req, res) {
@@ -853,7 +788,7 @@ async function handlePredictionBatch(req, res) {
           const historicalFallback = buildHistoricalPredictionContext(teamHome, teamAway, league);
           return extractPredictionContext(item, historicalFallback);
         });
-        const batch = await predictionClient.batchPredict(requests);
+        const batch = await parityAiClient.batchPredict(requests);
 
         if (wsNotificationServer && Array.isArray(batch.predictions)) {
           batch.predictions.forEach((predictionItem, index) => {
@@ -1483,7 +1418,7 @@ async function handlePredictionV2(req, res) {
           return;
         }
 
-        const prediction = await predictionClient.predictMatch(enrichedRequestPayload);
+        const prediction = await parityAiClient.predictMatch(enrichedRequestPayload);
         const normalizedPrediction = normalizePredictionResponse(prediction, enrichedRequestPayload);
 
         if (wsNotificationServer && normalizedPrediction?.success && normalizedPrediction.predictions) {
@@ -1546,15 +1481,20 @@ async function handlePredictionV2(req, res) {
 
 async function handlePredictionFamiliesV2(req, res) {
   try {
-    const leaguesResponse = await predictionClient.getLeagues();
-    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
-    const families = await predictionClient.getFamilies();
+    const modelInfo = await parityAiClient.getModelInfo();
+    const leagues = Array.isArray(modelInfo?.leagues) ? modelInfo.leagues : [];
+    const families = [
+      {
+        name: "all",
+        leagues: leagues.map((entry) => entry?.name).filter(Boolean),
+      },
+    ];
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: true,
       leagues,
-      families: families.families || [],
-      total_families: families.total || 0,
+      families: families || [],
+      total_families: families.length || 0,
     }));
   } catch (error) {
     console.error("Erreur lors de la recuperation des familles:", error);
@@ -1570,8 +1510,8 @@ async function handlePredictionLeaguesV2(req, res) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const familyFilter = String(url.pathname.split("/").pop() || url.searchParams.get("family") || "").trim().toUpperCase();
-    const leaguesResponse = await predictionClient.getLeagues();
-    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const modelInfo = await parityAiClient.getModelInfo();
+    const leagues = Array.isArray(modelInfo?.leagues) ? modelInfo.leagues : [];
     const filteredLeagues = familyFilter
       ? leagues.filter((league) => String(league?.family || "").toUpperCase() === familyFilter)
       : leagues;
@@ -1597,34 +1537,29 @@ async function handlePredictionModelInfoV2(req, res) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const league = url.searchParams.get("league") || decodeURIComponent(url.pathname.split("/").pop() || "");
 
+    const modelInfo = await parityAiClient.getModelInfo();
+    
     if (league) {
-      const [info, leaguesResponse] = await Promise.all([
-        predictionClient.getModelInfo(league),
-        predictionClient.getLeagues(),
-      ]);
-      const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
-      const matchedLeague = leagues.find((entry) => String(entry?.name || "").toLowerCase() === String(info?.league || league).toLowerCase());
+      const leagues = Array.isArray(modelInfo?.leagues) ? modelInfo.leagues : [];
+      const matchedLeague = leagues.find((entry) => String(entry?.name || "").toLowerCase() === String(league).toLowerCase());
       const enrichedInfo = {
-        ...info,
-        family: matchedLeague?.family || info?.family || "N/A",
-        models_available: matchedLeague?.models_available || Object.keys(info?.models || {}).filter((key) => info?.models?.[key]),
+        ...modelInfo,
+        league: matchedLeague?.name || league,
+        family: matchedLeague?.family || "N/A",
       };
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       res.end(JSON.stringify({ success: true, info: enrichedInfo }));
       return;
     }
 
-    const leaguesResponse = await predictionClient.getLeagues();
-    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
-    const families = await predictionClient.getFamilies();
+    const leagues = Array.isArray(modelInfo?.leagues) ? modelInfo.leagues : [];
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: true,
       info: {
         leagues,
-        families: families.families || [],
+        model: modelInfo.model || {},
         total_leagues: leagues.length,
-        total_families: families.total || 0,
       },
     }));
   } catch (error) {
@@ -1648,7 +1583,7 @@ async function handlePredictionBatchV2(req, res) {
         const payload = JSON.parse(body || "{}");
         const matches = Array.isArray(payload) ? payload : Array.isArray(payload.matches) ? payload.matches : [];
         const requests = matches.map((item) => extractPredictionContext(item, createPredictionFallbackContext(item)));
-        const batch = await predictionClient.batchPredict(requests);
+        const batch = await parityAiClient.batchPredict(requests);
 
         if (wsNotificationServer && Array.isArray(batch.predictions)) {
           batch.predictions.forEach((predictionItem, index) => {
@@ -1710,8 +1645,8 @@ async function handlePredictionBatchV2(req, res) {
 
 async function handlePredictionFamilies(req, res) {
   try {
-    const leaguesResponse = await predictionClient.getLeagues();
-    const leagues = Array.isArray(leaguesResponse?.leagues) ? leaguesResponse.leagues : [];
+    const modelInfo = await parityAiClient.getModelInfo();
+    const leagues = Array.isArray(modelInfo?.leagues) ? modelInfo.leagues : [];
     const families = [
       {
         name: "all",
@@ -1747,7 +1682,7 @@ async function handlePredictionModelInfo(req, res) {
       return;
     }
 
-    const leaguesResponse = await predictionClient.getLeagues();
+    const modelInfo = await parityAiClient.getModelInfo();
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({
       success: true,
@@ -1793,7 +1728,7 @@ async function handlePredictionBatch(req, res) {
         const payload = JSON.parse(body || "{}");
         const matches = Array.isArray(payload) ? payload : Array.isArray(payload.matches) ? payload.matches : [];
         const requests = matches.map((item) => extractPredictionContext(item, createPredictionFallbackContext(item)));
-        const batch = await predictionClient.batchPredict(requests);
+        const batch = await parityAiClient.batchPredict(requests);
 
         if (wsNotificationServer && Array.isArray(batch.predictions)) {
           batch.predictions.forEach((predictionItem, index) => {

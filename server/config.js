@@ -39,24 +39,17 @@ function parseBoolean(value, fallback = false) {
 const port = parseNumber(process.env.SERVER_PORT || process.env.PORT, DEFAULT_PORT);
 const internalProxyBaseUrl = process.env.INTERNAL_PROXY_BASE_URL || `http://127.0.0.1:${port}`;
 const DEFAULT_LIVE_FEED_URL = `${internalProxyBaseUrl}/api/888starz/LiveFeed/Get1x2_VZip`;
-const DEFAULT_PREDICTION_API_URL =
-  process.env.NODE_ENV === "production"
-    ? "https://api-fast-82wa.onrender.com"
-    : "https://api-fast-82wa.onrender.com";
 const DEFAULT_PENALTY_API_URL = "https://888starz.bet/service-api/LiveFeed/Get1x2_VZip";
 const DEFAULT_AI_MODEL_API_URL = "https://aimodelapi.onrender.com/v1";
 const DEFAULT_AI_MODEL = "grok-4";
 const DEFAULT_PARITYAI_API_URL = "https://fifa-ai-trainer.lovable.app";
 const DEFAULT_SSL_VERIFY = false;
 const DEFAULT_PREDICTION_REQUEST_TIMEOUT_MS = 60000;
-const DEFAULT_LOCAL_PREDICTION_API_URL = "http://127.0.0.1:8000";
-const DEFAULT_PREDICTION_PROBE_TIMEOUT_MS = 3500;
 
 module.exports = {
   port,
   internalProxyBaseUrl,
   appSignature: "SOLITAIRE HACK",
-  predictionApiUrl: process.env.PREDICTION_API_URL || DEFAULT_PREDICTION_API_URL,
   liveFeedUrl: process.env.LIVE_FEED_URL || DEFAULT_LIVE_FEED_URL,
   penaltyApiUrl: process.env.PENALTY_API_URL || DEFAULT_PENALTY_API_URL,
   aiModelApiUrl: process.env.AI_MODEL_API_URL || DEFAULT_AI_MODEL_API_URL,
@@ -65,7 +58,5 @@ module.exports = {
   parityAiApiUrl: process.env.PARITYAI_API_URL || DEFAULT_PARITYAI_API_URL,
   sslVerify: parseBoolean(process.env.SSL_VERIFY, DEFAULT_SSL_VERIFY),
   predictionRequestTimeoutMs: parseNumber(process.env.PREDICTION_REQUEST_TIMEOUT_MS, DEFAULT_PREDICTION_REQUEST_TIMEOUT_MS),
-  localPredictionApiUrl: process.env.LOCAL_PREDICTION_API_URL || DEFAULT_LOCAL_PREDICTION_API_URL,
-  predictionProbeTimeoutMs: parseNumber(process.env.PREDICTION_PROBE_TIMEOUT_MS, DEFAULT_PREDICTION_PROBE_TIMEOUT_MS),
   databaseUrl: process.env.DATABASE_URL || "postgresql://postgres.btnohofkrnojbqtsuhto:66240702Mkings@aws-0-eu-west-1.pooler.supabase.com:5432/postgres",
 };
